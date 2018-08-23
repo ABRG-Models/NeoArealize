@@ -15,6 +15,19 @@ int main (int argc, char **argv)
         return -1;
     }
 
+    vector<morph::Gdisplay> displays;
+    vector<double> fix(3, 0.0);
+    vector<double> eye(3, 0.0);
+    vector<double> rot(3, 0.0);
+
+    double rhoInit = 1.4;
+    string worldName(argv[1]);
+    string winTitle = worldName + ": n";
+    displays.push_back (morph::Gdisplay (500, 500, 100, 0, winTitle.c_str(), rhoInit, 0.0, 0.0));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
+
     // Set RNG seed
     int rseed = 1;
     srand(rseed);
@@ -36,7 +49,7 @@ int main (int argc, char **argv)
     }
 
     // How many iterations to compute?
-    unsigned int T = 100; // Care - while debugging h5 files are being created, with T=10000 30 GB of logs will be created!
+    unsigned int T = 100000; // Care - while debugging h5 files are being created, with T=10000 30 GB of logs will be created!
 
     // Start the loop
     bool finished = false;
@@ -48,6 +61,19 @@ int main (int argc, char **argv)
             cerr << "Caught exception calling RD.step(): " << e.what() << endl;
             finished = true;
         }
+
+        // Plot every 100 steps
+        if (RD.stepCount % 100 == 0) {
+            displays[0].resetDisplay (fix, eye, rot);
+            try {
+                RD.plot (displays);
+            } catch (const exception& e) {
+                cerr << "Caught exception calling M.plot(): " << e.what() << endl;
+                //doing = false;
+            }
+        }
+
+
         if (RD.stepCount > T) {
             finished = true;
         }

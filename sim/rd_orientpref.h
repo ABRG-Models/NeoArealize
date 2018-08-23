@@ -1,3 +1,4 @@
+#include "morph/display.h"
 #include "morph/tools.h"
 #include "morph/ReadCurves.h"
 #include "morph/HexGrid.h"
@@ -14,7 +15,7 @@
 #endif
 #include <unistd.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #define DBGSTREAM std::cout
 #include <morph/MorphDbg.h>
 
@@ -172,7 +173,7 @@ public:
     /*!
      * Strength of lateral interactions.
      */
-    double eta = 0.0006;
+    double eta = 0.000001;//0.0006;
 
 private:
     /*!
@@ -735,5 +736,43 @@ public:
             laplace[1][h->vi] = norm * sum_im;
         }
     }
+
+    /*!
+     * Plot the system on @a disps
+     */
+    void plot (vector<morph::Gdisplay>& disps) {
+
+        float hgwidth = this->hg->getXmax()-this->hg->getXmin();
+
+        vector<double> sel(z[0].size());
+        double smax = -1e7;
+        double smin = +1e7;
+        int i = 0;
+        for (auto h : this->hg->hexen) {
+            double s = pow((this->z[0][h.vi])*(this->z[0][h.vi])+
+                           (this->z[1][h.vi])*(this->z[1][h.vi]),0.5);
+            if(s>smax){smax = s;}
+            if(s<smin){smin = s;}
+            sel[i] = s;
+            i++;
+        }
+
+        disps[0].resetDisplay (vector<double>(3,0.),vector<double>(3,0.),vector<double>(3,0.));
+        i=0;
+        for (auto h : this->hg->hexen) {
+
+            //double mapVal = fmod(1.0*((atan2(this->z[0][h.vi],this->z[1][h.vi])+2.*M_PI)),2.*M_PI);
+
+            double mapVal = ((atan2(this->z[0][h.vi],this->z[1][h.vi])+M_PI))/(2.*M_PI);
+
+
+            //array<float,3> cl_a = morph::Tools::getJetColorF (norm_a[h.vi]);
+            array<float,3> cl_a = morph::Tools::HSVtoRGB (mapVal,1.,sel[i]/smax);
+            disps[0].drawHex (h.position(), {{0.0f,0.0f,0.0f}}, (h.d/2.0f), cl_a);
+            i++;
+        }
+        disps[0].redrawDisplay();
+    }
+
 
 }; // RD_OrientPref

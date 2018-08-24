@@ -15,7 +15,7 @@
 #endif
 #include <unistd.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #define DBGSTREAM std::cout
 #include <morph/MorphDbg.h>
 
@@ -375,13 +375,6 @@ public:
         this->noiseify_vector_field (this->r,
                                      -0.005, 0.01,
                                      false, 100.0, 0.02);
-#if 0
-        // debugging shows that initial values are sensible and small.
-        string lp = this->logpath;
-        this->logpath = "./logs/tmp";
-        this->saveState();
-        this->logpath = lp;
-#endif
     }
 
     /*!
@@ -517,39 +510,11 @@ public:
     }
 
     //! Runge-Kutta integration:
-    void integrate (array<vector<double>, 2>& E, array<vector<double>, 2>& x, double h_ = 0.05
-#ifdef DEBUG__
-                    , bool first=false
-#endif
-        ) {
-
-#ifdef DEBUG__
-        stringstream fss;
-        // Hacky way of having two different file names for numerical debugging
-        if (first) {
-            fss << this->logpath << "/pinwheel_intz_step_" << stepCount << ".h5";
-        } else {
-            fss << this->logpath << "/pinwheel_intr_step_" << stepCount << ".h5";
-        }
-        HdfData data (fss.str());
-        DBG("stepCount:" << stepCount);
-
-        data.add_double_vector ("/x_re", x[0]);
-        data.add_double_vector ("/x_im", x[1]);
-        data.add_double_vector ("/E_re", E[0]);
-        data.add_double_vector ("/E_im", E[1]);
-        DBG ("E_re[0]:" << E[0][0]);
-#endif
-
+    void integrate (array<vector<double>, 2>& E, array<vector<double>, 2>& x, double h_ = 0.05) {
 
         double h2 = h_ * h_;
 
         this->compute_lapl_cmplx (x, lap);
-#ifdef DEBUG__
-        DBG("lap_1_re[0]:" << lap[0][0]);
-        data.add_double_vector ("/lap_1_re", lap[0]);
-        data.add_double_vector ("/lap_1_im", lap[1]);
-#endif
         #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             k1[0][h] = h_ * (E[0][h] + this->eta * lap[0][h]);
@@ -559,10 +524,6 @@ public:
         }
 
         this->compute_lapl_cmplx (q, lap);
-#ifdef DEBUG__
-        data.add_double_vector ("/lap_2_re", lap[0]);
-        data.add_double_vector ("/lap_2_im", lap[1]);
-#endif
         #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             k2[0][h] = this->halfdt * h2 * (E[0][h] + this->eta * lap[0][h]);
@@ -572,10 +533,6 @@ public:
         }
 
         this->compute_lapl_cmplx (q, lap);
-#ifdef DEBUG__
-        data.add_double_vector ("/lap_3_re", lap[0]);
-        data.add_double_vector ("/lap_3_im", lap[1]);
-#endif
         #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             k3[0][h] = this->halfdt * h2 * (E[0][h] + this->eta * lap[0][h]);
@@ -585,10 +542,6 @@ public:
         }
 
         this->compute_lapl_cmplx (q, lap);
-#ifdef DEBUG__
-        data.add_double_vector ("/lap_4_re", lap[0]);
-        data.add_double_vector ("/lap_4_im", lap[1]);
-#endif
         #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             k4[0][h] = h2 * (E[0][h] + this->eta * lap[0][h]);
@@ -597,73 +550,6 @@ public:
             // Write final result on this loop back into x
             x[0][h] = x[0][h] + (k1[0][h] + 2.0*(k2[0][h]+k3[0][h]) + k4[0][h]) / 6.0;
             x[1][h] = x[1][h] + (k1[1][h] + 2.0*(k2[1][h]+k3[1][h]) + k4[1][h]) / 6.0;
-#ifdef DEBUG__
-            if (h < 3) {
-                DBG("x[0][" << h << "]=" << x[0][h] << " x[1][" << h << "]=" << x[1][h]);
-            }
-#endif
-        }
-#ifdef DEBUG__
-        data.add_double_vector ("/k1_re", k1[0]);
-        data.add_double_vector ("/k1_im", k1[1]);
-        data.add_double_vector ("/k2_re", k2[0]);
-        data.add_double_vector ("/k2_im", k2[1]);
-        data.add_double_vector ("/k3_re", k3[0]);
-        data.add_double_vector ("/k3_im", k3[1]);
-        data.add_double_vector ("/k4_re", k4[0]);
-        data.add_double_vector ("/k4_im", k4[1]);
-#endif
-    }
-
-    /*!
-     * Computes the Laplacian (the divergence of the gradient) of the
-     * scalar field fa, placing the result in the scalar field
-     * laplace.
-     */
-    void compute_lapl (vector<double>& fa, vector<double>& laplace) {
-
-        // The normalisation comes from the area of the hex. See methods_notes.pdf.
-        double norm  = 2.0 / (3.0 * this->d * this->d);
-
-        #pragma omp parallel for
-        for (unsigned int hi=0; hi<this->nhex; ++hi) {
-
-            Hex* h = this->hg->vhexen[hi];
-
-            // Compute the sum around the neighbours
-            double thesum = -6 * fa[h->vi];
-            if (h->has_ne) {
-                thesum += fa[h->ne->vi];
-            } else {
-                thesum += fa[h->vi]; // A ghost neighbour-east with same value as Hex_0
-            }
-            if (h->has_nne) {
-                thesum += fa[h->nne->vi];
-            } else {
-                thesum += fa[h->vi];
-            }
-            if (h->has_nnw) {
-                thesum += fa[h->nnw->vi];
-            } else {
-                thesum += fa[h->vi];
-            }
-            if (h->has_nw) {
-                thesum += fa[h->nw->vi];
-            } else {
-                thesum += fa[h->vi];
-            }
-            if (h->has_nsw) {
-                thesum += fa[h->nsw->vi];
-            } else {
-                thesum += fa[h->vi];
-            }
-            if (h->has_nse) {
-                thesum += fa[h->nse->vi];
-            } else {
-                thesum += fa[h->vi];
-            }
-
-            laplace[h->vi] = norm * thesum;
         }
     }
 
@@ -747,30 +633,21 @@ public:
         double smin = +1e7;
         int i = 0;
         for (auto h : this->hg->hexen) {
-            double s = pow((this->z[0][h.vi])*(this->z[0][h.vi])+
-                           (this->z[1][h.vi])*(this->z[1][h.vi]),0.5);
-            if(s>smax){smax = s;}
-            if(s<smin){smin = s;}
-            sel[i] = s;
-            i++;
+            double s = pow (this->z[0][h.vi] * this->z[0][h.vi] +
+                            this->z[1][h.vi] * this->z[1][h.vi], 0.5);
+            if (s > smax) { smax = s; }
+            if (s < smin) { smin = s; }
+            sel[i++] = s;
         }
 
-        disps[0].resetDisplay (vector<double>(3,0.),vector<double>(3,0.),vector<double>(3,0.));
+        disps[0].resetDisplay (vector<double>(3, 0.0), vector<double>(3, 0.0), vector<double>(3, 0.0));
         i=0;
         for (auto h : this->hg->hexen) {
-
-            //double mapVal = fmod(1.0*((atan2(this->z[0][h.vi],this->z[1][h.vi])+2.*M_PI)),2.*M_PI);
-
-            double mapVal = ((atan2(this->z[0][h.vi],this->z[1][h.vi])+M_PI))/(2.*M_PI);
-
-
-            //array<float,3> cl_a = morph::Tools::getJetColorF (norm_a[h.vi]);
-            array<float,3> cl_a = morph::Tools::HSVtoRGB (mapVal,1.,sel[i]/smax);
-            disps[0].drawHex (h.position(), {{0.0f,0.0f,0.0f}}, (h.d/2.0f), cl_a);
-            i++;
+            double mapVal = ((atan2 (this->z[0][h.vi], this->z[1][h.vi]) + M_PI)) / TWO_PI;
+            array<float,3> cl_a = morph::Tools::HSVtoRGB (mapVal, 1.0, sel[i++] / smax);
+            disps[0].drawHex (h.position(), {{0.0f, 0.0f, 0.0f}}, (h.d/2.0f), cl_a);
         }
         disps[0].redrawDisplay();
     }
-
 
 }; // RD_OrientPref

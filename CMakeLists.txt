@@ -27,7 +27,10 @@ if (APPLE)
   # omp.h header)
   set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11")
 else()
-  set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -fopenmp")
+  # Why is single threaded, but optimized version so much faster? Why
+  # does optimization seem not to work when -fopenmp is switched on?
+  #set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -Wno-unused-result -march=native -fopenmp")
+  set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -Wno-unused-result -Wno-unknown-pragmas -march=native -O3")
 endif()
 
 # Lib finding - we have to do this, so that the correct include paths

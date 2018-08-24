@@ -75,7 +75,7 @@ public:
      * how many thalamo-cortical axon types are there? Denoted by N in
      * the paper, and so we use N here too.
      */
-    unsigned int N = 5;
+    static const unsigned int N = 5;
 
     /*!
      * These are the c_i(x,t) variables from the Karb2004 paper. x is
@@ -315,6 +315,22 @@ public:
     unsigned int frameN = 0;
 
     /*!
+     * The contour threshold. For contour plotting [see
+     * plot_contour()], the field is normalised, then the contour is
+     * plotted where the field crosses this threshold.
+     */
+    double contour_threshold = 0.5;
+
+    /*!
+     * Used by plotting functions
+     */
+    //@{
+    vector<double> fix = {3, 0.0};
+    vector<double> eye = {3, 0.0};
+    vector<double> rot = {3, 0.0};
+    //@}
+
+    /*!
      * Simple constructor; no arguments.
      */
     RD_2D_Karb (void) {
@@ -494,6 +510,9 @@ public:
             // Construct Gaussian-waves rather than doing the full-Karbowski shebang.
             this->makeupChemoAttractants();
 #else
+# ifdef RD_CREATES_GUIDANCE_MOLECULES
+            // Then load up result of a RD system generating the ephrin molecular distributions
+# else
             // Generate the assumed uncoupled concentrations of growth/transcription factors
             this->createFactorInitialConc (this->diremx, this->Aemx, this->Chiemx, this->eta_emx);
             this->createFactorInitialConc (this->dirpax, this->Apax, this->Chipax, this->eta_pax);
@@ -509,8 +528,9 @@ public:
             this->runExpressionDynamics (displays);
             // Can now populate rhoA, rhoB and rhoC according to the paper.
             this->populateChemoAttractants();
+# endif
 #endif
-            this->plotchemo (displays);
+            this->plot_chemo (displays);
 
             // Save pngs of the factors and guidance expressions.
             displays[0].saveImage (this->logpath + "/factors.png");
@@ -719,7 +739,6 @@ public:
         // 2. Do integration of a (RK in the 1D model). Involves computing axon branching flux.
 
         // Pre-compute intermediate val:
-        // FIXME Could precompute betaterm first, then use it in this avoiding more pow(a, k)s
         for (unsigned int i=0; i<this->N; ++i) {
             #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
@@ -1111,7 +1130,7 @@ public:
                 fgf[h.vi] += tau_fgf * (-fgf[h.vi] + eta_fgf[h.vi] / (1. + w1 * emx[h.vi]));
             }
         }
-        this->plotexpression (displays);
+        this->plot_expression (displays);
     }
 
     /*!
@@ -1145,8 +1164,8 @@ public:
 
         // Positions of the bumps:
         double xoffA = -0.35;
-        double xoffB = 0.0;
         double xoffC = 0.4;
+        double xoffB = (xoffA + xoffC) / 2.0;
 
         double cosphi = (double) cos (phi);
         double sinphi = (double) sin (phi);
@@ -1168,10 +1187,11 @@ public:
      * Plot the system on @a disps
      */
     void plot (vector<morph::Gdisplay>& disps, bool savePngs = false) {
+
         this->plot_f (this->a, disps[2]);
         this->plot_f (this->c, disps[3]);
 
-        this->plot_contour (this->c, disps[4], 0.75);
+        this->plot_contour (this->c, disps[4], this->contour_threshold);
 
         if (savePngs) {
             // a
@@ -1201,10 +1221,9 @@ public:
      * Plot a or c
      */
     void plot_f (vector<vector<double> >& f, morph::Gdisplay& disp) {
-        vector<double> fix(3, 0.0);
-        vector<double> eye(3, 0.0);
-        eye[2] = -0.4;
-        vector<double> rot(3, 0.0);
+
+        this->eye[2] = -0.9;
+        disp.resetDisplay (this->fix, this->eye, this->rot);
 
 #ifdef INDIVIDUAL_SCALING
         // Copies data to plot out of the model
@@ -1267,7 +1286,6 @@ public:
         array<float,3> offset = { 2*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
 
         // Draw
-        disp.resetDisplay (fix, eye, rot);
         for (unsigned int i = 0; i<this->N; ++i) {
             // Note: OpenGL isn't thread-safe, so no omp parallel for here.
             for (auto h : this->hg->hexen) {
@@ -1280,67 +1298,221 @@ public:
         disp.redrawDisplay();
     }
 
+    /*!
+     * Get the c contours in this case.
+     */
+    array<list<Hex>, N> get_contours (double threshold) {
+        return this->get_contours (this->c, threshold);
+    }
+
+    /*!
+     * Obtain the contours (as list<Hex>?) in the scalar fields f,
+     * where threshold is crossed. Is some sort of list of hexes
+     * right, or would list of locations (r,g,b or x,y) be better?
+     */
+    array<list<Hex>, N> get_contours (vector<vector<double> >& f, double threshold) {
+
+        array<list<Hex>, N> rtn;
+
+        // Determine min and max
+        vector<double> maxf (this->N, -1e7);
+        vector<double> minf (this->N, +1e7);
+        for (auto h : this->hg->hexen) {
+            if (h.onBoundary() == false) {
+                for (unsigned int i = 0; i<this->N; ++i) {
+                    if (f[i][h.vi] > maxf[i]) { maxf[i] = f[i][h.vi]; }
+                    if (f[i][h.vi] < minf[i]) { minf[i] = f[i][h.vi]; }
+                }
+            }
+        }
+
+        vector<double> scalef (5, 0);
+        #pragma omp parallel for
+        for (unsigned int i = 0; i<this->N; ++i) {
+            scalef[i] = 1.0 / (maxf[i]-minf[i]);
+        }
+
+        // Re-normalize
+        vector<vector<double> > norm_f;
+        this->resize_vector_vector (norm_f);
+        for (unsigned int i = 0; i<this->N; ++i) {
+            #pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; h++) {
+                norm_f[i][h] = fmin (fmax (((f[i][h]) - minf[i]) * scalef[i], 0.0), 1.0);
+            }
+        }
+
+        // Collate
+        #pragma omp parallel for
+        for (unsigned int i = 0; i<this->N; ++i) {
+
+            for (auto h : this->hg->hexen) {
+                if (h.onBoundary() == false) {
+#ifdef DEBUG__
+                    if (!i) {
+                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " OFF boundary with value: " << norm_f[i][h.vi]);
+                    }
+#endif
+                    if (norm_f[i][h.vi] > threshold) {
+#ifdef DEBUG__
+                        if (!i) {
+                            DBG("Value over threshold...");
+                        }
+#endif
+                        if ( (h.has_ne && norm_f[i][h.ne->vi] < threshold)
+                             || (h.has_nne && norm_f[i][h.nne->vi] < threshold)
+                             || (h.has_nnw && norm_f[i][h.nnw->vi] < threshold)
+                             || (h.has_nw && norm_f[i][h.nw->vi] < threshold)
+                             || (h.has_nsw && norm_f[i][h.nsw->vi] < threshold)
+                             || (h.has_nse && norm_f[i][h.nse->vi] < threshold) ) {
+#ifdef DEBUG__
+                            if (!i) {
+                                DBG("...with neighbour under threshold (push_back)");
+                            }
+#endif
+                            rtn[i].push_back (h);
+                        }
+                    }
+                } else { // h.onBoundary() is true
+#ifdef DEBUG__
+                    if (!i) {
+                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " ON boundary with value: " << norm_f[i][h.vi]);
+                    }
+#endif
+                    if (norm_f[i][h.vi] > threshold) {
+#ifdef DEBUG__
+                        if (!i) {
+                            DBG("...Value over threshold (push_back)");
+                        }
+#endif
+                        rtn[i].push_back (h);
+                    }
+                }
+            }
+        }
+
+        return rtn;
+    }
+
+    /*!
+     * Plot the contour described by contourHexes, with these hexes coloured in.
+     */
+    void plot_contour (array<list<Hex>, N>& contourHexes, morph::Gdisplay& disp) {
+
+        this->eye[2] = -0.4;
+        disp.resetDisplay (this->fix, this->eye, this->rot);
+
+        // Draw
+        array<float,3> cl_grey = {0.5f, 0.5f, 0.5f};
+
+        // Grey background
+        float r = this->hg->hexen.begin()->getSR();
+        //for (auto h : this->hg->hexen) {
+        //    disp.drawHex (h.position(), r, cl_grey);
+        //}
+        // Coloured boundaries
+        for (unsigned int i = 0; i<this->N; ++i) {
+            array<float,3> cl_b = morph::Tools::HSVtoRGB ((double)i/(double)(this->N), 1.0, 1.0);
+            for (auto h : contourHexes[i]) {
+                disp.drawHex (h.position(), r, cl_b);
+            }
+        }
+
+        // Used both for zero_offset and cl_blk
+        array<float,3> zero_ar = {0.0f, 0.0f, 0.0f};
+        for (auto h : this->hg->hexen) {
+#ifdef DEBUG__ // Show a black hex in a known location
+            if (h.ri==-28 && h.gi==-21) {
+                disp.drawHex (h.position(), r, zero_ar);
+            }
+#endif
+            if (h.onBoundary() == true) {
+                if (!h.has_ne) {
+                    disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 0);
+                }
+                if (!h.has_nne) {
+                    disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 1);
+                }
+                if (!h.has_nnw) {
+                    disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 2);
+                }
+                if (!h.has_nw) {
+                    disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 3);
+                }
+                if (!h.has_nsw) {
+                    disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 4);
+                }
+                if (!h.has_nse) {
+                    disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 5);
+                }
+            }
+
+        }
+        disp.redrawDisplay();
+    }
+
+    /*!
+     * Plot the contours where the fields f cross threshold. Plot on
+     * disp.
+     */
     void plot_contour (vector<vector<double> >& f, morph::Gdisplay& disp, double threshold) {
 
-        vector<double> fix(3, 0.0);
-        vector<double> eye(3, 0.0);
-        vector<double> rot(3, 0.0);
+        this->eye[2] = -0.4;
+        disp.resetDisplay (this->fix, this->eye, this->rot);
 
         // Copies data to plot out of the model
-        vector<double> maxa (5, -1e7);
-        vector<double> mina (5, +1e7);
+        vector<double> maxf (this->N, -1e7);
+        vector<double> minf (this->N, +1e7);
 
         // Determines min and max
         for (auto h : this->hg->hexen) {
             if (h.onBoundary() == false) {
                 for (unsigned int i = 0; i<this->N; ++i) {
-                    if (f[i][h.vi]>maxa[i]) { maxa[i] = f[i][h.vi]; }
-                    if (f[i][h.vi]<mina[i]) { mina[i] = f[i][h.vi]; }
+                    if (f[i][h.vi] > maxf[i]) { maxf[i] = f[i][h.vi]; }
+                    if (f[i][h.vi] < minf[i]) { minf[i] = f[i][h.vi]; }
                 }
             }
         }
 
-        vector<double> scalea (5, 0);
+        vector<double> scalef (5, 0);
         for (unsigned int i = 0; i<this->N; ++i) {
-            scalea[i] = 1.0 / (maxa[i]-mina[i]);
+            scalef[i] = 1.0 / (maxf[i]-minf[i]);
         }
 
         // Re-normalize
-        vector<vector<double> > norm_a;
-        this->resize_vector_vector (norm_a);
+        vector<vector<double> > norm_f;
+        this->resize_vector_vector (norm_f);
         for (unsigned int i = 0; i<this->N; ++i) {
             for (unsigned int h=0; h<this->nhex; h++) {
-                norm_a[i][h] = fmin (fmax (((f[i][h]) - mina[i]) * scalea[i], 0.0), 1.0);
+                norm_f[i][h] = fmin (fmax (((f[i][h]) - minf[i]) * scalef[i], 0.0), 1.0);
             }
         }
 
         // Draw
-        double c = threshold;
-        disp.resetDisplay (fix, eye, rot);
         array<float,3> cl_blk = {0.0f, 0.0f, 0.0f};
         array<float,3> zero_offset = {0.0f, 0.0f, 0.0f};
 
         for (unsigned int i = 0; i<this->N; ++i) {
-            array<float,3> cl_b = morph::Tools::HSVtoRGB ((double)i/(double)(this->N),1.,1.);
+            array<float,3> cl_b = morph::Tools::HSVtoRGB ((double)i/(double)(this->N), 1.0, 1.0);
             for (auto h : this->hg->hexen) {
                 if (h.onBoundary() == false) {
-                    if (norm_a[i][h.vi]<c) {
-                        if (norm_a[i][h.ne->vi]>c && h.has_ne) {
+                    if (norm_f[i][h.vi]<threshold) {
+                        if (norm_f[i][h.ne->vi] > threshold && h.has_ne) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 0);
                         }
-                        if (norm_a[i][h.nne->vi]>c && h.has_nne) {
+                        if (norm_f[i][h.nne->vi] > threshold && h.has_nne) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 1);
                         }
-                        if (norm_a[i][h.nnw->vi]>c && h.has_nnw) {
+                        if (norm_f[i][h.nnw->vi] > threshold && h.has_nnw) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 2);
                         }
-                        if (norm_a[i][h.nw->vi]>c && h.has_nw) {
+                        if (norm_f[i][h.nw->vi] > threshold && h.has_nw) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 3);
                         }
-                        if (norm_a[i][h.nsw->vi]>c && h.has_nsw) {
+                        if (norm_f[i][h.nsw->vi] > threshold && h.has_nsw) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 4);
                         }
-                        if (norm_a[i][h.nse->vi]>c && h.has_nse) {
+                        if (norm_f[i][h.nse->vi] > threshold && h.has_nse) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 5);
                         }
                     }
@@ -1374,12 +1546,10 @@ public:
     /*!
      * Plot expression of emx, pax and fgf
      */
-    void plotexpression (vector<morph::Gdisplay>& disps) {
+    void plot_expression (vector<morph::Gdisplay>& disps) {
 
-        vector<double> fix(3, 0.0);
-        vector<double> eye(3, 0.0);
-        eye[2] = -0.4;
-        vector<double> rot(3, 0.0);
+        this->eye[2] = -0.4;
+        disps[0].resetDisplay (this->fix, this->eye, this->rot);
 
         // Determines min and max
         double max = -1e7;
@@ -1410,7 +1580,6 @@ public:
         }
 
         // Step through vectors or iterate through list? The latter should be just fine here.
-        disps[0].resetDisplay (fix, eye, rot);
 
         // Set offsets for the three maps that we'll plot
         float hgwidth = this->hg->getXmax()-this->hg->getXmin();
@@ -1437,12 +1606,10 @@ public:
     /*!
      * Plot concentrations of chemo-attractor molecules A, B and C.
      */
-    void plotchemo (vector<morph::Gdisplay>& disps) {
+    void plot_chemo (vector<morph::Gdisplay>& disps) {
 
-        vector<double> fix(3, 0.0);
-        vector<double> eye(3, 0.0);
-        eye[2] = -0.4;
-        vector<double> rot(3, 0.0);
+        this->eye[2] = -0.4;
+        disps[1].resetDisplay (this->fix, this->eye, this->rot);
 
         double max = -1e7;
         double min = +1e7;
@@ -1478,7 +1645,6 @@ public:
         array<float,3> offset3 = { hgwidth+(hgwidth/20), 0.0f, 0.0f };
 
         // Step through vectors or iterate through list? The latter should be just fine here.
-        disps[1].resetDisplay (fix, eye, rot);
         for (auto h : this->hg->hexen) {
             array<float,3> cl_rhoA = morph::Tools::HSVtoRGB (0.0, norm_rhoA[h.vi], 1.0);
             disps[1].drawHex (h.position(), offset1, (h.d/2.0f), cl_rhoA);

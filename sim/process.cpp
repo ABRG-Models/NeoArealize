@@ -1,3 +1,4 @@
+#define MANUFACTURE_GUIDANCE_MOLECULES 1
 #include "rd_2d_karb.h"
 
 #include "morph/display.h"
@@ -54,40 +55,61 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+    // Final Contours
+    winTitle = worldName + ": final contours";
+    displays.push_back (morph::Gdisplay (500, 500, 100, 900, winTitle.c_str(), rhoInit, 0.0, 0.0, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
     // Instantiate the model object
-    RD_2D_Karb M;
-    // You can:
-    // M.useSecondFgfSource = true;
+    RD_2D_Karb RD;
     try {
-        M.init (displays);
+        RD.init (displays);
     } catch (const exception& e) {
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
     }
 
     // Start the loop
-    bool doing = true;
-    while (doing) {
+    unsigned int maxSteps = 500;
+    bool finished = false;
+    while (finished == false) {
         // Step the model
         try {
-            M.step();
+            RD.step();
         } catch (const exception& e) {
-            cerr << "Caught exception calling M.step(): " << e.what() << endl;
-            doing = false;
+            cerr << "Caught exception calling RD.step(): " << e.what() << endl;
+            finished = true;
         }
 
-        displays[0].resetDisplay (fix, eye, rot);
+#if 1
         try {
-            M.plot (displays);
+            displays[0].resetDisplay (fix, eye, rot);
+            if (RD.stepCount % 10 == 0) {
+                RD.plot (displays);
+            }
             // Save some frames ('c' variable only for now)
-            if (M.stepCount % 100 == 0) {
-                M.saveC();
+            if (RD.stepCount % 100 == 0) {
+                RD.saveC();
             }
 
         } catch (const exception& e) {
-            cerr << "Caught exception calling M.plot(): " << e.what() << endl;
-            doing = false;
+            cerr << "Caught exception calling RD.plot(): " << e.what() << endl;
+            finished = true;
+        }
+#endif
+        if (RD.stepCount > maxSteps) {
+            finished = true;
         }
     }
+
+    array<list<Hex>, 5> ctrs = RD.get_contours (0.6);
+
+    // Do a final plot of the ctrs as found.
+    RD.plot_contour (ctrs, displays[5]);
+
+    int a;
+    cout << "Press any key[return] to exit.\n";
+    cin >> a;
 
     return 0;
 };

@@ -11,7 +11,7 @@
 #include <iomanip>
 #include <cmath>
 #ifdef __GLN__
-//#include <omp.h>
+#include <omp.h>
 #endif
 #include <unistd.h>
 

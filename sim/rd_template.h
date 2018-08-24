@@ -301,11 +301,12 @@ public:
         }
 
         // 1. Do some computes
+#if 0
         #pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             Hex* h = this->hg->vhexen[hi];
         }
-
+#endif
         // 2. Do integration of some variable.
 #if 0
         // Runge-Kutta integration:

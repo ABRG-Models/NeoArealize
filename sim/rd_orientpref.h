@@ -742,8 +742,6 @@ public:
      */
     void plot (vector<morph::Gdisplay>& disps) {
 
-        float hgwidth = this->hg->getXmax()-this->hg->getXmin();
-
         vector<double> sel(z[0].size());
         double smax = -1e7;
         double smin = +1e7;

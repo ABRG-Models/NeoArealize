@@ -67,6 +67,12 @@ public:
     }
 
     /*!
+     * Hex to hex d for the grid. Make smaller to increase the number
+     * of Hexes being computed.
+     */
+    float hextohex_d = 0.01;
+
+    /*!
      * Holds the number of hexes in the populated HexGrid
      */
     unsigned int nhex = 0;
@@ -423,7 +429,7 @@ public:
 
         DBG ("called");
         // Create a HexGrid
-        this->hg = new HexGrid (0.01, 3);
+        this->hg = new HexGrid (this->hextohex_d, 3);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid

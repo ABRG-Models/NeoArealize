@@ -67,6 +67,11 @@ public:
     }
 
     /*!
+     * Can set this to the d for the hex grid.
+     */
+    float hextohex_d = 0.01;
+
+    /*!
      * Holds the number of hexes in the populated HexGrid
      */
     unsigned int nhex = 0;
@@ -329,7 +334,7 @@ public:
      */
     void init (const list<Hex>& pHexes) {
         // Create a HexGrid
-        this->hg = new HexGrid (0.01, 3);
+        this->hg = new HexGrid (this->hextohex_d, 3);
         this->hg->setBoundary (pHexes);
         this->init_common();
     }
@@ -340,7 +345,7 @@ public:
      */
     void init (void) {
         // Create a HexGrid
-        this->hg = new HexGrid (0.01, 3);
+        this->hg = new HexGrid (this->hextohex_d, 3);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid

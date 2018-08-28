@@ -43,6 +43,9 @@ int main (int argc, char **argv)
     int rseed = 1;
     srand(rseed);
 
+    // Common hex spacing to use across all systems.
+    float hextohex = 0.007;
+
     // Create some displays
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);
@@ -74,7 +77,7 @@ int main (int argc, char **argv)
 
     // SW - Contours
     winTitle = worldName + ": contours";
-    displays.push_back (morph::Gdisplay (500, 500, 100, 900, winTitle.c_str(), rhoInit, 0.0, 0.0, displays[0].win));
+    displays.push_back (morph::Gdisplay (1000, 1000, 100, 900, winTitle.c_str(), 1.6, 0.0, 0.0, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
@@ -86,6 +89,7 @@ int main (int argc, char **argv)
 
     // Instantiate the model object
     RD_2D_Karb RD;
+    RD.hextohex_d = hextohex;
     RD.contour_threshold = 0.6;
 
     try {
@@ -133,10 +137,13 @@ int main (int argc, char **argv)
 
     RD_OrientPref RD2_0;
     RD2_0.eta = 0.000001;
+    RD2_0.hextohex_d = hextohex;
     RD_OrientPref RD2_2;
     RD2_2.eta = 0.0000002;
+    RD2_2.hextohex_d = hextohex;
     RD_OrientPref RD2_4;
     RD2_4.eta = 0.0000005;
+    RD2_4.hextohex_d = hextohex;
     try {
         RD2_0.init (ctrs[0]);
         RD2_2.init (ctrs[2]);

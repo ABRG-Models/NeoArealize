@@ -369,7 +369,7 @@ public:
      */
     void compute_lapl (vector<double>& fa, unsigned int i) {
 
-        double norm  = (2) / (3 * this->d * this->d); // SW: double-check the factor 2 here?
+        double norm  = (2) / (3 * this->d * this->d);
 
 #pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
@@ -457,15 +457,31 @@ public:
                 dum2[5] = fa2[h->nse->vi];
             }
 
-            double val =    (dum1[0]+dum1[1])*(dum2[0]-fa2[h->vi])+
+            /* // John Brooke's 'second interim report' solution
+            double val =
+            (dum1[0]+dum1[1])*(dum2[0]-fa2[h->vi])+
             (dum1[1]+dum1[2])*(dum2[1]-fa2[h->vi])+
             (dum1[2]+dum1[3])*(dum2[2]-fa2[h->vi])+
             (dum1[3]+dum1[4])*(dum2[3]-fa2[h->vi])+
             (dum1[4]+dum1[5])*(dum2[4]-fa2[h->vi])+
             (dum1[5]+dum1[0])*(dum2[5]-fa2[h->vi]);
-
             this->poiss[i][h->vi] = val / (ROOT3 * this->d * this->d);
+             */
+
+            // John Brooke's final thesis solution (based on 'finite volume method'
+            // of Lee et al. https://doi.org/10.1080/00207160.2013.864392
+            double val =
+            (dum1[0]+fa1[h->vi])*(dum2[0]-fa2[h->vi])+
+            (dum1[1]+fa1[h->vi])*(dum2[1]-fa2[h->vi])+
+            (dum1[2]+fa1[h->vi])*(dum2[2]-fa2[h->vi])+
+            (dum1[3]+fa1[h->vi])*(dum2[3]-fa2[h->vi])+
+            (dum1[4]+fa1[h->vi])*(dum2[4]-fa2[h->vi])+
+            (dum1[5]+fa1[h->vi])*(dum2[5]-fa2[h->vi]);
+            this->poiss[i][h->vi] = val / (3 * this->d * this->d);
         }
+
+    }
+
 
     }
 

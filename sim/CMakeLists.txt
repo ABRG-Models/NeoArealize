@@ -33,3 +33,7 @@ target_link_libraries(orient ${MORPH_LDFLAGS})
 # Ermentrout (2009) model
 add_executable(ermentrout ermentrout.cpp)
 target_link_libraries(ermentrout ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+
+# A first combined model
+add_executable(embedded embedded.cpp)
+target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})

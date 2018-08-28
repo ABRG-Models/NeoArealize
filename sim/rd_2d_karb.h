@@ -1163,8 +1163,8 @@ public:
         double gain = 1;
 
         // Positions of the bumps:
-        double xoffA = -0.35;
-        double xoffC = 0.4;
+        double xoffA = -0.2;
+        double xoffC = 0.24;
         double xoffB = (xoffA + xoffC) / 2.0;
 
         double cosphi = (double) cos (phi);
@@ -1190,8 +1190,13 @@ public:
 
         this->plot_f (this->a, disps[2]);
         this->plot_f (this->c, disps[3]);
-
+#if 0
         this->plot_contour (this->c, disps[4], this->contour_threshold);
+#else
+        // Do a final plot of the ctrs as found.
+        array<list<Hex>, 5> ctrs = this->get_contours (this->contour_threshold);
+        this->plot_contour (ctrs, disps[4]);
+#endif
 
         if (savePngs) {
             // a
@@ -1394,23 +1399,10 @@ public:
         return rtn;
     }
 
-    /*!
-     * Plot the contour described by contourHexes, with these hexes coloured in.
-     */
-    void plot_contour (array<list<Hex>, N>& contourHexes, morph::Gdisplay& disp) {
+    void add_contour_plot (array<list<Hex>, N>& contourHexes, morph::Gdisplay& disp) {
 
-        this->eye[2] = -0.4;
-        disp.resetDisplay (this->fix, this->eye, this->rot);
-
-        // Draw
-        array<float,3> cl_grey = {0.5f, 0.5f, 0.5f};
-
-        // Grey background
-        float r = this->hg->hexen.begin()->getSR();
-        //for (auto h : this->hg->hexen) {
-        //    disp.drawHex (h.position(), r, cl_grey);
-        //}
         // Coloured boundaries
+        float r = this->hg->hexen.begin()->getSR();
         for (unsigned int i = 0; i<this->N; ++i) {
             array<float,3> cl_b = morph::Tools::HSVtoRGB ((double)i/(double)(this->N), 1.0, 1.0);
             for (auto h : contourHexes[i]) {
@@ -1446,19 +1438,25 @@ public:
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 5);
                 }
             }
-
         }
+    }
+
+    /*!
+     * Plot the contour described by contourHexes, with these hexes coloured in.
+     */
+    void plot_contour (array<list<Hex>, N>& contourHexes, morph::Gdisplay& disp) {
+
+        this->eye[2] = -0.4;
+        disp.resetDisplay (this->fix, this->eye, this->rot);
+        this->add_contour_plot (contourHexes, disp);
         disp.redrawDisplay();
     }
 
     /*!
-     * Plot the contours where the fields f cross threshold. Plot on
-     * disp.
+     * Do the work of adding the contours of the fields f to the
+     * display disp.
      */
-    void plot_contour (vector<vector<double> >& f, morph::Gdisplay& disp, double threshold) {
-
-        this->eye[2] = -0.4;
-        disp.resetDisplay (this->fix, this->eye, this->rot);
+    void add_contour_plot (vector<vector<double> >& f, morph::Gdisplay& disp, double threshold) {
 
         // Copies data to plot out of the model
         vector<double> maxf (this->N, -1e7);
@@ -1540,6 +1538,16 @@ public:
                 }
             }
         }
+    }
+
+    /*!
+     * Plot the contours where the fields f cross threshold. Plot on
+     * disp.
+     */
+    void plot_contour (vector<vector<double> >& f, morph::Gdisplay& disp, double threshold) {
+        this->eye[2] = -0.4;
+        disp.resetDisplay (this->fix, this->eye, this->rot);
+        this->add_contour_plot (f, disp, threshold);
         disp.redrawDisplay();
     }
 

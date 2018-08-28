@@ -325,17 +325,31 @@ public:
     }
 
     /*!
+     * Init with passed in Hexes as boundary
+     */
+    void init (const list<Hex>& pHexes) {
+        // Create a HexGrid
+        this->hg = new HexGrid (0.01, 3);
+        this->hg->setBoundary (pHexes);
+        this->init_common();
+    }
+
+    /*!
      * Initialise HexGrid, variables and parameters. Carry out any
      * one-time computations required by the model.
      */
     void init (void) {
-
         // Create a HexGrid
         this->hg = new HexGrid (0.01, 3);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid
         this->hg->setBoundary (r.getCorticalPath());
+
+        this->init_common();
+    }
+
+    void init_common (void) {
         // Compute the distances from the boundary
         this->hg->computeDistanceToBoundary();
         // Vector size comes from number of Hexes in the HexGrid
@@ -623,11 +637,7 @@ public:
         }
     }
 
-    /*!
-     * Plot the system on @a disps
-     */
-    void plot (vector<morph::Gdisplay>& disps) {
-
+    void add_to_plot (morph::Gdisplay& disp) {
         vector<double> sel(z[0].size());
         double smax = -1e7;
         double smin = +1e7;
@@ -640,13 +650,20 @@ public:
             sel[i++] = s;
         }
 
-        disps[0].resetDisplay (vector<double>(3, 0.0), vector<double>(3, 0.0), vector<double>(3, 0.0));
         i=0;
         for (auto h : this->hg->hexen) {
             double mapVal = ((atan2 (this->z[0][h.vi], this->z[1][h.vi]) + M_PI)) / TWO_PI;
             array<float,3> cl_a = morph::Tools::HSVtoRGB (mapVal, 1.0, sel[i++] / smax);
-            disps[0].drawHex (h.position(), {{0.0f, 0.0f, 0.0f}}, (h.d/2.0f), cl_a);
+            disp.drawHex (h.position(), {{0.0f, 0.0f, 0.0f}}, (h.d/2.0f), cl_a);
         }
+    }
+
+    /*!
+     * Plot the system on @a disps
+     */
+    void plot (vector<morph::Gdisplay>& disps) {
+        disps[0].resetDisplay (vector<double>(3, 0.0), vector<double>(3, 0.0), vector<double>(3, 0.0));
+        this->add_to_plot (disps[0]);
         disps[0].redrawDisplay();
     }
 

@@ -2,6 +2,7 @@
 #include "morph/tools.h"
 #include "morph/ReadCurves.h"
 #include "morph/HexGrid.h"
+#include "morph/HdfData.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -28,7 +29,7 @@ using std::runtime_error;
 
 using morph::HexGrid;
 using morph::ReadCurves;
-
+using morph::HdfData;
 
 /*!
  * Reaction diffusion system; Ermentrout 2009.
@@ -61,6 +62,9 @@ public:
         morph::Tools::createDir (this->logpath);
     }
 
+    /*!
+     * Frame number, used when saving PNG movie frames.
+     */
     unsigned int frameN = 0;
 
     /*!
@@ -112,15 +116,23 @@ public:
     HexGrid* hg;
 
     /*!
+     * Store Hex positions for saving.
+     */
+    //@{
+    vector<float> hgvx;
+    vector<float> hgvy;
+    //@}
+
+    /*!
      * Hex to hex distance. Populate this from hg.d after hg has been
      * initialised.
      */
     double d = 1.0;
 
-
     /*!
      * Parameters of the Ermentrout model
      */
+    //@{
     double Dn;
     double Dc;
     double beta;
@@ -128,6 +140,7 @@ public:
     double b;
     double mu;
     double chi;
+    //@}
 
     /*!
      * Track the number of computational steps that we've carried
@@ -176,7 +189,6 @@ public:
         p.resize (this->N, 0.0);
     }
 
-
     /*!
      * Initialise this vector of vectors with noise.
      */
@@ -207,6 +219,11 @@ public:
         this->nhex = this->hg->num();
         // Spatial d comes from the HexGrid, too.
         this->d = this->hg->getd();
+        // Save hex positions in vectors for datafile saving
+        for (auto h : this->hg->hexen) {
+            this->hgvx.push_back (h.x);
+            this->hgvy.push_back (h.y);
+        }
 
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
@@ -230,23 +247,13 @@ public:
     }
 
     /*!
-     * Examine the value in each Hex of the hexgrid of the scalar
-     * field f. If abs(f[h]) exceeds the size of dangerThresh, then
-     * output debugging information.
+     * Computations
      */
-    void debug_values (vector<double>& f, double dangerThresh) {
-        for (auto h : this->hg->hexen) {
-            if (abs(f[h.vi]) > dangerThresh) {
-                DBG ("Blow-up threshold exceeded at Hex.vi=" << h.vi << " ("<< h.ri <<","<< h.gi <<")" <<  ": " << f[h.vi]);
-                unsigned int wait = 0;
-                while (wait++ < 120) {
-                    usleep (1000000);
-                }
-            }
-        }
-    }
+    //@{
 
-
+    /*!
+     * Compute one step of the model
+     */
     void step (void) {
 
         this->stepCount++;
@@ -275,92 +282,6 @@ public:
                 c[i][h] += (beta*n2/(1.+n2) - mu*c[i][h] +Dc*lapl[i][h])*dt;
             }
         }
-
-    }
-
-
-    /*!
-     * Plot the system on @a disps
-     */
-    void plot (vector<morph::Gdisplay>& disps) {
-        this->plot_f (this->n, disps[0], true);
-        this->plot_f (this->c, disps[1], true);
-
-        /*
-        std::stringstream frameFile1;
-        frameFile1<<"logs/tmp/demo";
-        frameFile1<<setw(5)<<setfill('0')<<frameN;
-        frameFile1<<".png";
-        //disps[0].saveImage(frameFile1.str());
-        frameN++;
-         */
-    }
-
-    /*!
-     * Plot a or c
-     */
-    void plot_f (vector<vector<double> >& f, morph::Gdisplay& disp, bool combinedNorm) {
-        vector<double> fix(3, 0.0);
-        vector<double> eye(3, 0.0);
-        vector<double> rot(3, 0.0);
-
-        vector<double> maxa (this->N, -1e7);
-        vector<double> mina (this->N, +1e7);
-        // Copies data to plot out of the model
-        if(combinedNorm){
-            double maxb = -1e7;
-            double minb = +1e7;
-            for (auto h : this->hg->hexen) {
-                if (h.onBoundary() == false) {
-                    for (unsigned int i = 0; i<this->N; ++i) {
-                        if (f[i][h.vi]>maxb) { maxb = f[i][h.vi]; }
-                        if (f[i][h.vi]<minb) { minb = f[i][h.vi]; }
-                    }
-                }
-            }
-            for (unsigned int i = 0; i<this->N; ++i) {
-                mina[i] = minb;
-                maxa[i] = maxb;
-            }
-        } else {
-            for (auto h : this->hg->hexen) {
-                if (h.onBoundary() == false) {
-                    for (unsigned int i = 0; i<this->N; ++i) {
-                        if (f[i][h.vi]>maxa[i]) { maxa[i] = f[i][h.vi]; }
-                        if (f[i][h.vi]<mina[i]) { mina[i] = f[i][h.vi]; }
-                    }
-                }
-            }
-        }
-        vector<double> scalea (this->N, 0);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            scalea[i] = 1.0 / (maxa[i]-mina[i]);
-        }
-
-        // Determine a colour from min, max and current value
-        vector<vector<double> > norm_a;
-        this->resize_vector_vector (norm_a);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            for (unsigned int h=0; h<this->nhex; h++) {
-                norm_a[i][h] = fmin (fmax (((f[i][h]) - mina[i]) * scalea[i], 0.0), 1.0);
-            }
-        }
-
-        // Create an offset which we'll increment by the width of the
-        // map, starting from the left-most map (f[0])
-        float hgwidth = this->hg->getXmax()-this->hg->getXmin();
-        array<float,3> offset = {{0.0f,0.0f,0.0f}};//{ 2*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
-
-        // Draw
-        disp.resetDisplay (fix, eye, rot);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            for (auto h : this->hg->hexen) {
-                array<float,3> cl_a = morph::Tools::getJetColorF (norm_a[i][h.vi]);
-                disp.drawHex (h.position(), offset, (h.d/2.0f), cl_a);
-            }
-            offset[0] += hgwidth + (hgwidth/20);
-        }
-        disp.redrawDisplay();
     }
 
     /*!
@@ -431,7 +352,6 @@ public:
             vector<double> dum1(6,fa1[h->vi]);
             vector<double> dum2(6,fa2[h->vi]);
 
-
             if (h->has_ne) {
                 dum1[0] = fa1[h->ne->vi];
                 dum2[0] = fa2[h->ne->vi];
@@ -457,7 +377,8 @@ public:
                 dum2[5] = fa2[h->nse->vi];
             }
 
-            /* // John Brooke's 'second interim report' solution
+#ifdef SECOND_REPORT_SOLUTION
+            // John Brooke's 'second interim report' solution
             double val =
             (dum1[0]+dum1[1])*(dum2[0]-fa2[h->vi])+
             (dum1[1]+dum1[2])*(dum2[1]-fa2[h->vi])+
@@ -466,7 +387,7 @@ public:
             (dum1[4]+dum1[5])*(dum2[4]-fa2[h->vi])+
             (dum1[5]+dum1[0])*(dum2[5]-fa2[h->vi]);
             this->poiss[i][h->vi] = val / (ROOT3 * this->d * this->d);
-             */
+#endif
 
             // John Brooke's final thesis solution (based on 'finite volume method'
             // of Lee et al. https://doi.org/10.1080/00207160.2013.864392
@@ -479,7 +400,147 @@ public:
             (dum1[5]+fa1[h->vi])*(dum2[5]-fa2[h->vi]);
             this->poiss[i][h->vi] = val / (3 * this->d * this->d);
         }
-
     }
+    //@} // computations
+
+    /*!
+     * Plotting functions
+     */
+    //@{
+
+    /*!
+     * Plot the system on @a disps
+     */
+    void plot (vector<morph::Gdisplay>& disps) {
+
+        this->plot_f (this->n, disps[0], true);
+        this->plot_f (this->c, disps[1], true);
+
+#ifdef SAVE_PNGS
+        std::stringstream frameFile1;
+        frameFile1<<"logs/tmp/demo";
+        frameFile1<<setw(5)<<setfill('0')<<frameN;
+        frameFile1<<".png";
+        disps[0].saveImage(frameFile1.str());
+        frameN++;
+#endif
+    }
+
+    /*!
+     * Plot a or c
+     */
+    void plot_f (vector<vector<double> >& f, morph::Gdisplay& disp, bool combinedNorm) {
+        vector<double> fix(3, 0.0);
+        vector<double> eye(3, 0.0);
+        vector<double> rot(3, 0.0);
+
+        vector<double> maxa (this->N, -1e7);
+        vector<double> mina (this->N, +1e7);
+        // Copies data to plot out of the model
+        if (combinedNorm) {
+            double maxb = -1e7;
+            double minb = +1e7;
+            for (auto h : this->hg->hexen) {
+                if (h.onBoundary() == false) {
+                    for (unsigned int i = 0; i<this->N; ++i) {
+                        if (f[i][h.vi]>maxb) { maxb = f[i][h.vi]; }
+                        if (f[i][h.vi]<minb) { minb = f[i][h.vi]; }
+                    }
+                }
+            }
+            for (unsigned int i = 0; i<this->N; ++i) {
+                mina[i] = minb;
+                maxa[i] = maxb;
+            }
+        } else {
+            for (auto h : this->hg->hexen) {
+                if (h.onBoundary() == false) {
+                    for (unsigned int i = 0; i<this->N; ++i) {
+                        if (f[i][h.vi]>maxa[i]) { maxa[i] = f[i][h.vi]; }
+                        if (f[i][h.vi]<mina[i]) { mina[i] = f[i][h.vi]; }
+                    }
+                }
+            }
+        }
+        vector<double> scalea (this->N, 0);
+        for (unsigned int i = 0; i<this->N; ++i) {
+            scalea[i] = 1.0 / (maxa[i]-mina[i]);
+        }
+
+        // Determine a colour from min, max and current value
+        vector<vector<double> > norm_a;
+        this->resize_vector_vector (norm_a);
+        for (unsigned int i = 0; i<this->N; ++i) {
+            for (unsigned int h=0; h<this->nhex; h++) {
+                norm_a[i][h] = fmin (fmax (((f[i][h]) - mina[i]) * scalea[i], 0.0), 1.0);
+            }
+        }
+
+        // Create an offset which we'll increment by the width of the
+        // map, starting from the left-most map (f[0])
+        float hgwidth = this->hg->getXmax()-this->hg->getXmin();
+        array<float,3> offset = {{0.0f,0.0f,0.0f}};//{ 2*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
+
+        // Draw
+        disp.resetDisplay (fix, eye, rot);
+        for (unsigned int i = 0; i<this->N; ++i) {
+            for (auto h : this->hg->hexen) {
+                array<float,3> cl_a = morph::Tools::getJetColorF (norm_a[i][h.vi]);
+                disp.drawHex (h.position(), offset, (h.d/2.0f), cl_a);
+            }
+            offset[0] += hgwidth + (hgwidth/20);
+        }
+        disp.redrawDisplay();
+    }
+    //@} // plotting
+
+    /*!
+     * HDF5 file saving/loading methods
+     */
+    //@{
+
+    /*!
+     * Save positions of the hexes - note using two vector<floats>
+     * that have been populated with the positions from the HexGrid,
+     * to fit in with the HDF API.
+     */
+    void saveHexPositions (HdfData& dat) {
+        dat.add_float_vector ("/x", this->hgvx);
+        dat.add_float_vector ("/y", this->hgvy);
+        // And hex to hex distance:
+        dat.add_double ("/d", this->d);
+    }
+
+    /*!
+     * Save some data like this.
+     */
+    void saveState (void) {
+        string fname = this->logpath + "/2Derm.h5";
+        HdfData data (fname);
+
+        // Save some variables
+        for (unsigned int i = 0; i<this->N; ++i) {
+
+            stringstream vss;
+            vss << "c_" << i;
+            string vname = vss.str();
+            data.add_double_vector (vname.c_str(), this->c[i]);
+            vname[1] = 'n';
+            data.add_double_vector (vname.c_str(), this->n[i]);
+        }
+
+        // Parameters
+        data.add_double ("/Dn", this->Dn);
+        data.add_double ("/Dc", this->Dc);
+        data.add_double ("/beta", this->beta);
+        data.add_double ("/a", this->a);
+        data.add_double ("/b", this->b);
+        data.add_double ("/mu", this->mu);
+        data.add_double ("/chi", this->chi);
+
+        // HexGrid information
+        this->saveHexPositions (data);
+    }
+    //@} // HDF5
 
 }; // RD_2D_Erm

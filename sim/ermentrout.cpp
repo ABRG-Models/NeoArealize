@@ -7,8 +7,8 @@
 
 using namespace std;
 
-int main (int argc, char **argv){
-
+int main (int argc, char **argv)
+{
     if (argc < 3) {
         cerr << "\nUsage: " << argv[0] << " w0 Dn\n\n";
         cerr << "Be sure to run from the base source directory.\n";
@@ -32,40 +32,48 @@ int main (int argc, char **argv){
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+    // How long to run the sim:
+    unsigned int maxSteps = 5000;
+
     // Instantiate the model object
     RD_2D_Erm M;
+
+    M.setLogpath (string("./logs/") + worldName);
+    M.Dn = stod(argv[2]);
+    M.chi = M.Dn;
+    M.Dc = 0.3*M.Dn;
+
     try {
         M.init (displays);
     } catch (const exception& e) {
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
     }
 
-    M.Dn = stod(argv[2]);
-    M.chi = M.Dn;
-    M.Dc = 0.3*M.Dn;
-
     // Start the loop
     bool doing = true;
     while (doing) {
-        // Step the model
-        try {
-            M.step();
-        } catch (const exception& e) {
-            cerr << "Caught exception calling M.step(): " << e.what() << endl;
-            doing = false;
-        }
 
-        // Plot every 100 steps
-        if (M.stepCount % 100 == 0) {
-            displays[0].resetDisplay (fix, eye, rot);
-            try {
+        try {
+            // Step the model:
+            M.step();
+            // Plot every 100 steps:
+            if (M.stepCount % 100 == 0) {
+                displays[0].resetDisplay (fix, eye, rot);
                 M.plot (displays);
-            } catch (const exception& e) {
-                cerr << "Caught exception calling M.plot(): " << e.what() << endl;
+            }
+            // After a while, stop:
+            if (M.stepCount > maxSteps) {
                 doing = false;
             }
+
+        } catch (const exception& e) {
+            cerr << "Caught exception: " << e.what() << endl;
+            doing = false;
         }
     }
+
+    // Before exit, save data
+    M.saveState();
 
     return 0;
 };

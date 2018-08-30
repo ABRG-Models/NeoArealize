@@ -400,6 +400,12 @@ public:
      * HDF5 file saving/loading methods
      */
     //@{
+
+    /*!
+     * Save positions of the hexes - note using two vector<floats>
+     * that have been populated with the positions from the HexGrid,
+     * to fit in with the HDF API.
+     */
     void saveHexPositions (HdfData& dat) {
         dat.add_float_vector ("/x", this->hgvx);
         dat.add_float_vector ("/y", this->hgvy);

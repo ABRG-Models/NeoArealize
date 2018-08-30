@@ -33,7 +33,7 @@ int main (int argc, char **argv)
     displays.back().redrawDisplay();
 
     // How long to run the sim:
-    unsigned int maxSteps = 5000;
+    unsigned int maxSteps = 50000;
 
     // Instantiate the model object
     RD_2D_Erm M;

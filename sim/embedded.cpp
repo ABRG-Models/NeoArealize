@@ -44,7 +44,7 @@ int main (int argc, char **argv)
     srand(rseed);
 
     // Common hex spacing to use across all systems.
-    float hextohex = 0.007;
+    float hextohex = 0.01;
 
     // Create some displays
     vector<morph::Gdisplay> displays;
@@ -93,9 +93,10 @@ int main (int argc, char **argv)
     RD.contour_threshold = 0.6;
 
     try {
-        RD.init (displays);
+        RD.init (displays, true); // true to use previously saved rhoA/B/C guidance molecules
     } catch (const exception& e) {
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
+        return -1;
     }
 
     // Start the loop

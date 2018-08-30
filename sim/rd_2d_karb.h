@@ -52,6 +52,8 @@ public:
     const double R3_OVER_2 = 0.866025403784439;
     //! Square root of 3
     const double ROOT3 = 1.73205080756888;
+    //! Passed to HdfData constructor to say we want to read the data
+    const bool READ_DATA = true;
     //@}
 
     /*!
@@ -538,40 +540,40 @@ public:
             this->populateChemoAttractants();
 # endif
 #endif
-            this->plot_chemo (displays);
-
-            // Save pngs of the factors and guidance expressions.
-            displays[0].saveImage (this->logpath + "/factors.png");
-            displays[1].saveImage (this->logpath + "/guidance.png");
-
-            // Compute gradients of guidance molecule concentrations once only
-            this->spacegrad2D (this->rhoA, this->grad_rhoA);
-            this->spacegrad2D (this->rhoB, this->grad_rhoB);
-            this->spacegrad2D (this->rhoC, this->grad_rhoC);
-
-            // Having computed gradients, build this->g; has
-            // to be done once only. Note that a sigmoid is applied so
-            // that g(x) drops to zero around the boundary of the domain.
-            for (unsigned int i=0; i<this->N; ++i) {
-                for (auto h : this->hg->hexen) {
-                    // Sigmoid/logistic fn params: 100 sharpness, 0.02 dist offset from boundary
-                    double bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
-                    this->g[i][0][h.vi] = (this->gammaA[i] * this->grad_rhoA[0][h.vi]
-                                           + this->gammaB[i] * this->grad_rhoB[0][h.vi]
-                                           + this->gammaC[i] * this->grad_rhoC[0][h.vi]) * bSig;
-                    this->g[i][1][h.vi] = (this->gammaA[i] * this->grad_rhoA[1][h.vi]
-                                           + this->gammaB[i] * this->grad_rhoB[1][h.vi]
-                                           + this->gammaC[i] * this->grad_rhoC[1][h.vi]) * bSig;
-                }
-            }
-
-            // Save that data out
-            this->saveFactorExpression();
-
         } else {
-            // Load the data from files
+            // Load the data from files - Right now loads only rhoA/B/B
             this->loadFactorExpression();
         }
+
+        this->plot_chemo (displays);
+
+        // Save pngs of the factors and guidance expressions.
+        displays[0].saveImage (this->logpath + "/factors.png");
+        displays[1].saveImage (this->logpath + "/guidance.png");
+
+        // Compute gradients of guidance molecule concentrations once only
+        this->spacegrad2D (this->rhoA, this->grad_rhoA);
+        this->spacegrad2D (this->rhoB, this->grad_rhoB);
+        this->spacegrad2D (this->rhoC, this->grad_rhoC);
+
+        // Having computed gradients, build this->g; has
+        // to be done once only. Note that a sigmoid is applied so
+        // that g(x) drops to zero around the boundary of the domain.
+        for (unsigned int i=0; i<this->N; ++i) {
+            for (auto h : this->hg->hexen) {
+                // Sigmoid/logistic fn params: 100 sharpness, 0.02 dist offset from boundary
+                double bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
+                this->g[i][0][h.vi] = (this->gammaA[i] * this->grad_rhoA[0][h.vi]
+                                       + this->gammaB[i] * this->grad_rhoB[0][h.vi]
+                                       + this->gammaC[i] * this->grad_rhoC[0][h.vi]) * bSig;
+                this->g[i][1][h.vi] = (this->gammaA[i] * this->grad_rhoA[1][h.vi]
+                                       + this->gammaB[i] * this->grad_rhoB[1][h.vi]
+                                       + this->gammaC[i] * this->grad_rhoC[1][h.vi]) * bSig;
+            }
+        }
+
+        // Save that data out
+        this->saveFactorExpression();
     }
 
     /*!
@@ -698,8 +700,19 @@ public:
      * runExpressionDynamics() and populateChemoAttractants().
      */
     void loadFactorExpression (void) {
-        // The only thing I'll load for now is the
+        // The only thing I'll load for now is the rhoA/B/C values.
+        HdfData data ("./logs/e0/2Derm.h5", READ_DATA);
+        data.read_double_vector ("/c_0", this->rhoA);
+        if (rhoA.size() != this->nhex) {
+            throw runtime_error ("Guidance molecules came from HexGrid with different size from this one...");
+        }
+        DBG ("rhoA now has size " << this->rhoA.size() << " with first two values: " << rhoA[0] << "," << rhoA[1]);
+        data.read_double_vector ("/c_1", this->rhoB);
+        data.read_double_vector ("/c_2", this->rhoC);
 
+        this->normalise (this->rhoA);
+        this->normalise (this->rhoB);
+        this->normalise (this->rhoC);
     }
 
     //@} // HDF5
@@ -708,6 +721,28 @@ public:
      * Computation methods
      */
     //@{
+
+    /*!
+     * Normalise the vector of doubles f.
+     */
+    void normalise (vector<double>& f) {
+
+        double maxf = -1e7;
+        double minf = +1e7;
+
+        // Determines min and max
+        for (auto val : f) {
+            if (val>maxf) { maxf = val; }
+            if (val<minf) { minf = val; }
+        }
+        double scalef = 1.0 /(maxf - minf);
+
+        vector<vector<double> > norm_a;
+        this->resize_vector_vector (norm_a);
+        for (unsigned int fi = 0; fi < f.size(); ++fi) {
+            f[fi] = fmin (fmax (((f[fi]) - minf) * scalef, 0.0), 1.0);
+        }
+    }
 
     /*!
      * Do a step through the model.

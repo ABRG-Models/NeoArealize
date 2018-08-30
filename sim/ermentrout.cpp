@@ -43,6 +43,8 @@ int main (int argc, char **argv)
     M.Dn = stod(argv[2]);
     M.chi = M.Dn;
     M.Dc = 0.3*M.Dn;
+    M.N = 3; // For three chemo attractant molecules (i.e. not using
+             // this in the sense of the original Ermentrout system)
 
     try {
         M.init (displays);

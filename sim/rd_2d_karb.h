@@ -2,6 +2,7 @@
 #include "morph/tools.h"
 #include "morph/ReadCurves.h"
 #include "morph/HexGrid.h"
+#include "morph/HdfData.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -28,6 +29,7 @@ using std::runtime_error;
 
 using morph::HexGrid;
 using morph::ReadCurves;
+using morph::HdfData;
 
 /*!
  * Define this to use manufactured guidance molecules, A, B and C, in
@@ -586,24 +588,25 @@ public:
         fname.width(5);
         fname.fill('0');
         fname << this->stepCount << ".h5";
-        hid_t file_id = H5Fcreate (fname.str().c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        HdfData data(fname.str());
         for (unsigned int i = 0; i<this->N; ++i) {
             stringstream path;
             path << "/c" << i;
-            this->add_double_vector_to_hdf5file (file_id, path.str().c_str(), this->c[i]);
+            data.add_double_vector (path.str().c_str(), this->c[i]);
         }
-        this->saveHexPositions (file_id);
-        herr_t status = H5Fclose (file_id);
-        if (status) {
-            cerr << "status: " << status << endl;
-        }
+        this->saveHexPositions (data);
     }
 
-    void saveHexPositions (const hid_t& file_id) {
-        this->add_float_vector_to_hdf5file (file_id, "/x", this->hgvx);
-        this->add_float_vector_to_hdf5file (file_id, "/y", this->hgvy);
-        // And hex to hex distance
-        this->add_double_to_hdf5file (file_id, "/d", this->d);
+    /*!
+     * Save positions of the hexes - note using two vector<floats>
+     * that have been populated with the positions from the HexGrid,
+     * to fit in with the HDF API.
+     */
+    void saveHexPositions (HdfData& dat) {
+        dat.add_float_vector ("/x", this->hgvx);
+        dat.add_float_vector ("/y", this->hgvy);
+        // And hex to hex distance:
+        dat.add_double ("/d", this->d);
     }
 
     /*!
@@ -613,86 +616,81 @@ public:
     void saveFactorExpression (void) {
         string fname = this->logpath + "/factorexpression.h5";
         cout << "Saving to file " << fname << endl;
-        hid_t file_id = H5Fcreate (fname.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        HdfData data (fname);
 
         // Save initial factor calculations - required in
         // createFactorInitialConc() and runExpressionDynamics()
-        this->add_double_to_hdf5file (file_id, "/Aemx", this->Aemx);
-        this->add_double_to_hdf5file (file_id, "/Apax", this->Apax);
-        this->add_double_to_hdf5file (file_id, "/Afgf", this->Afgf);
+        data.add_double ("/Aemx", this->Aemx);
+        data.add_double ("/Apax", this->Apax);
+        data.add_double ("/Afgf", this->Afgf);
 
-        this->add_double_to_hdf5file (file_id, "/Chiemx", this->Chiemx);
-        this->add_double_to_hdf5file (file_id, "/Chipax", this->Chipax);
-        this->add_double_to_hdf5file (file_id, "/Chifgf", this->Chifgf);
+        data.add_double ("/Chiemx", this->Chiemx);
+        data.add_double ("/Chipax", this->Chipax);
+        data.add_double ("/Chifgf", this->Chifgf);
 
-        this->add_double_to_hdf5file (file_id, "/tau_emx", this->tau_emx);
-        this->add_double_to_hdf5file (file_id, "/tau_pax", this->tau_pax);
-        this->add_double_to_hdf5file (file_id, "/tau_fgf", this->tau_fgf);
+        data.add_double ("/tau_emx", this->tau_emx);
+        data.add_double ("/tau_pax", this->tau_pax);
+        data.add_double ("/tau_fgf", this->tau_fgf);
 
-        this->add_float_to_hdf5file (file_id, "/diremx", this->diremx);
-        this->add_float_to_hdf5file (file_id, "/dirpax", this->dirpax);
-        this->add_float_to_hdf5file (file_id, "/dirfgf", this->dirfgf);
+        data.add_float ("/diremx", this->diremx);
+        data.add_float ("/dirpax", this->dirpax);
+        data.add_float ("/dirfgf", this->dirfgf);
 
-        this->add_double_to_hdf5file (file_id, "/v1", this->v1);
-        this->add_double_to_hdf5file (file_id, "/v2", this->v2);
+        data.add_double ("/v1", this->v1);
+        data.add_double ("/v2", this->v2);
 
-        this->add_double_to_hdf5file (file_id, "/w1", this->w1);
-        this->add_double_to_hdf5file (file_id, "/w2", this->w2);
+        data.add_double ("/w1", this->w1);
+        data.add_double ("/w2", this->w2);
 
         // Signalling molecule expression levels
-        this->add_double_vector_to_hdf5file (file_id, "/emx", this->emx);
-        this->add_double_vector_to_hdf5file (file_id, "/pax", this->pax);
-        this->add_double_vector_to_hdf5file (file_id, "/fgf", this->fgf);
+        data.add_double_vector ("/emx", this->emx);
+        data.add_double_vector ("/pax", this->pax);
+        data.add_double_vector ("/fgf", this->fgf);
 
-        this->add_double_vector_to_hdf5file (file_id, "/eta_emx", this->eta_emx);
-        this->add_double_vector_to_hdf5file (file_id, "/eta_pax", this->eta_pax);
-        this->add_double_vector_to_hdf5file (file_id, "/eta_fgf", this->eta_fgf);
+        data.add_double_vector ("/eta_emx", this->eta_emx);
+        data.add_double_vector ("/eta_pax", this->eta_pax);
+        data.add_double_vector ("/eta_fgf", this->eta_fgf);
 
         // parameters and vars for populateChemoAttractants
-        this->add_double_to_hdf5file (file_id, "/sigmaA", this->sigmaA);
-        this->add_double_to_hdf5file (file_id, "/sigmaB", this->sigmaB);
-        this->add_double_to_hdf5file (file_id, "/sigmaC", this->sigmaC);
+        data.add_double ("/sigmaA", this->sigmaA);
+        data.add_double ("/sigmaB", this->sigmaB);
+        data.add_double ("/sigmaC", this->sigmaC);
 
-        this->add_double_to_hdf5file (file_id, "/kA", this->kA);
-        this->add_double_to_hdf5file (file_id, "/kB", this->kB);
-        this->add_double_to_hdf5file (file_id, "/kC", this->kC);
+        data.add_double ("/kA", this->kA);
+        data.add_double ("/kB", this->kB);
+        data.add_double ("/kC", this->kC);
 
-        this->add_double_to_hdf5file (file_id, "/theta1", this->theta1);
-        this->add_double_to_hdf5file (file_id, "/theta2", this->theta2);
-        this->add_double_to_hdf5file (file_id, "/theta3", this->theta3);
-        this->add_double_to_hdf5file (file_id, "/theta4", this->theta4);
+        data.add_double ("/theta1", this->theta1);
+        data.add_double ("/theta2", this->theta2);
+        data.add_double ("/theta3", this->theta3);
+        data.add_double ("/theta4", this->theta4);
 
         // The axon guidance molecule expression levels
-        this->add_double_vector_to_hdf5file (file_id, "/rhoA", this->rhoA);
-        this->add_double_vector_to_hdf5file (file_id, "/rhoB", this->rhoB);
-        this->add_double_vector_to_hdf5file (file_id, "/rhoC", this->rhoC);
+        data.add_double_vector ("/rhoA", this->rhoA);
+        data.add_double_vector ("/rhoB", this->rhoB);
+        data.add_double_vector ("/rhoC", this->rhoC);
 
         // And gradient thereof
-        this->add_double_vector_to_hdf5file (file_id, "/grad_rhoA_x", this->grad_rhoA[0]);
-        this->add_double_vector_to_hdf5file (file_id, "/grad_rhoA_y", this->grad_rhoA[1]);
-        this->add_double_vector_to_hdf5file (file_id, "/grad_rhoB_x", this->grad_rhoB[0]);
-        this->add_double_vector_to_hdf5file (file_id, "/grad_rhoB_y", this->grad_rhoB[1]);
-        this->add_double_vector_to_hdf5file (file_id, "/grad_rhoC_x", this->grad_rhoC[0]);
-        this->add_double_vector_to_hdf5file (file_id, "/grad_rhoC_y", this->grad_rhoC[1]);
+        data.add_double_vector ("/grad_rhoA_x", this->grad_rhoA[0]);
+        data.add_double_vector ("/grad_rhoA_y", this->grad_rhoA[1]);
+        data.add_double_vector ("/grad_rhoB_x", this->grad_rhoB[0]);
+        data.add_double_vector ("/grad_rhoB_y", this->grad_rhoB[1]);
+        data.add_double_vector ("/grad_rhoC_x", this->grad_rhoC[0]);
+        data.add_double_vector ("/grad_rhoC_y", this->grad_rhoC[1]);
 
         // g - the guidance molecular modifier on a.
-        this->add_double_vector_to_hdf5file (file_id, "/g_0_x", this->g[0][0]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_0_y", this->g[0][1]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_1_x", this->g[1][0]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_1_y", this->g[1][1]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_2_x", this->g[2][0]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_2_y", this->g[2][1]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_3_x", this->g[3][0]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_3_y", this->g[3][1]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_4_x", this->g[4][0]);
-        this->add_double_vector_to_hdf5file (file_id, "/g_4_y", this->g[4][1]);
+        data.add_double_vector ("/g_0_x", this->g[0][0]);
+        data.add_double_vector ("/g_0_y", this->g[0][1]);
+        data.add_double_vector ("/g_1_x", this->g[1][0]);
+        data.add_double_vector ("/g_1_y", this->g[1][1]);
+        data.add_double_vector ("/g_2_x", this->g[2][0]);
+        data.add_double_vector ("/g_2_y", this->g[2][1]);
+        data.add_double_vector ("/g_3_x", this->g[3][0]);
+        data.add_double_vector ("/g_3_y", this->g[3][1]);
+        data.add_double_vector ("/g_4_x", this->g[4][0]);
+        data.add_double_vector ("/g_4_y", this->g[4][1]);
 
-        this->saveHexPositions (file_id);
-
-        herr_t status = H5Fclose (file_id);
-        if (status) {
-            cerr << "status: " << status << endl;
-        }
+        this->saveHexPositions (data);
     }
 
     /*!
@@ -700,7 +698,8 @@ public:
      * runExpressionDynamics() and populateChemoAttractants().
      */
     void loadFactorExpression (void) {
-        throw runtime_error ("Implement loadFactorExpression().");
+        // The only thing I'll load for now is the
+
     }
 
     //@} // HDF5
@@ -1675,112 +1674,7 @@ public:
         }
         disps[1].redrawDisplay();
     }
-
-    //@}
-
-    /*!
-     * tools for reading and writing to HDF5 files. To be transferred
-     * into libmorpholgica in time.
-     */
-    //@{
-
-    /*!
-     * Makes necessary calls to add a double to an HDF5 file store,
-     * using path as the name of the variable. Path could be /myvar or
-     * /somegroup/myvar, though I think you'd have to have created the
-     * group for the latter.
-     */
-    void add_double_to_hdf5file (hid_t file_id, const char* path, const double& val) {
-        hsize_t dim_singleparam[1];
-        dim_singleparam[0] = 1;
-        hid_t dataspace_id = H5Screate_simple (1, dim_singleparam, NULL);
-        hid_t dataset_id = H5Dcreate2 (file_id, path, H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        herr_t status = H5Dwrite (dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &val);
-        if (status) {
-            cerr << "status after H5Dwrite: " << status << endl;
-        }
-        status = H5Dclose (dataset_id);
-        if (status) {
-            cerr << "status H5Dclose: " << status << endl;
-        }
-        status = H5Sclose (dataspace_id);
-        if (status) {
-            cerr << "status H5Sclose: " << status << endl;
-        }
-    }
-
-    /*!
-     * Makes necessary calls to add a float to an HDF5 file store,
-     * using path as the name of the variable.
-     */
-    void add_float_to_hdf5file (hid_t file_id, const char* path, const float& val) {
-        hsize_t dim_singleparam[1];
-        herr_t status;
-        dim_singleparam[0] = 1;
-        hid_t dataspace_id = H5Screate_simple (1, dim_singleparam, NULL);
-        hid_t dataset_id = H5Dcreate2 (file_id, path, H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite (dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &val);
-        if (status) {
-            cerr << "status after H5Dwrite: " << status << endl;
-        }
-        status = H5Dclose (dataset_id);
-        if (status) {
-            cerr << "status H5Dclose: " << status << endl;
-        }
-        status = H5Sclose (dataspace_id);
-        if (status) {
-            cerr << "status H5Sclose: " << status << endl;
-        }
-    }
-
-    /*!
-     * Makes necessary calls to add a vector of doubles to an HDF5
-     * file store, using path as the name of the variable.
-     */
-    void add_double_vector_to_hdf5file (hid_t file_id, const char* path, const vector<double>& vals) {
-        hsize_t dim_singleparam[1];
-        herr_t status;
-        dim_singleparam[0] = vals.size();
-        hid_t dataspace_id = H5Screate_simple (1, dim_singleparam, NULL);
-        hid_t dataset_id = H5Dcreate2 (file_id, path, H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite (dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(vals[0]));
-        if (status) {
-            cerr << "status after H5Dwrite: " << status << endl;
-        }
-        status = H5Dclose (dataset_id);
-        if (status) {
-            cerr << "status H5Dclose: " << status << endl;
-        }
-        status = H5Sclose (dataspace_id);
-        if (status) {
-            cerr << "status H5Sclose: " << status << endl;
-        }
-    }
-
-    /*!
-     * Makes necessary calls to add a vector of floats to an HDF5
-     * file store, using path as the name of the variable.
-     */
-    void add_float_vector_to_hdf5file (hid_t file_id, const char* path, const vector<float>& vals) {
-        hsize_t dim_singleparam[1];
-        herr_t status;
-        dim_singleparam[0] = vals.size();
-        hid_t dataspace_id = H5Screate_simple (1, dim_singleparam, NULL);
-        hid_t dataset_id = H5Dcreate2 (file_id, path, H5T_IEEE_F64LE, dataspace_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-        status = H5Dwrite (dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &(vals[0]));
-        if (status) {
-            cerr << "status after H5Dwrite: " << status << endl;
-        }
-        status = H5Dclose (dataset_id);
-        if (status) {
-            cerr << "status H5Dclose: " << status << endl;
-        }
-        status = H5Sclose (dataspace_id);
-        if (status) {
-            cerr << "status H5Sclose: " << status << endl;
-        }
-    }
-    //@}
+    //@} // plotting
 
 #ifdef GAUSSIAN_CODE_NEEDED
     /*!

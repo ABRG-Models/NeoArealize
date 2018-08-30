@@ -38,6 +38,7 @@ int main (int argc, char **argv)
     // Instantiate the model object
     RD_2D_Erm M;
 
+    // Modify any parameters before calling M.init()
     M.setLogpath (string("./logs/") + worldName);
     M.Dn = stod(argv[2]);
     M.chi = M.Dn;

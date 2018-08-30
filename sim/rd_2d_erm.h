@@ -130,16 +130,23 @@ public:
     double d = 1.0;
 
     /*!
-     * Parameters of the Ermentrout model
+     * Parameters of the Ermentrout model - default values.
      */
     //@{
-    double Dn;
-    double Dc;
-    double beta;
-    double a;
-    double b;
-    double mu;
-    double chi;
+    //! Diffusion constant for n
+    double Dn = 0.3;
+    //! Diffusion constant for c
+    double Dc = Dn * 0.3;
+    //! saturation term in function for production of c
+    double beta = 5.0;
+    //! production of new axon branches
+    double a = 1.0;
+    //! pruning constant
+    double b = 1.0;
+    //! decay of chemoattractant constant
+    double mu = 1.0;
+    //! degree of attraction of chemoattractant
+    double chi = Dn;
     //@}
 
     /*!
@@ -201,8 +208,8 @@ public:
     }
 
     /*!
-     * Initialise HexGrid, variables and parameters. Carry out
-     * one-time computations of the model.
+     * Initialise HexGrid, variables. Carry out any one-time
+     * computations of the model.
      */
     void init (vector<morph::Gdisplay>& displays, bool useSavedGenetics = false) {
 
@@ -230,16 +237,6 @@ public:
         this->resize_vector_vector (this->n);
         this->resize_vector_vector (this->lapl);
         this->resize_vector_vector (this->poiss);
-
-        // Populate parameters
-
-        this->Dn = 0.3;                 // Diffusion constant for n
-        this->Dc = Dn*0.3;              // Diffusion constant for c
-        this->beta = 5.;                // saturation term in function for production of c
-        this->a = 1.;                   // production of new axon branches
-        this->b = 1.;                   // pruning constant
-        this->mu = 1.;                  // decay of chemoattractant constant
-        this->chi = Dn;                 // degree of attraction of chemoattractant
 
         // Initialise a with noise
         this->noiseify_vector_vector (this->n, 1., 0.01);
@@ -525,7 +522,7 @@ public:
             vss << "c_" << i;
             string vname = vss.str();
             data.add_double_vector (vname.c_str(), this->c[i]);
-            vname[1] = 'n';
+            vname[0] = 'n';
             data.add_double_vector (vname.c_str(), this->n[i]);
         }
 

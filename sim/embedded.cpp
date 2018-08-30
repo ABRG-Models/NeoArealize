@@ -89,11 +89,12 @@ int main (int argc, char **argv)
 
     // Instantiate the model object
     RD_2D_Karb RD;
+    RD.rhoMethod = GuidanceMoleculeMethod::LoadToInitialConc;
     RD.hextohex_d = hextohex;
     RD.contour_threshold = 0.6;
 
     try {
-        RD.init (displays, true); // true to use previously saved rhoA/B/C guidance molecules
+        RD.init (displays);
     } catch (const exception& e) {
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
         return -1;

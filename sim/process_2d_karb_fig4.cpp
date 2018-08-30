@@ -63,6 +63,7 @@ int main (void)
 
     // Instantiate the model object
     RD_2D_Karb M;
+    M.rhoMethod = GuidanceMoleculeMethod::KarbowskiOriginal;
     // Set the log path (also creates that directory if required)
     M.setLogpath ("logs/" + worldName);
     // Initialise variables and do any pre-computation

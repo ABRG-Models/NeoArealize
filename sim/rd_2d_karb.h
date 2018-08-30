@@ -38,6 +38,16 @@ using morph::HdfData;
 //#define MANUFACTURE_GUIDANCE_MOLECULES 1
 
 /*!
+ * Enumerates the way that the guidance molecules are set up
+ */
+enum class GuidanceMoleculeMethod {
+    GaussWaves,
+    LoadToRhoDirect,
+    LoadToInitialConc,
+    KarbowskiOriginal
+};
+
+/*!
  * Reaction diffusion system; 2-D Karbowski 2004.
  */
 class RD_2D_Karb
@@ -264,6 +274,11 @@ public:
     //@}
 
     /*!
+     * How to load the guidance molecules?
+     */
+    GuidanceMoleculeMethod rhoMethod = GuidanceMoleculeMethod::GaussWaves;
+
+    /*!
      * Rho_A/B/C variables in Eq 4 - the concentrations of axon
      * guidance molecules A, B and C. In Karbowski 2004, these are
      * time independent and we will treat time as such, populating
@@ -429,7 +444,7 @@ public:
      * Initialise HexGrid, variables and parameters. Carry out
      * one-time computations of the model.
      */
-    void init (vector<morph::Gdisplay>& displays, bool useSavedGenetics = false) {
+    void init (vector<morph::Gdisplay>& displays) {
 
         DBG ("called");
         // Create a HexGrid
@@ -515,14 +530,24 @@ public:
             this->beta[i] = 3;
         }
 
-        if (useSavedGenetics == false) {
-#ifdef MANUFACTURE_GUIDANCE_MOLECULES
+        if (this->rhoMethod == GuidanceMoleculeMethod::GaussWaves) {
             // Construct Gaussian-waves rather than doing the full-Karbowski shebang.
             this->makeupChemoAttractants();
-#else
-# ifdef RD_CREATES_GUIDANCE_MOLECULES
+
+        } else if (this->rhoMethod == GuidanceMoleculeMethod::LoadToRhoDirect) {
             // Then load up result of a RD system generating the ephrin molecular distributions
-# else
+            // Load the data from files - Right now loads only rhoA/B/B
+            this->loadFactorExpression();
+
+        } else if (this->rhoMethod == GuidanceMoleculeMethod::LoadToInitialConc) {
+            // Load into eta_emx, eta_pax and eta_fgf
+            this->loadToInitialConc();
+            // Run the expression dynamics, showing images as we go.
+            this->runExpressionDynamics (displays);
+            // Can now populate rhoA, rhoB and rhoC according to the paper.
+            this->populateChemoAttractants();
+
+        } else if (this->rhoMethod == GuidanceMoleculeMethod::KarbowskiOriginal) {
             // Generate the assumed uncoupled concentrations of growth/transcription factors
             this->createFactorInitialConc (this->diremx, this->Aemx, this->Chiemx, this->eta_emx);
             this->createFactorInitialConc (this->dirpax, this->Apax, this->Chipax, this->eta_pax);
@@ -538,11 +563,6 @@ public:
             this->runExpressionDynamics (displays);
             // Can now populate rhoA, rhoB and rhoC according to the paper.
             this->populateChemoAttractants();
-# endif
-#endif
-        } else {
-            // Load the data from files - Right now loads only rhoA/B/B
-            this->loadFactorExpression();
         }
 
         this->plot_chemo (displays);
@@ -713,6 +733,20 @@ public:
         this->normalise (this->rhoA);
         this->normalise (this->rhoB);
         this->normalise (this->rhoC);
+    }
+
+    void loadToInitialConc (void) {
+        HdfData data ("./logs/e0/2Derm.h5", READ_DATA);
+        data.read_double_vector ("/c_0", this->eta_pax);
+        if (eta_pax.size() != this->nhex) {
+            throw runtime_error ("Guidance molecules came from HexGrid with different size from this one...");
+        }
+        data.read_double_vector ("/c_1", this->eta_emx);
+        data.read_double_vector ("/c_2", this->eta_fgf);
+
+        this->normalise (this->eta_pax);
+        this->normalise (this->eta_emx);
+        this->normalise (this->eta_fgf);
     }
 
     //@} // HDF5
@@ -1186,7 +1220,6 @@ public:
         }
     }
 
-#ifdef MANUFACTURE_GUIDANCE_MOLECULES
     /*!
      * Generate Gaussian profiles for the chemo-attractants.
      *
@@ -1217,7 +1250,6 @@ public:
             this->rhoC[h.vi] = gain * exp(-((x_-xoffC)*(x_-xoffC)) / sigma);
         }
     }
-#endif
 
     /*!
      * Plotting code

@@ -63,7 +63,7 @@ int main (void)
 
     // Instantiate the model object
     RD_2D_Karb M;
-
+    M.rhoMethod = GuidanceMoleculeMethod::KarbowskiOriginal;
     M.useSecondFgfSource = true;
 
     // Set the log path (also creates that directory if required)

@@ -63,6 +63,7 @@ int main (void)
 
     // Instantiate the model object
     RD_2D_Karb M;
+    M.rhoMethod = GuidanceMoleculeMethod::KarbowskiOriginal;
 
     // Turn pax6 off like this:
     M.Apax = 0;

@@ -36,10 +36,10 @@ endif()
 # Lib finding - we have to do this, so that the correct include paths
 # are present for OpenGL, OpenCV, etc; they're all included by
 # morphologica header files.
-find_package(OpenCV REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
-find_package(X11 REQUIRED)
+#find_package(OpenCV REQUIRED)
+#find_package(OpenGL REQUIRED)
+#find_package(GLUT REQUIRED)
+#find_package(X11 REQUIRED)
 
 set (LIB_TYPE SHARED) # STATIC or SHARED
 string(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
@@ -47,23 +47,26 @@ string(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
 # In case the above fails, something like this might work
 find_package (HDF5 NAMES hdf5 COMPONENTS C ${SEARCH_TYPE})
 
-include_directories(${OpenCV_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR} ${X11_INC_SEARCH_PATH} ${HDF5_INCLUDE_DIR})
+include_directories(${OpenCV_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR} ${X11_INC_SEARCH_PATH} ${HDF5_INCLUDE_DIR} )
+
+# rapidxml is bundled in the source for one program (DEBUGGING - don't incorporate into master):
+include_directories ("${PROJECT_SOURCE_DIR}/include/rapidxml-1.13")
 
 # Find libmorphologica using pkgconfig
-find_package(PkgConfig)
-if(PKG_CONFIG_FOUND)
-  message(STATUS "Have pkg_config")
-  pkg_check_modules(MORPH REQUIRED libmorphologica)
-  if (MORPH_FOUND)
-    message(STATUS "pkg_config found libmorphologica")
-    include_directories(${MORPH_INCLUDEDIR})
-  else()
-    message(FATAL_ERROR "You need libmorphologica from github.com/ABRG_Models/morphologica")
-  endif(MORPH_FOUND)
-else()
-  message(WARNING "There's no pkg-config on this system to check for libmorphologica. "
-    "You can set MORPH_LIB with `cmake -DMORPH_LIB=/pathto/lib` ...")
-endif()
+#find_package(PkgConfig)
+#if(PKG_CONFIG_FOUND)
+#  message(STATUS "Have pkg_config")
+#  pkg_check_modules(MORPH REQUIRED libmorphologica)
+#  if (MORPH_FOUND)
+#    message(STATUS "pkg_config found libmorphologica")
+#    include_directories(${MORPH_INCLUDEDIR})
+#  else()
+#    message(FATAL_ERROR "You need libmorphologica from github.com/ABRG_Models/morphologica")
+#  endif(MORPH_FOUND)
+#else()
+#  message(WARNING "There's no pkg-config on this system to check for libmorphologica. "
+#    "You can set MORPH_LIB with `cmake -DMORPH_LIB=/pathto/lib` ...")
+#endif()
 
 add_subdirectory(sim)
 

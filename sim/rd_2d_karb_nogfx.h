@@ -1,7 +1,7 @@
-#include "morph/tools.h"
-#include "morph/ReadCurves.h"
-#include "morph/HexGrid.h"
-#include "morph/HdfData.h"
+#include "tools.h"
+#include "ReadCurves.h"
+#include "HexGrid.h"
+#include "HdfData.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -16,7 +16,7 @@
 
 #define DEBUG 1
 #define DBGSTREAM std::cout
-#include <morph/MorphDbg.h>
+#include "MorphDbg.h"
 
 using std::vector;
 using std::array;

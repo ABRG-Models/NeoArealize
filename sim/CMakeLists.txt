@@ -37,3 +37,7 @@ target_link_libraries(ermentrout ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 # A first combined model
 add_executable(embedded embedded.cpp)
 target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+
+# No graphics version of process model for code profiling
+add_executable(process_nogfx process_nogfx.cpp)
+target_link_libraries(process_nogfx ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})

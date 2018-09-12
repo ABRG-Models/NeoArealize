@@ -70,7 +70,7 @@ int main (int argc, char **argv)
     }
 
     // Start the loop
-    unsigned int maxSteps = 500;
+    unsigned int maxSteps = 2000;
     bool finished = false;
     while (finished == false) {
         // Step the model
@@ -107,9 +107,10 @@ int main (int argc, char **argv)
     // Do a final plot of the ctrs as found.
     RD.plot_contour (ctrs, displays[5]);
 
+#if 0
     int a;
     cout << "Press any key[return] to exit.\n";
     cin >> a;
-
+#endif
     return 0;
 };

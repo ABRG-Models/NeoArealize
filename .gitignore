@@ -39,3 +39,6 @@ build*
 
 # Emacs backup files
 *~
+
+# Intel compiler reports
+rep*

@@ -42,9 +42,22 @@ namespace morph {
      * the 2D surface represented by the HexGrid which is to be
      * computed.
      */
-    class HexGrid
+    class alignas(8) HexGrid
     {
     public:
+        /*!
+         * Ans: Not very well because of all the data accesses. Better
+         * therefore to create 7 vectors - one of the indices of the
+         * identity Hex and 6 for each neighbour
+         */
+        alignas(8) vector<unsigned int> vi_self;
+        alignas(8) vector<unsigned int> vi_ne;
+        alignas(8) vector<unsigned int> vi_nne;
+        alignas(8) vector<unsigned int> vi_nnw;
+        alignas(8) vector<unsigned int> vi_nw;
+        alignas(8) vector<unsigned int> vi_nsw;
+        alignas(8) vector<unsigned int> vi_nse;
+
         /*!
          * Default constructor
          */

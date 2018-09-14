@@ -496,11 +496,42 @@ morph::HexGrid::renumberVectorIndices (void)
 {
     unsigned int vi = 0;
     this->vhexen.clear();
+    this->vi_self.clear();
     auto hi = this->hexen.begin();
     while (hi != this->hexen.end()) {
-        DBG2 ("Old vi: " << hi->vi << " new vi: " << vi);
         hi->vi = vi++;
         this->vhexen.push_back (&(*hi));
+        this->vi_self.push_back (hi->vi);
+        ++hi;
+    }
+    // Now that all the vector indices for selves are set, iterate
+    // through and set neighbours
+    this->vi_ne.clear();
+    this->vi_nne.clear();
+    this->vi_nnw.clear();
+    this->vi_nw.clear();
+    this->vi_nsw.clear();
+    this->vi_nse.clear();
+    hi = this->hexen.begin();
+    while (hi != this->hexen.end()) {
+        if (hi->has_ne) {
+            this->vi_ne.push_back (hi->ne->vi);
+        }
+        if (hi->has_nne) {
+            this->vi_nne.push_back (hi->nne->vi);
+        }
+        if (hi->has_nnw) {
+            this->vi_nnw.push_back (hi->nnw->vi);
+        }
+        if (hi->has_nw) {
+            this->vi_nw.push_back (hi->nw->vi);
+        }
+        if (hi->has_nsw) {
+            this->vi_nsw.push_back (hi->nsw->vi);
+        }
+        if (hi->has_nse) {
+            this->vi_nse.push_back (hi->nse->vi);
+        }
         ++hi;
     }
 }

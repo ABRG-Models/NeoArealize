@@ -8,9 +8,6 @@
 #include <array>
 #include <iomanip>
 #include <cmath>
-#ifdef __GLN__ // Currently I've only tested OpenMP on Linux
-#include <omp.h>
-#endif
 #include <hdf5.h>
 #include <unistd.h>
 
@@ -49,7 +46,7 @@ enum class GuidanceMoleculeMethod {
 /*!
  * Reaction diffusion system; 2-D Karbowski 2004.
  */
-class RD_2D_Karb
+class alignas(8) RD_2D_Karb
 {
 public:
 
@@ -58,12 +55,292 @@ public:
      */
     //@{
     //! Square root of 3 over 2
-    const double R3_OVER_2 = 0.866025403784439;
+    const alignas(8) double R3_OVER_2 = 0.866025403784439;
     //! Square root of 3
-    const double ROOT3 = 1.73205080756888;
+    const alignas(8) double ROOT3 = 1.73205080756888;
     //! Passed to HdfData constructor to say we want to read the data
-    const bool READ_DATA = true;
+    const alignas(4) bool READ_DATA = true;
     //@}
+
+    /*!
+     * Hex to hex d for the grid. Make smaller to increase the number
+     * of Hexes being computed.
+     */
+    alignas(4) float hextohex_d = 0.01;
+
+    /*!
+     * Holds the number of hexes in the populated HexGrid
+     */
+    alignas(4) unsigned int nhex = 0;
+
+    /*!
+     * how many thalamo-cortical axon types are there? Denoted by N in
+     * the paper, and so we use N here too.
+     */
+    static const alignas(4) unsigned int N = 5;
+
+    /*!
+     * These are the c_i(x,t) variables from the Karb2004 paper. x is
+     * a vector in two-space.
+     */
+    alignas(8) vector<vector<double> > c;
+
+    /*!
+     * These are the a_i(x,t) variables from the Karb2004 paper. x is
+     * a vector in two-space. The first vector is over the different
+     * TC axon types, enumerated by i, the second vector are the a_i
+     * values, indexed by the vi in the Hexes in HexGrid.
+     */
+    alignas(8) vector<vector<double> > a;
+
+    /*!
+     * For each TC axon type, this holds the two components of the
+     * gradient field of the scalar value a(x,t) (where this x is a
+     * vector in two-space)
+     */
+    alignas(8) vector<array<vector<double>, 2> > grad_a;
+
+    /*!
+     * Contains the chemo-attractant modifiers which are applied to
+     * a_i(x,t) in Eq 4.
+     */
+    alignas(8) vector<array<vector<double>, 2> > g;
+
+    /*!
+     * n(x,t) variable from the Karb2004 paper.
+     */
+    alignas(8) vector<double> n;
+
+    /*!
+     * J_i(x,t) variables - the "flux current of axonal branches of
+     * type i". This is a vector field.
+     */
+    alignas(8) vector<array<vector<double>, 2> > J;
+
+    /*!
+     * Holds the divergence of the J_i(x)s
+     */
+    alignas(8) vector<vector<double> > divJ;
+
+    /*!
+     * Our choice of dt.
+     */
+    alignas(8) double dt = 0.0001;
+
+    /*!
+     * Compute half and sixth dt in constructor.
+     */
+    //@{
+    alignas(8) double halfdt = 0.0;
+    alignas(8) double sixthdt = 0.0;
+    //@}
+
+    /*!
+     * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
+     * paper.
+     */
+    alignas(8) double k = 3.0;
+
+    /*!
+     * The diffusion parameter.
+     */
+    alignas(8) double D = 0.1;
+
+    /*!
+     * alpha_i parameters
+     */
+    alignas(8) vector<double> alpha;
+
+    /*!
+     * beta_i parameters
+     */
+    alignas(8) vector<double> beta;
+
+    /*!
+     * gamma_A/B/C_i parameters from Eq 4
+     */
+    //@{
+    alignas(8) vector<double> gammaA;
+    alignas(8) vector<double> gammaB;
+    alignas(8) vector<double> gammaC;
+    //@}
+
+    /*!
+     * Variables for factor expression dynamics (Eqs 5-7)
+     */
+    //@{
+    /*!
+     * Uncoupled concentrations of the factors - i.e. where they start.
+     */
+    //@{
+    alignas(8) vector<double> eta_emx;
+    alignas(8) vector<double> eta_pax;
+    alignas(8) vector<double> eta_fgf;
+    //@}
+
+    /*!
+     * These are s(x), r(x) and f(x) in Karb2004.
+     */
+    //@}
+    alignas(8) vector<double> emx;
+    alignas(8) vector<double> pax;
+    alignas(8) vector<double> fgf;
+    //@}
+    //@}
+
+    /*!
+     * Parameters for factor expression dynamics (Eqs 5-7)
+     */
+    //@{
+    alignas(8) double Aemx = 1; // 1.34 in paper
+    alignas(8) double Apax = 1; // 1.4 in paper
+    alignas(8) double Afgf = 1; // 0.9 in paper
+
+    // These are scaled rougly in proportion with the values in
+    // Karb2004. I have about a 1mm long cortex, so their Chis are
+    // divided by 40 to get these values.
+    alignas(8) double Chiemx = 0.64; // 25.6/40
+    alignas(8) double Chipax = 0.68; // 27.3/40
+    alignas(8) double Chifgf = 0.66; // 26.4/40
+
+    // See Karb2004 Fig 8 - the arealization duplication figure
+    //@{
+    alignas(4) bool useSecondFgfSource = false;
+    alignas(8) double Afgfprime = 1.5;
+    alignas(8) double Chifgfprime = 0.3; // 12/40
+    //@}
+
+    alignas(8) double v1 = 2.6;
+    alignas(8) double v2 = 2.7;
+    alignas(8) double w1 = 2.4;
+    alignas(8) double w2 = 2.1;
+
+    /*!
+     * Note: Using tau_emx, tau_pax, tau_fgf in place of tau_s, tau_r, tau_f
+     */
+    //@{
+    alignas(8) double tau_emx = 0.0001;
+    alignas(8) double tau_pax = 0.0001;
+    alignas(8) double tau_fgf = 0.0001;
+    //@}
+
+    /*!
+     * The directions of the change (in radians) in uncoupled factor
+     * concentrations
+     */
+    //@{
+    alignas(4) float diremx = 3.141593;
+    alignas(4) float dirpax = 0;
+    alignas(4) float dirfgf = 0;
+    //@}
+
+    //@} end factor expression dynamics parameters
+
+    /*!
+     * Params used in the calculation of rhoA, rhoB and rhoC from the
+     * final eta, pax and fgf expression levels.
+     */
+    //@{
+    alignas(8) double sigmaA = 0.2;
+    alignas(8) double sigmaB = 0.3;
+    alignas(8) double sigmaC = 0.2;
+
+    alignas(8) double kA = 0.34;
+    alignas(8) double kB = 0.9;
+    alignas(8) double kC = 0.3;
+
+    alignas(8) double theta1 = 0.4;  // 0.77 originally, in the paper
+    alignas(8) double theta2 = 0.5;  // 0.5
+    alignas(8) double theta3 = 0.39; // 0.39
+    alignas(8) double theta4 = 0.3;  // 0.08
+    //@}
+
+    /*!
+     * Rho_A/B/C variables in Eq 4 - the concentrations of axon
+     * guidance molecules A, B and C. In Karbowski 2004, these are
+     * time independent and we will treat time as such, populating
+     * them at initialisation.
+     */
+    //@{
+    alignas(8) vector<double> rhoA;
+    alignas(8) vector<double> rhoB;
+    alignas(8) vector<double> rhoC;
+    //@}
+
+    /*!
+     * Into grad_rhoA/B/C put the two components of the gradient of
+     * rhoA/B/C computed across the HexGrid surface.
+     */
+    //@{
+    alignas(8) array<vector<double>, 2> grad_rhoA;
+    alignas(8) array<vector<double>, 2> grad_rhoB;
+    alignas(8) array<vector<double>, 2> grad_rhoC;
+    //@}
+
+    /*!
+     * Hex to hex distance. Populate this from hg.d after hg has been
+     * initialised.
+     */
+    alignas(8) double d = 1.0;
+
+    /*!
+     * Memory to hold an intermediate result
+     */
+    alignas(8) vector<vector<double> > betaterm;
+
+    /*!
+     * Holds an intermediate value for the computation of Eqs 1 and 2.
+     */
+    alignas(8) vector<vector<double> > alpha_c_beta_na;
+
+    /*!
+     * Track the number of computational steps that we've carried
+     * out. Only to show a message saying "100 steps done...", but
+     * that's reason enough.
+     */
+    alignas(4) unsigned int stepCount = 0;
+
+    /*!
+     * A frame number, incremented when an image is plotted to a PNG file.
+     */
+    alignas(4) unsigned int frameN = 0;
+
+    /*!
+     * The contour threshold. For contour plotting [see
+     * plot_contour()], the field is normalised, then the contour is
+     * plotted where the field crosses this threshold.
+     */
+    alignas(8) double contour_threshold = 0.5;
+
+    /*!
+     * Used by plotting functions
+     */
+    //@{
+    alignas(8) vector<double> fix = {3, 0.0};
+    alignas(8) vector<double> eye = {3, 0.0};
+    alignas(8) vector<double> rot = {3, 0.0};
+    //@}
+
+    /*!
+     * Members for which alignment is not important
+     */
+    //@{
+
+    /*!
+     * The HexGrid "background" for the Reaction Diffusion system.
+     */
+    HexGrid* hg;
+
+    /*!
+     * Store Hex positions for saving.
+     */
+    vector<float> hgvx;
+    vector<float> hgvy;
+
+    /*!
+     * How to load the guidance molecules?
+     */
+    GuidanceMoleculeMethod rhoMethod = GuidanceMoleculeMethod::GaussWaves;
 
     /*!
      * The logpath for this model. Used when saving data out.
@@ -78,280 +355,6 @@ public:
         // Ensure log directory exists
         morph::Tools::createDir (this->logpath);
     }
-
-    /*!
-     * Hex to hex d for the grid. Make smaller to increase the number
-     * of Hexes being computed.
-     */
-    float hextohex_d = 0.01;
-
-    /*!
-     * Holds the number of hexes in the populated HexGrid
-     */
-    unsigned int nhex = 0;
-
-    /*!
-     * how many thalamo-cortical axon types are there? Denoted by N in
-     * the paper, and so we use N here too.
-     */
-    static const unsigned int N = 5;
-
-    /*!
-     * These are the c_i(x,t) variables from the Karb2004 paper. x is
-     * a vector in two-space.
-     */
-    vector<vector<double> > c;
-
-    /*!
-     * These are the a_i(x,t) variables from the Karb2004 paper. x is
-     * a vector in two-space. The first vector is over the different
-     * TC axon types, enumerated by i, the second vector are the a_i
-     * values, indexed by the vi in the Hexes in HexGrid.
-     */
-    vector<vector<double> > a;
-
-    /*!
-     * For each TC axon type, this holds the two components of the
-     * gradient field of the scalar value a(x,t) (where this x is a
-     * vector in two-space)
-     */
-    vector<array<vector<double>, 2> > grad_a;
-
-    /*!
-     * Contains the chemo-attractant modifiers which are applied to
-     * a_i(x,t) in Eq 4.
-     */
-    vector<array<vector<double>, 2> > g;
-
-    /*!
-     * n(x,t) variable from the Karb2004 paper.
-     */
-    vector<double> n;
-
-    /*!
-     * J_i(x,t) variables - the "flux current of axonal branches of
-     * type i". This is a vector field.
-     */
-    vector<array<vector<double>, 2> > J;
-
-    /*!
-     * Holds the divergence of the J_i(x)s
-     */
-    vector<vector<double> > divJ;
-
-    /*!
-     * Our choice of dt.
-     */
-    double dt = 0.0001;
-
-    /*!
-     * Compute half and sixth dt in constructor.
-     */
-    //@{
-    double halfdt = 0.0;
-    double sixthdt = 0.0;
-    //@}
-
-    /*!
-     * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
-     * paper.
-     */
-    double k = 3.0;
-
-    /*!
-     * The diffusion parameter.
-     */
-    double D = 0.1;
-
-    /*!
-     * alpha_i parameters
-     */
-    vector<double> alpha;
-
-    /*!
-     * beta_i parameters
-     */
-    vector<double> beta;
-
-    /*!
-     * gamma_A/B/C_i parameters from Eq 4
-     */
-    //@{
-    vector<double> gammaA;
-    vector<double> gammaB;
-    vector<double> gammaC;
-    //@}
-
-    /*!
-     * Variables for factor expression dynamics (Eqs 5-7)
-     */
-    //@{
-    /*!
-     * Uncoupled concentrations of the factors - i.e. where they start.
-     */
-    //@{
-    vector<double> eta_emx;
-    vector<double> eta_pax;
-    vector<double> eta_fgf;
-    //@}
-
-    /*!
-     * These are s(x), r(x) and f(x) in Karb2004.
-     */
-    //@}
-    vector<double> emx;
-    vector<double> pax;
-    vector<double> fgf;
-    //@}
-    //@}
-
-    /*!
-     * Parameters for factor expression dynamics (Eqs 5-7)
-     */
-    //@{
-    double Aemx = 1; // 1.34 in paper
-    double Apax = 1; // 1.4 in paper
-    double Afgf = 1; // 0.9 in paper
-
-    // These are scaled rougly in proportion with the values in
-    // Karb2004. I have about a 1mm long cortex, so their Chis are
-    // divided by 40 to get these values.
-    double Chiemx = 0.64; // 25.6/40
-    double Chipax = 0.68; // 27.3/40
-    double Chifgf = 0.66; // 26.4/40
-
-    // See Karb2004 Fig 8 - the arealization duplication figure
-    //@{
-    bool useSecondFgfSource = false;
-    double Afgfprime = 1.5;
-    double Chifgfprime = 0.3; // 12/40
-    //@}
-
-    double v1 = 2.6;
-    double v2 = 2.7;
-    double w1 = 2.4;
-    double w2 = 2.1;
-
-    /*!
-     * Note: Using tau_emx, tau_pax, tau_fgf in place of tau_s, tau_r, tau_f
-     */
-    //@{
-    double tau_emx = 0.0001;
-    double tau_pax = 0.0001;
-    double tau_fgf = 0.0001;
-    //@}
-
-    /*!
-     * The directions of the change (in radians) in uncoupled factor
-     * concentrations
-     */
-    //@{
-    float diremx = 3.141593;
-    float dirpax = 0;
-    float dirfgf = 0;
-    //@}
-
-    //@} end factor expression dynamics parameters
-
-    /*!
-     * Params used in the calculation of rhoA, rhoB and rhoC from the
-     * final eta, pax and fgf expression levels.
-     */
-    //@{
-    double sigmaA = 0.2;
-    double sigmaB = 0.3;
-    double sigmaC = 0.2;
-
-    double kA = 0.34;
-    double kB = 0.9;
-    double kC = 0.3;
-
-    double theta1 = 0.4;  // 0.77 originally, in the paper
-    double theta2 = 0.5;  // 0.5
-    double theta3 = 0.39; // 0.39
-    double theta4 = 0.3;  // 0.08
-    //@}
-
-    /*!
-     * How to load the guidance molecules?
-     */
-    GuidanceMoleculeMethod rhoMethod = GuidanceMoleculeMethod::GaussWaves;
-
-    /*!
-     * Rho_A/B/C variables in Eq 4 - the concentrations of axon
-     * guidance molecules A, B and C. In Karbowski 2004, these are
-     * time independent and we will treat time as such, populating
-     * them at initialisation.
-     */
-    //@{
-    vector<double> rhoA;
-    vector<double> rhoB;
-    vector<double> rhoC;
-    //@}
-
-    /*!
-     * Into grad_rhoA/B/C put the two components of the gradient of
-     * rhoA/B/C computed across the HexGrid surface.
-     */
-    //@{
-    array<vector<double>, 2> grad_rhoA;
-    array<vector<double>, 2> grad_rhoB;
-    array<vector<double>, 2> grad_rhoC;
-    //@}
-
-    /*!
-     * The HexGrid "background" for the Reaction Diffusion system.
-     */
-    HexGrid* hg;
-
-    /*!
-     * Store Hex positions for saving.
-     */
-    vector<float> hgvx;
-    vector<float> hgvy;
-
-    /*!
-     * Hex to hex distance. Populate this from hg.d after hg has been
-     * initialised.
-     */
-    double d = 1.0;
-
-    /*!
-     * Memory to hold an intermediate result
-     */
-    vector<vector<double> > betaterm;
-
-    /*!
-     * Holds an intermediate value for the computation of Eqs 1 and 2.
-     */
-    vector<vector<double> > alpha_c_beta_na;
-
-    /*!
-     * Track the number of computational steps that we've carried
-     * out. Only to show a message saying "100 steps done...", but
-     * that's reason enough.
-     */
-    unsigned int stepCount = 0;
-
-    /*!
-     * A frame number, incremented when an image is plotted to a PNG file.
-     */
-    unsigned int frameN = 0;
-
-    /*!
-     * The contour threshold. For contour plotting [see
-     * plot_contour()], the field is normalised, then the contour is
-     * plotted where the field crosses this threshold.
-     */
-    double contour_threshold = 0.5;
-
-    /*!
-     * Used by plotting functions
-     */
-    //@{
-    vector<double> fix = {3, 0.0};
-    vector<double> eye = {3, 0.0};
-    vector<double> rot = {3, 0.0};
     //@}
 
     /*!
@@ -787,7 +790,7 @@ public:
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         double nsum = 0.0;
         double csum = 0.0;
-        #pragma omp parallel for
+        #pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             Hex* h = this->hg->vhexen[hi];
             n[h->vi] = 0;
@@ -807,28 +810,26 @@ public:
 
         // Pre-compute intermediate val:
         for (unsigned int i=0; i<this->N; ++i) {
-            #pragma omp parallel for
+            #pragma omp parallel for shared(i,k)
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k);
             }
         }
 
         // Runge-Kutta:
-        #pragma omp parallel for
+        // No OMP here - only N<10 loops
         for (unsigned int i=0; i<this->N; ++i) {
-
-            DBG2 ("(a) alpha_c_beta_na["<<i<<"][0] = " << this->alpha_c_beta_na[i][0]);
 
             // Runge-Kutta integration for A
             vector<double> q(this->nhex, 0.0);
+            // Function call is bad already!
             this->compute_divJ (a[i], i); // populates divJ[i]
-            DBG2 ("Computing divJ, divJ[0][0]: " << divJ[0][0]);
+
             vector<double> k1(this->nhex, 0.0);
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k1[h] * halfdt;
             }
-            DBG2 ("(a) After RK stage 1, q[0]: " << q[0]);
 
             vector<double> k2(this->nhex, 0.0);
             this->compute_divJ (q, i);
@@ -836,7 +837,6 @@ public:
                 k2[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k2[h] * halfdt;
             }
-            DBG2 ("(a) After RK stage 2, q[0]:" << q[0] << " from a["<<i<<"][0]:" << a[i][0] << " divj["<<i<<"][0]:" << divJ[i][0] << " k2[0]:" << k2[0]);
 
             vector<double> k3(this->nhex, 0.0);
             this->compute_divJ (q, i);
@@ -844,7 +844,6 @@ public:
                 k3[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k3[h] * dt;
             }
-            DBG2 ("(a) After RK stage 3, q[0]: " << q[0]);
 
             vector<double> k4(this->nhex, 0.0);
             this->compute_divJ (q, i);
@@ -852,15 +851,12 @@ public:
                 k4[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * sixthdt;
             }
-            DBG2 ("(a) After RK stage 4, a[" << i << "][0]: " << a[i][0]);
-
-            DBG2("(a) Debug a["<<i<<"]");
         }
 
         // 3. Do integration of c
-        #pragma omp parallel for
         for (unsigned int i=0; i<this->N; ++i) {
 
+            #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 this->betaterm[i][h] = beta[i] * n[h] * pow (a[i][h], k);
             }
@@ -869,24 +865,28 @@ public:
             // Runge-Kutta integration for C (or ci)
             vector<double> q(nhex,0.);
             vector<double> k1 = compute_dci_dt (c[i], i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k1[h] * halfdt;
             }
             DBG2 ("(c) After RK stage 1, q[0]: " << q[0]);
 
             vector<double> k2 = compute_dci_dt (q, i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k2[h] * halfdt;
             }
             DBG2 ("(c) After RK stage 2, q[0]: " << q[0]);
 
             vector<double> k3 = compute_dci_dt (q, i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k3[h] * dt;
             }
             DBG2 ("(c) After RK stage 3, q[0]: " << q[0]);
 
             vector<double> k4 = compute_dci_dt (q, i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * sixthdt;
             }
@@ -922,23 +922,19 @@ public:
     void spacegrad2D (vector<double>& f, array<vector<double>, 2>& gradf) {
 
         // Note - East is positive x; North is positive y. Does this match how it's drawn in the display??
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             Hex* h = this->hg->vhexen[hi];
 
             gradf[0][h->vi] = 0.0;
             gradf[1][h->vi] = 0.0;
 
-            DBG2 ("(h->ri,h->gi): (" << h->ri << "," << h->gi << ")");
             // Find x gradient
             if (h->has_ne && h->has_nw) {
-                DBG2 ("x case 1 f[h->ne]: " << f[h->ne->vi] << " - f[h->nw]" << f[h->nw->vi] << "/ h->d*2: " << (double)h->d * 2.0);
                 gradf[0][h->vi] = (f[h->ne->vi] - f[h->nw->vi]) / ((double)h->d * 2.0);
             } else if (h->has_ne) {
-                DBG2 ("x case 2 f[h->ne]: " << f[h->ne->vi] << " - f[h]" << f[h->vi] << "/ h->d: " << (double)h->d);
                 gradf[0][h->vi] = (f[h->ne->vi] - f[h->vi]) / (double)h->d;
             } else if (h->has_nw) {
-                DBG2 ("x case 3 f[h]: " << f[h->vi] << " - f[h->nw]" << f[h->nw->vi] << "/ h->d: " << (double)h->d);
                 gradf[0][h->vi] = (f[h->vi] - f[h->nw->vi]) / (double)h->d;
             } else {
                 // zero gradient in x direction as no neighbours in
@@ -949,13 +945,6 @@ public:
             // Find y gradient
             if (h->has_nnw && h->has_nne && h->has_nsw && h->has_nse) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
-#ifdef DEBUG2
-                if (h->vi == 0) {
-                    double _d = (double)h->getV();
-                    double _td = (double)h->getTwoV();
-                    DBG2 ("y case 1. getV: " << _d << " getTwoV: " << _td);
-                }
-#endif
                 gradf[1][h->vi] = ((f[h->nne->vi] - f[h->nse->vi]) + (f[h->nnw->vi] - f[h->nsw->vi])) / (double)h->getV();
 
             } else if (h->has_nnw && h->has_nne ) {
@@ -976,10 +965,6 @@ public:
             } else {
                 // Leave grady at 0
             }
-
-            //if (h->vi == 0) {
-            //    DBG ("gradf[0/1][0]: " << gradf[0][0] << "," << gradf[1][0]);
-            //}
         }
     }
 
@@ -989,6 +974,7 @@ public:
      */
     vector<double> compute_dci_dt (vector<double>& f, unsigned int i) {
         vector<double> dci_dt (this->nhex, 0.0);
+        #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; h++) {
             dci_dt[h] = this->betaterm[i][h] - this->alpha[i] * f[h];
         }
@@ -1011,7 +997,7 @@ public:
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             Hex* h = this->hg->vhexen[hi];

@@ -27,10 +27,15 @@ if (APPLE)
   # omp.h header)
   set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11")
 else()
-  # Why is single threaded, but optimized version so much faster? Why
-  # does optimization seem not to work when -fopenmp is switched on?
-  #set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -Wno-unused-result -march=native -fopenmp")
-  set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -Wno-unused-result -Wno-unknown-pragmas -march=native -O3")
+  # Check whether we're using Intel compiler, which is generally
+  # produces slightly faster code.
+  #
+  # To use Intel compiler, call cmake as: cmake -DCMAKE_CXX_COMPILER=icpc ..
+  if (CMAKE_CXX_COMPILER_ID MATCHES Intel)
+    set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -xHOST -O3 -qopenmp")
+  else() # GCC
+    set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -Wno-unused-result -march=native -O3 -fopenmp")
+  endif()
 endif()
 
 # Lib finding - we have to do this, so that the correct include paths
@@ -51,6 +56,11 @@ include_directories(${OpenCV_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_
 
 # rapidxml is bundled in the source for one program (DEBUGGING - don't incorporate into master):
 include_directories ("${PROJECT_SOURCE_DIR}/include/rapidxml-1.13")
+
+if (CMAKE_CXX_COMPILER_ID MATCHES Intel)
+  # Intel tool debugging - ittnotify.h
+  include_directories ("/opt/intel/vtune_amplifier_2019.0.2.570779/include")
+endif()
 
 # Find libmorphologica using pkgconfig
 #find_package(PkgConfig)

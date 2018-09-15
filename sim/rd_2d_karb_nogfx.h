@@ -826,6 +826,7 @@ public:
             this->compute_divJ (a[i], i); // populates divJ[i]
 
             vector<double> k1(this->nhex, 0.0);
+            #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k1[h] * halfdt;
@@ -833,6 +834,7 @@ public:
 
             vector<double> k2(this->nhex, 0.0);
             this->compute_divJ (q, i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k2[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k2[h] * halfdt;
@@ -840,6 +842,7 @@ public:
 
             vector<double> k3(this->nhex, 0.0);
             this->compute_divJ (q, i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k3[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k3[h] * dt;
@@ -847,6 +850,7 @@ public:
 
             vector<double> k4(this->nhex, 0.0);
             this->compute_divJ (q, i);
+            #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k4[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * sixthdt;

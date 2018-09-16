@@ -8,19 +8,23 @@
 #define _HEXGRID_H_
 
 #include "Hex.h"
-#include "BezCurvePath.h"
+#include <morph/BezCurvePath.h>
 
 #include <set>
 #include <list>
 #include <string>
+#include <array>
 
 using std::set;
 using std::list;
+using std::array;
 using std::string;
-using morph::Hex;
+using morph::BezCurvePath;
+using morph2::Hex;
 
-namespace morph {
+namespace morph2 {
 
+    const float SQRT_OF_3_OVER_2_F = 0.866025404;
     /*!
      * This class is used to build an hexagonal grid of hexagons. The
      * member hexagons are all arranged with a vertex pointing
@@ -45,10 +49,12 @@ namespace morph {
     class alignas(8) HexGrid
     {
     public:
+#if 0
         /*!
-         * Ans: Not very well because of all the data accesses. Better
-         * therefore to create 7 vectors - one of the indices of the
-         * identity Hex and 6 for each neighbour
+         * Can I do parallel loops with these vectors of Ans: Not very
+         * well because of all the data accesses. Better therefore to
+         * create 7 vectors - one of the indices of the identity Hex
+         * and 6 for each neighbour
          */
         alignas(8) vector<unsigned int> vi_self;
         alignas(8) vector<unsigned int> vi_ne;
@@ -57,6 +63,77 @@ namespace morph {
         alignas(8) vector<unsigned int> vi_nw;
         alignas(8) vector<unsigned int> vi_nsw;
         alignas(8) vector<unsigned int> vi_nse;
+#endif
+        /*!
+         * Domain attributes
+         * -----------------
+         *
+         * Vectors containing the "domain" info extracted from the
+         * list of Hexes. The "domain" is the set of Hexes left over
+         * after teh boundary has been applied and the outer Hexes
+         * have been reduced down to a regular, somewhat rectangular
+         * set.
+         *
+         * Each of these is prefixed d_ and is carefully aligned.
+         *
+         * The order in which these are populated is raster-style,
+         * from top left to bottom right.
+         */
+        //@{
+        // NB: For these to be alignas(4) need to do some sort of packing.
+        alignas(8) vector<float> d_x;
+        alignas(8) vector<float> d_y;
+
+        alignas(8) vector<int> d_ri;
+        alignas(8) vector<int> d_gi;
+        alignas(8) vector<int> d_bi;
+
+        /*!
+         * Flags, such as "on boundary", "inside boundary", "outside
+         * boundary", "has neighbour east", etc.
+         */
+        alignas(8) vector<unsigned int> d_flags;
+
+        /*!
+         * The length of a row in the domain. The first Hex in the
+         * first row will overhang to the left.
+         */
+        unsigned int d_rowlen = 0;
+
+        /*!
+         * The number of rows in the domain.
+         */
+        unsigned int d_numrows = 0;
+
+        /*!
+         * d_rowlen * d_numrows is the domain size in number of
+         * hexes. Client code will create vectors of length d_size and
+         * hold the variables pertaining to the Hex
+         * domain therein.
+         */
+        unsigned int d_size = 0;
+
+        /*!
+         * How many additional hexes to grow out to the left and
+         * right; top and bottom? Set this to a larger number if the
+         * boundary is expected to grow during a simulation.
+         */
+        //@{
+        unsigned int d_growthbuffer_horz = 0;
+        unsigned int d_growthbuffer_vert = 0;
+        //@}
+
+        /*!
+         * Add entries to all the d_ vectors for the Hex pointed to by
+         * hi.
+         */
+        void d_push_back (list<Hex>::iterator hi);
+
+        /*!
+         * Clear out all the d_ vectors
+         */
+        void d_clear (void);
+        //@}
 
         /*!
          * Default constructor
@@ -165,7 +242,8 @@ namespace morph {
 
         /*!
          * Once boundary secured, fill this vector. Experimental - can
-         * I do parallel loops with vectors of hexes?
+         * I do parallel loops with vectors of hexes? Ans: Not very
+         * well.
          */
         vector<Hex*> vhexen;
 
@@ -224,10 +302,34 @@ namespace morph {
         void markHexesInside (list<Hex>::iterator hi);
 
         /*!
+         * Recursively mark hexes to be kept if they are inside the
+         * rectangular hex domain.
+         */
+        void markHexesInsideDomain (const array<int, 4>& extnts);
+
+        /*!
          * Discard hexes in this->hexen that are outside the boundary
          * #boundary.
          */
-        void discardOutside (void);
+        void discardOutsideBoundary (void);
+
+        /*!
+         * Discard hexes in this->hexen that are outside the
+         * rectangular hex domain.
+         */
+        void discardOutsideDomain (void);
+
+        /*!
+         * Find the extents of the boundary hexes. Find the ri for the
+         * left-most hex and the ri for the right-most hex (elements 0
+         * and 1 of the return array). Find the gi for the top most
+         * hex and the gi for the bottom most hex. Assumes bi is 0.
+         *
+         * Return object contains {ri-left, ri-right, gi-bottom, gi-top}
+         */
+        array<int, 4> findBoundaryExtents (void);
+
+        void setDomain (void);
 
         /*!
          * Find the Hex in the Hex grid which is closest to the x,y
@@ -282,11 +384,11 @@ namespace morph {
         //@}
 
         /*!
-         * Set true when a new boundary has been applied. This means
-         * that the #vertexE, #vertexW, and similar iterators are no
-         * longer valid.
+         * Set true when a new boundary or domain has been
+         * applied. This means that the #vertexE, #vertexW, and
+         * similar iterators are no longer valid.
          */
-        bool gridReducedToBoundary = false;
+        bool gridReduced = false;
 
     };
 

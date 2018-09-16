@@ -1,7 +1,7 @@
-#include "tools.h"
-#include "ReadCurves.h"
+#include <morph/tools.h>
+#include <morph/ReadCurves.h>
 #include "HexGrid.h"
-#include "HdfData.h"
+#include <morph/HdfData.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -23,7 +23,7 @@ using std::cerr;
 using std::endl;
 using std::runtime_error;
 
-using morph::HexGrid;
+using morph2::HexGrid;
 using morph::ReadCurves;
 using morph::HdfData;
 

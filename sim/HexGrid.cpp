@@ -527,6 +527,11 @@ morph2::HexGrid::setDomain (void)
     // 'buffer region' already added.
     array<int, 4> extnts = this->findBoundaryExtents();
 
+    // 1.5 set rowlen and numrows
+    this->d_rowlen = extnts[1]-extnts[0]+1;
+    this->d_numrows = extnts[3]-extnts[2]+1;
+    this->d_size = this->d_rowlen * this->d_numrows;
+
     // 2. Mark Hexes inside and outside the domain.
     // Mark those hexes inside the boundary
     this->markHexesInsideDomain (extnts);
@@ -596,7 +601,7 @@ morph2::HexGrid::setDomain (void)
         }
     } while (hi->has_ne == true);
 
-    DBG ("Size of d_x: " << this->d_x.size());
+    DBG ("Size of d_x: " << this->d_x.size() << " and d_size=" << this->d_size);
 }
 
 void

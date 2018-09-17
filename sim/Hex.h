@@ -44,6 +44,7 @@ using std::endl;
 #define HEX_IS_BOUNDARY      0x40
 #define HEX_INSIDE_BOUNDARY  0x80
 #define HEX_INSIDE_DOMAIN   0x100
+#define HEX_IN_REGION       0x200 // If HEX_IS_BOUNDARY & HEX_INSIDE_BOUNDARY are set.
 //@}
 
 namespace morph2 {
@@ -341,6 +342,9 @@ namespace morph2 {
             }
             if (insideDomain == true) {
                 flgs |= HEX_INSIDE_DOMAIN;
+            }
+            if (insideBoundary == true || boundaryHex == true) {
+                flgs |= HEX_IN_REGION;
             }
             if (has_ne == true) {
                 flgs |= HEX_HAS_NE;

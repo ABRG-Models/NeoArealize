@@ -147,7 +147,7 @@ namespace morph2 {
          * identifier if several HexGrids are being managed by client
          * code, but it not otherwise made use of.
          */
-        HexGrid (float d_, float x_span_, float z_ = 0.0f);
+        HexGrid (float d_, float x_span_, float z_ = 0.0f, bool domainMode = true);
 
         /*!
          * Initialise with the passed-in parameters; a hex to hex
@@ -234,6 +234,13 @@ namespace morph2 {
          * nearest boundary hex.
          */
         void computeDistanceToBoundary (void);
+
+        /*!
+         * Set to true or false during constructor. False gives old
+         * behaviour of discarding all hexes outside the domain. True
+         * gives newer domain mode.
+         */
+        bool domainMode = true;
 
         /*!
          * The list of hexes that make up this HexGrid.

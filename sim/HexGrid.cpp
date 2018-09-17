@@ -43,11 +43,12 @@ morph2::HexGrid::HexGrid ()
 {
 }
 
-morph2::HexGrid::HexGrid (float d_, float x_span_, float z_)
+morph2::HexGrid::HexGrid (float d_, float x_span_, float z_, bool dommode)
 {
     this->d = d_;
     this->x_span = x_span_;
     this->z = z_;
+    this->domainMode = dommode;
 
     this->init();
 }
@@ -99,10 +100,10 @@ morph2::HexGrid::setBoundary (const list<Hex>& pHexes)
         throw runtime_error (ee.str());
     }
 
-#if 0 // Possibly reset the domain here.
-    // Boundary IS contiguous, discard hexes outside the boundary.
-    this->discardOutside();
-#endif
+    if (this->domainMode == false) {
+        // Boundary IS contiguous, discard hexes outside the boundary.
+        this->discardOutsideBoundary();
+    }
 }
 
 #ifdef UNTESTED_UNUSED
@@ -165,13 +166,17 @@ morph2::HexGrid::setBoundary (const BezCurvePath& p)
             throw runtime_error (ee.str());
         }
 
-        // Given that the boundary IS contiguous, can now set a domain
-        // of hexes (rectangular region, such that computations can be
-        // efficient) and discard hexes outside the domain.
-        // setDomain() will define a regular domain, then discard
-        // those hexes outside the regular domain and populate all the
-        // d_ vectors.
-        this->setDomain();
+        if (this->domainMode == false) {
+            this->discardOutsideBoundary();
+        } else {
+            // Given that the boundary IS contiguous, can now set a domain
+            // of hexes (rectangular region, such that computations can be
+            // efficient) and discard hexes outside the domain.
+            // setDomain() will define a regular domain, then discard
+            // those hexes outside the regular domain and populate all the
+            // d_ vectors.
+            this->setDomain();
+        }
     }
 }
 

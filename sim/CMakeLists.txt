@@ -8,6 +8,14 @@ else()
   target_link_libraries(process_nogfx -lmorphologica ${HDF5_C_${LIB_TYPE}_LIBRARY})
 endif()
 
+add_executable(process_nogfx_doms process_nogfx_doms.cpp HexGrid.cpp)
+if (CMAKE_CXX_COMPILER_ID MATCHES Intel)
+  # Statically link the libittnotify library to allow pausing of data collection during init.
+  target_link_libraries(process_nogfx_doms -lmorphologica ${HDF5_C_${LIB_TYPE}_LIBRARY} /opt/intel/vtune_amplifier_2019.0.2.570779/lib64/libittnotify.a)
+else()
+  target_link_libraries(process_nogfx_doms -lmorphologica ${HDF5_C_${LIB_TYPE}_LIBRARY})
+endif()
+
 add_executable(testhexgrid3 testhexgrid3.cpp HexGrid.cpp)
 if (CMAKE_CXX_COMPILER_ID MATCHES Intel)
   # Statically link the libittnotify library to allow pausing of data collection during init.

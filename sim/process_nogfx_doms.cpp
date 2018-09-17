@@ -1,5 +1,5 @@
 #define MANUFACTURE_GUIDANCE_MOLECULES 1
-#include "rd_2d_karb_nogfx.h"
+#include "rd_2d_karb_nogfx_doms.h"
 
 #include <iostream>
 #include <vector>
@@ -29,7 +29,6 @@ int main (int argc, char **argv)
 
     // Instantiate the model object
     RD_2D_Karb RD;
-    RD.domainMode = false;
     try {
         RD.init();
     } catch (const exception& e) {

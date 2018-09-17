@@ -394,20 +394,69 @@ morph2::HexGrid::markHexesInside (list<Hex>::iterator hi)
 }
 
 void
-morph2::HexGrid::markHexesInsideDomain (const array<int, 4>& extnts)
+morph2::HexGrid::markHexesInsideDomain (const array<int, 6>& extnts)
 {
     // Check ri,gi,bi and reduce to equivalent ri,gi,bi=0.
     // Use gi to determine whether outside top/bottom region
     // Add gi contribution to ri to determine whether outside left/right region
+
+    // Is the bottom row's gi even or odd?  extnts[2] is gi for the
+    // bottom row. If it's even, then we add 0.5 to all rows with even
+    // gi. If it's odd then we add 0.5 to all rows with ODD gi.
+    float even_addn = 0.5f;
+    float odd_addn = 0.0f;
+    float addleft = 0;
+    if (extnts[2]%2 == 0) {
+        DBG ("bottom row has EVEN gi (" << extnts[2] << ")");
+        even_addn = 0.0f;
+        odd_addn = 0.5f;
+    } else {
+        DBG ("bottom row has ODD gi (" << extnts[2] << ")");
+        addleft += 0.5f;
+    }
+
+    if (abs(extnts[2]%2) == abs(extnts[4]%2)) {
+        // Left most hex is on a parity-matching line to bottom line,
+        // no need to add left.
+        DBG("Left most hex on line matching parity of bottom line")
+    } else {
+        // Need to add left.
+        DBG("Left most hex NOT on line matching parity of bottom line add left to BL hex");
+        if (extnts[2]%2 == 0) {
+            addleft += 1.0f;
+            // For some reason, only in this case do we addleft (and
+            // not in the case where BR is ODD and Left most hex NOT
+            // matching, which makes addleft = 0.5 + 0.5). I can't
+            // work it out.
+            DBG ("Before: d_rowlen " << d_rowlen << " d_size " << d_size);
+            this->d_rowlen += addleft;
+            this->d_size = this->d_rowlen * this->d_numrows;
+            DBG ("after: d_rowlen " << d_rowlen << " d_size " << d_size);
+        } else {
+            addleft += 0.5f;
+        }
+    }
+
+    DBG ("FINAL addleft is: " << addleft);
+
     auto hi = this->hexen.begin();
     while (hi != this->hexen.end()) {
-        float hz = hi->ri + 0.5*(hi->gi) + (hi->gi%2 ? 0.5f : 0.0f);
-        if (hz < extnts[0]) {
+
+        // Here, hz is "horizontal index", made up of the ri index,
+        // half the gi index.
+        //
+        // plus a row-varying addition of a half
+        // (the row of hexes above is shifted right by 0.5 a hex
+        // width).
+        float hz = hi->ri + 0.5*(hi->gi); /*+ (hi->gi%2 ? odd_addn : even_addn)*/;
+        float parityhalf = (hi->gi%2 ? odd_addn : even_addn);
+
+        if (hz < (extnts[0] - addleft + parityhalf)) {
             // outside
-            DBG2 ("Outside. Horz idx: " << hz << " < extnts[0]: " << extnts[0]);
-        } else if (hz > extnts[1]) {
+            DBG2 ("Outside. gi:"<<hi->gi<<". Horz idx: " << hz << " < extnts[0]-addleft+parityhalf: " << extnts[0] <<"-"<< addleft <<"+"<< parityhalf);
+        } else if (hz > (extnts[1] + parityhalf)) {
             // outside
-            DBG2 ("Outside. Horz idx: " << hz << " > extnts[1]: " << extnts[1]);
+            DBG2 ("Outside. gi:"<<hi->gi<<". Horz idx: " << hz << " > extnts[1]+parityhalf: " << extnts[0] <<"+"<< parityhalf);
         } else if (hi->gi < extnts[2]) {
             // outside
             DBG2 ("Outside. Vert idx: " << hi->gi << " < extnts[2]: " << extnts[2]);
@@ -416,7 +465,7 @@ morph2::HexGrid::markHexesInsideDomain (const array<int, 4>& extnts)
             DBG2 ("Outside. Vert idx: " << hi->gi << " > extnts[3]: " << extnts[3]);
         } else {
             // inside
-            DBG2 ("INSIDE. Horz,vert index: " << hz << "," << hi->gi << ". hi->bi should be 0: " << h->bi);
+            DBG2 ("INSIDE. Horz,vert index: " << hz << "," << hi->gi);
             hi->insideDomain = true;
         }
         ++hi;
@@ -449,12 +498,12 @@ morph2::HexGrid::computeDistanceToBoundary (void)
     }
 }
 
-array<int, 4>
+array<int, 6>
 morph2::HexGrid::findBoundaryExtents (void)
 {
-    // Return object contains {ri-left, ri-right, gi-bottom, gi-top}
-    // i.e. {xmin, xmax, ymin, ymax}
-    array<int, 4> rtn = {{0,0,0,0}};
+    // Return object contains {ri-left, ri-right, gi-bottom, gi-top, gi at ri-left, gi at ri-right}
+    // i.e. {xmin, xmax, ymin, ymax, gi at xmin, gi at xmax}
+    array<int, 6> rtn = {{0,0,0,0,0,0}};
 
     // Find the furthest left and right hexes and the further up and down hexes.
     array<float, 4> limits = {{0,0,0,0}};
@@ -467,9 +516,11 @@ morph2::HexGrid::findBoundaryExtents (void)
             }
             if (h.x < limits[0]) {
                 limits[0] = h.x;
+                rtn[4] = h.gi;
             }
             if (h.x > limits[1]) {
                 limits[1] = h.x;
+                rtn[5] = h.gi;
             }
             if (h.y < limits[2]) {
                 limits[2] = h.y;
@@ -530,12 +581,13 @@ morph2::HexGrid::setDomain (void)
 {
     // 1. Find extent of boundary, both left/right and up/down, with
     // 'buffer region' already added.
-    array<int, 4> extnts = this->findBoundaryExtents();
+    array<int, 6> extnts = this->findBoundaryExtents();
 
     // 1.5 set rowlen and numrows
     this->d_rowlen = extnts[1]-extnts[0]+1;
     this->d_numrows = extnts[3]-extnts[2]+1;
     this->d_size = this->d_rowlen * this->d_numrows;
+    DBG("Initially, d_rowlen=" << d_rowlen << ", d_numrows=" << d_numrows << ", d_size=" << d_size);
 
     // 2. Mark Hexes inside and outside the domain.
     // Mark those hexes inside the boundary
@@ -564,11 +616,18 @@ morph2::HexGrid::setDomain (void)
     // hi should now be the bottom left hex.
     list<Hex>::iterator blh = hi;
 
+#if 0
     // Sanity check
     if (blh->has_nne == false || blh->has_ne == false || blh->has_nnw == true) {
-        throw runtime_error ("We expect the bottom left hex to have an east and a "
-                             "north east neighbour, but no north west neighbour.");
+        stringstream ee;
+        ee << "We expect the bottom left hex to have an east and a "
+           << "north east neighbour, but no north west neighbour. This has: "
+           << (blh->has_nne == true ? "Neighbour NE ":"NO Neighbour NE ")
+           << (blh->has_ne == true ? "Neighbour E ":"NO Neighbour E ")
+           << (blh->has_nnw == true ? "Neighbour NW ":"NO Neighbour NW ");
+        throw runtime_error (ee.str());
     }
+#endif
 
     // Now raster through the hexes, building the d_ vectors
     this->d_clear();
@@ -809,6 +868,12 @@ morph2::HexGrid::getd (void) const
 }
 
 float
+morph2::HexGrid::getv (void) const
+{
+    return this->v;
+}
+
+float
 morph2::HexGrid::getXmin (float phi) const
 {
     float xmin = 0.0f;
@@ -850,6 +915,7 @@ void
 morph2::HexGrid::init (float d_, float x_span_, float z_)
 {
     this->d = d_;
+    this->v = this->d * SQRT_OF_3_OVER_2_F;
     this->x_span = x_span_;
     this->z = z_;
     this->init();

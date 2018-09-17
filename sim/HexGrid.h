@@ -49,21 +49,6 @@ namespace morph2 {
     class alignas(8) HexGrid
     {
     public:
-#if 0
-        /*!
-         * Can I do parallel loops with these vectors of Ans: Not very
-         * well because of all the data accesses. Better therefore to
-         * create 7 vectors - one of the indices of the identity Hex
-         * and 6 for each neighbour
-         */
-        alignas(8) vector<unsigned int> vi_self;
-        alignas(8) vector<unsigned int> vi_ne;
-        alignas(8) vector<unsigned int> vi_nne;
-        alignas(8) vector<unsigned int> vi_nnw;
-        alignas(8) vector<unsigned int> vi_nw;
-        alignas(8) vector<unsigned int> vi_nsw;
-        alignas(8) vector<unsigned int> vi_nse;
-#endif
         /*!
          * Domain attributes
          * -----------------
@@ -221,6 +206,11 @@ namespace morph2 {
         float getd (void) const;
 
         /*!
+         * Getter for v - vertical hex spacing.
+         */
+        float getv (void) const;
+
+        /*!
          * Find the minimum or maximum value of x' on the HexGrid,
          * where x' is the x axis rotated by phi degrees.
          */
@@ -312,7 +302,7 @@ namespace morph2 {
          * Recursively mark hexes to be kept if they are inside the
          * rectangular hex domain.
          */
-        void markHexesInsideDomain (const array<int, 4>& extnts);
+        void markHexesInsideDomain (const array<int, 6>& extnts);
 
         /*!
          * Discard hexes in this->hexen that are outside the boundary
@@ -332,9 +322,16 @@ namespace morph2 {
          * and 1 of the return array). Find the gi for the top most
          * hex and the gi for the bottom most hex. Assumes bi is 0.
          *
-         * Return object contains {ri-left, ri-right, gi-bottom, gi-top}
+         * Return object contains:
+         * {ri-left, ri-right, gi-bottom, gi-top, gi at ri-left, gi at ri-right}
+         *
+         * gi at ri-left, gi at ri-right are returned so that the
+         * bottom left hex can be set correctly and the entire
+         * boundary is enclosed - it's important to know if the bottom
+         * line is parity-matched with the line on which the left and
+         * right most boundary hexes are found.
          */
-        array<int, 4> findBoundaryExtents (void);
+        array<int, 6> findBoundaryExtents (void);
 
         void setDomain (void);
 
@@ -356,6 +353,12 @@ namespace morph2 {
          * of the hex grid.
          */
         float d = 1.0f;
+
+        /*!
+         * The centre to centre hex distance between hexes on adjacent
+         * rows - the 'vertical' distance.
+         */
+        float v = 1.0f * SQRT_OF_3_OVER_2_F;
 
         /*!
          * Give the hexagonal hex grid a diameter of approximately

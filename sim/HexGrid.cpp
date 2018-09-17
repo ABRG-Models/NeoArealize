@@ -616,7 +616,6 @@ morph2::HexGrid::setDomain (void)
     // hi should now be the bottom left hex.
     list<Hex>::iterator blh = hi;
 
-#if 0
     // Sanity check
     if (blh->has_nne == false || blh->has_ne == false || blh->has_nnw == true) {
         stringstream ee;
@@ -627,7 +626,6 @@ morph2::HexGrid::setDomain (void)
            << (blh->has_nnw == true ? "Neighbour NW ":"NO Neighbour NW ");
         throw runtime_error (ee.str());
     }
-#endif
 
     // Now raster through the hexes, building the d_ vectors
     this->d_clear();

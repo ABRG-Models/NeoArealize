@@ -967,89 +967,67 @@ public:
         double v = this->hg->getv();
         double twov = v+v;
 
-        // Num processed. Debugging.
-        unsigned int nproc = 0;
-        unsigned int not_in = 0;
+        unsigned int rl = this->hg->d_rowlen;
+        unsigned int nr = this->hg->d_numrows;
 
-#pragma omp parallel for schedule(static)
-        for (unsigned int hi=0; hi<this->nhex; ++hi) {
+        /*
+         * First compute the edges, which have different methods for
+         * finding the gradients.
+         */
 
-            // We have this->hg->d_x[hi] d_y[hi] d_ri, d_gi, d_flags, d_rowlen, d_numrows, d_size
-            // For any hex, here's how to get to the neighbours:
-            // E  : +1
-            // NE : -d_rowlen
-            // NW : -d_rowlen-1
-            // W  : -1
-            // SW : +d_rowlen
-            // SE : +d_rowlen+1
-
-            // h->has_ne becomes (this->hg->d_flags[hi+NE]&HEX_INSIDE_BOUNDARY)
-            // h->ne->vi becomes hi+NE
-
-            // Instead of this use IF_IN_BOUNDARY, having pre-computed the domain edge.
-            if (!IN_BOUNDARY(hi)) {
-                gradf[0][hi] = 0.0;
-                gradf[1][hi] = 0.0;
-                not_in++;
-                continue;
-            }
-
-            nproc++;
-
+        // Bottom edge
+        gradf[0][0] = IF_IN_BOUNDARY (0, ((f[/*0+*/NE] - f[0]) / d), 0);
+        gradf[1][0] = 0;
+        for (unsigned int hi=1; hi<rl-1; ++hi) {
             // Find x gradient
-            if (HAS_NE(hi) && HAS_NW(hi)) {
-                // USE IF_IN_BOUNDARY() here, but there's more to do first.
-                gradf[0][hi] = (f[hi+NE] - f[hi+NW]) / (d * 2.0);
-                if (hi == 4159) {
-                    DBG2("E W. f[ne]:" << f[hi+NE] << ", f[nw]:" << f[hi+NW] << ", f[hi]=" << f[hi] << " x/y" << this->hg->d_x[hi] << "," << this->hg->d_y[hi]);
-                }
-            } else if (HAS_NE(hi)) {
-                gradf[0][hi] = (f[hi+NE] - f[hi]) / d;
-            } else if (HAS_NW(hi)) {
-                gradf[0][hi] = (f[hi] - f[hi+NW]) / d;
-            } else {
-                // zero gradient in x direction as no neighbours in
-                // those directions? Or possibly use the average of
-                // the gradient between the nw,ne and sw,se neighbours
-                gradf[0][hi] = 0.0;
-            }
-
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) / (d * 2.0)), 0);
             // Find y gradient
-            if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
-                // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
-                gradf[1][hi] = ((f[hi+NNE] - f[hi+NSE]) + (f[hi+NNW] - f[hi+NSW])) / v;
-
-            } else if (HAS_NNW(hi) && HAS_NNE(hi)) {
-                gradf[1][hi] = ( (f[hi+NNE] + f[hi+NNW]) / 2.0 - f[hi]) / v;
-
-            } else if (HAS_NSW(hi) && HAS_NSE(hi)) {
-                gradf[1][hi] = (f[hi] - (f[hi+NSE] + f[hi+NSW]) / 2.0) / v;
-
-            } else if (HAS_NNW(hi) && HAS_NSW(hi)) {
-                gradf[1][hi] = (f[hi+NNW] - f[hi+NSW]) / twov;
-
-            } else if (HAS_NNE(hi) && HAS_NSE(hi)) {
-                gradf[1][hi] = (f[hi+NNE] - f[hi+NSE]) / twov;
-
-            } else {
-                // Leave grady at 0
-                gradf[1][hi] = 0.0;
-            }
-#if 0
-            if (hi == 4159) {
-                DBG ("Hex "<<hi<<" has r/g:" << this->hg->d_ri[hi] << "," << this->hg->d_gi[hi]);
-                DBG2 ("Hex "<<hi<<" has neighbours: "
-                     << (HAS_NE(hi)?"NE, ":"no NE, ")
-                     << (HAS_NNE(hi)?"NNE, ":"no NNE, ")
-                     << (HAS_NNW(hi)?"NNW, ":"no NNW, ")
-                     << (HAS_NW(hi)?"NW, ":"no NW, ")
-                     << (HAS_NSW(hi)?"NSW, ":"no NSW, ")
-                     << (HAS_NSE(hi)?"NSE.":"no NSE."));
-                DBG ("gradf[0]["<<hi<<"] = " << gradf[0][hi] << ", gradf[1]["<<hi<<"] = " << gradf[1][hi]);
-            }
-#endif
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NNW] - f[hi]) / v), 0);
         }
-        DBG2 ("number of hexes processed: " << nproc << " with " << not_in << " not in region (cf nhex: " << this->nhex << ")");
+        gradf[0][rl-1] = IF_IN_BOUNDARY (rl-1, ((f[rl-1] - f[rl-1+NW]) / d), 0);
+        gradf[1][rl-1] = 0;
+
+        // Right Edge
+        for (unsigned int hi=2*rl-1; hi<this->nhex-1; hi += rl) {
+            // x gradient
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - f[hi+NW]) / d), 0);
+            // y gradient
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - (f[hi+NSE] + f[hi+NSW]) / 2.0) / v), 0);
+        }
+
+        // Top Edge
+        gradf[0][this->nhex-rl-1] = IF_IN_BOUNDARY (this->nhex-rl-1, ((f[this->nhex-rl-1]-f[this->nhex-rl-1+NW]) / d), 0);
+        gradf[1][this->nhex-rl-1] = 0;
+        for (unsigned int hi=this->nhex-rl+1; hi<this->nhex-1; ++hi) {
+            // Find x gradient
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) / (d * 2.0)), 0);
+            // Find y gradient
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - f[hi+NSW]) / v), 0);
+        }
+        gradf[0][this->nhex-1] = IF_IN_BOUNDARY (this->nhex-1, ((f[this->nhex-1]-f[this->nhex-1+NW]) / d), 0);
+        gradf[1][this->nhex-1] = 0;
+
+        // Left Edge
+        for (unsigned int hi=rl; hi<this->nhex-rl; hi += rl) {
+            // x gradient
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi]) / d), 0);
+            // y gradient
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NNE] - f[hi+NSE]) / twov), 0);
+        }
+
+        /*
+         * Everything else
+         */
+
+        #pragma omp parallel for
+        for (unsigned int ri=rl; ri<this->nhex-2*rl; ri+=rl) { // Rows
+            for (unsigned int hi=ri+1; hi<(ri+rl-1); ++hi) { // Cols
+                // Find x gradient
+                gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) / (d * 2.0)), 0);
+                // Find y gradient
+                gradf[1][hi] = IF_IN_BOUNDARY (hi, (((f[hi+NNE] - f[hi+NSE]) + (f[hi+NNW] - f[hi+NSW])) / v), 0);
+            }
+        }
     }
 
     /*!

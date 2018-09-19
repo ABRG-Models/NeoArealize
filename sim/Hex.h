@@ -41,10 +41,12 @@ using std::endl;
 #define HEX_HAS_NSW      0x10
 #define HEX_HAS_NSE      0x20
 
+// All hexes marked as boundary hexes, including some that are additional to requirements:
 #define HEX_IS_BOUNDARY      0x40
+// All hexes inside boundary plus as much of the boundary as needed to make a contiguous boundary:
 #define HEX_INSIDE_BOUNDARY  0x80
+// All hexes inside the domain of computation:
 #define HEX_INSIDE_DOMAIN   0x100
-#define HEX_IN_REGION       0x200 // If HEX_IS_BOUNDARY & HEX_INSIDE_BOUNDARY are set.
 //@}
 
 namespace morph2 {
@@ -342,9 +344,6 @@ namespace morph2 {
             }
             if (insideDomain == true) {
                 flgs |= HEX_INSIDE_DOMAIN;
-            }
-            if (insideBoundary == true || boundaryHex == true) {
-                flgs |= HEX_IN_REGION;
             }
             if (has_ne == true) {
                 flgs |= HEX_HAS_NE;

@@ -28,10 +28,46 @@ using morph::ReadCurves;
 using morph::HdfData;
 
 /*!
- * Define this to use manufactured guidance molecules, A, B and C, in
- * contrast to what Karbowski et al did.
+ * Macros for testing neighbours. The step along for neighbours on the
+ * rows above/below is given by:
+ *
+ * Dest  | step
+ * ----------------------
+ * NNE   | +rowlen
+ * NNW   | +rowlen - 1
+ * NSW   | -rowlen
+ * NSE   | -rowlen + 1
  */
-//#define MANUFACTURE_GUIDANCE_MOLECULES 1
+//@{
+#define NE (1)
+#define HAS_NE(hi)  (((hi+NE) < this->nhex)  && (this->hg->d_flags[hi+NE]  & HEX_INSIDE_BOUNDARY > 0))
+
+#define NW (-1)
+#define HAS_NW(hi)  ((hi >= -NW)             && (this->hg->d_flags[hi+NW]  & HEX_INSIDE_BOUNDARY > 0))
+
+#define NNE (this->hg->d_rowlen)
+#define HAS_NNE(hi) (((hi+NNE) < this->nhex) && (this->hg->d_flags[hi+NNE] & HEX_INSIDE_BOUNDARY > 0))
+
+#define NNW (this->hg->d_rowlen-1)
+#define HAS_NNW(hi) (((hi+NNW) < this->nhex) && (this->hg->d_flags[hi+NNW] & HEX_INSIDE_BOUNDARY > 0))
+
+#define NSW (-this->hg->d_rowlen)
+#define HAS_NSW(hi) (hi >= -NSW              && (this->hg->d_flags[hi+NSW] & HEX_INSIDE_BOUNDARY > 0))
+
+#define NSE (1-this->hg->d_rowlen)
+#define HAS_NSE(hi) (hi >= -NSE              && (this->hg->d_flags[hi+NSE] & HEX_INSIDE_BOUNDARY > 0))
+//@}
+
+/*!
+ * Macro to test if hi is in the boundary region (i.e. on the boundary
+ * or inside the boundary).
+ */
+#define IN_BOUNDARY(hi) (this->hg->d_flags[hi] & HEX_INSIDE_BOUNDARY)
+
+/*!
+ * Macro to set a thing to inval if hi is in the boundary region or outval otherwise.
+ */
+#define IF_IN_BOUNDARY(hi, inval, outval) ((this->hg->d_flags[hi] & HEX_INSIDE_BOUNDARY) ? inval : outval)
 
 /*!
  * Enumerates the way that the guidance molecules are set up
@@ -334,7 +370,7 @@ public:
     /*!
      * Sets domainMode for hg. Set up before calling init().
      */
-    bool domainMode = false;
+    bool domainMode = true;
 
     /*!
      * Store Hex positions for saving.
@@ -433,15 +469,16 @@ public:
         double randNoiseOffset = 0.8;
         double randNoiseGain = 0.1;
         for (unsigned int i = 0; i<this->N; ++i) {
-            for (auto h : this->hg->hexen) {
+            #pragma omp parallel for
+            for (unsigned int hi = 0; hi < this->nhex; ++hi) {
                 // boundarySigmoid. Jumps sharply (100, larger is
                 // sharper) over length scale 0.05 to 1. So if
                 // distance from boundary > 0.05, noise has normal
                 // value. Close to boundary, noise is less.
-                vv[i][h.vi] = morph::Tools::randDouble() * randNoiseGain + randNoiseOffset;
-                if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
-                    double bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
-                    vv[i][h.vi] = vv[i][h.vi] * bSig;
+                vv[i][hi] = morph::Tools::randDouble() * randNoiseGain + randNoiseOffset;
+                if (hg->d_distToBoundary[hi] > -0.5) { // It's possible that distToBoundary is set to -1.0
+                    double bSig = 1.0 / ( 1.0 + exp (-100.0*(hg->d_distToBoundary[hi]-0.02)) );
+                    vv[i][hi] = vv[i][hi] * bSig;
                 }
             }
         }
@@ -460,18 +497,17 @@ public:
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid
         this->hg->setBoundary (r.getCorticalPath());
-        // Compute the distances from the boundary
-        this->hg->computeDistanceToBoundary();
         // Vector size comes from number of Hexes in the HexGrid
         this->nhex = this->hg->num();
         // Spatial d comes from the HexGrid, too.
         this->d = this->hg->getd();
+#ifdef XY_NOW_HELD_IN_HG_D_VECTORS
         // Save hex positions in vectors for datafile saving
         for (auto h : this->hg->hexen) {
             this->hgvx.push_back (h.x);
             this->hgvy.push_back (h.y);
         }
-
+#endif
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
         this->resize_vector_vector (this->a);
@@ -626,8 +662,8 @@ public:
      * to fit in with the HDF API.
      */
     void saveHexPositions (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hgvx);
-        dat.add_float_vector ("/y", this->hgvy);
+        dat.add_float_vector ("/x", this->hg->d_x);
+        dat.add_float_vector ("/y", this->hg->d_y);
         // And hex to hex distance:
         dat.add_double ("/d", this->d);
     }
@@ -774,6 +810,7 @@ public:
 
         vector<vector<double> > norm_a;
         this->resize_vector_vector (norm_a);
+        // FIXME Could add omp pragma here.
         for (unsigned int fi = 0; fi < f.size(); ++fi) {
             f[fi] = fmin (fmax (((f[fi]) - minf) * scalef, 0.0), 1.0);
         }
@@ -797,14 +834,14 @@ public:
         double csum = 0.0;
         #pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
-            Hex* h = this->hg->vhexen[hi];
-            n[h->vi] = 0;
+            n[hi] = 0;
             for (unsigned int i=0; i<N; ++i) {
-                n[h->vi] += c[i][h->vi];
+                n[hi] += IF_IN_BOUNDARY (hi, c[i][hi], 0);
             }
-            csum += c[0][h->vi];
-            n[h->vi] = 1. - n[h->vi];
-            nsum += n[h->vi];
+            // Make csum, nsum operate only within boundary.
+            csum += IF_IN_BOUNDARY (hi, c[0][hi], 0);
+            n[hi] = 1. - n[hi];
+            nsum += IF_IN_BOUNDARY (hi, n[hi], 0);
         }
         if (this->stepCount % 100 == 0) {
             DBG ("sum of all n is " << nsum);
@@ -815,25 +852,30 @@ public:
 
         // Pre-compute intermediate val:
         for (unsigned int i=0; i<this->N; ++i) {
+            DBG2 ("After coupling compute, c["<<i<<"][4159]: " << c[i][4159]);
+            DBG2 ("After coupling compute, n["<<i<<"][4159]: " << n[4159]);
             #pragma omp parallel for shared(i,k)
             for (unsigned int h=0; h<this->nhex; ++h) {
-                this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k);
+                this->alpha_c_beta_na[i][h] = IF_IN_BOUNDARY (h, (alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k)), 0);
             }
         }
 
         // Runge-Kutta:
-        // No OMP here - only N<10 loops
+        // No OMP here - there are only N(<10) loops, which isn't
+        // enough to load the threads up.
         for (unsigned int i=0; i<this->N; ++i) {
 
             // Runge-Kutta integration for A
             vector<double> q(this->nhex, 0.0);
-            // Function call is bad already!
+            DBG2 ("Before compute_divJ, a["<<i<<"][4159]=" << a[i][4159]);
             this->compute_divJ (a[i], i); // populates divJ[i]
 
             vector<double> k1(this->nhex, 0.0);
             #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
+                // Both divJ and alpha_c_beta_na computed with an IF_IN_BOUNDARY test, so this doesn't need it:
                 k1[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                // Because k1 is 0 if not IN_BOUNDARY, then this is save without IF_IN_BOUNDARY test:
                 q[h] = this->a[i][h] + k1[h] * halfdt;
             }
 
@@ -841,7 +883,9 @@ public:
             this->compute_divJ (q, i);
             #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
+                // Both divJ and alpha_c_beta_na computed with an IF_IN_BOUNDARY test, so this doesn't need it:
                 k2[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                // Because k2 is 0 if not IN_BOUNDARY, then this is save without IF_IN_BOUNDARY test:
                 q[h] = this->a[i][h] + k2[h] * halfdt;
             }
 
@@ -849,7 +893,9 @@ public:
             this->compute_divJ (q, i);
             #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
+                // Both divJ and alpha_c_beta_na computed with an IF_IN_BOUNDARY test, so this doesn't need it:
                 k3[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                // Because k3 is 0 if not IN_BOUNDARY, then this is save without IF_IN_BOUNDARY test:
                 q[h] = this->a[i][h] + k3[h] * dt;
             }
 
@@ -857,7 +903,9 @@ public:
             this->compute_divJ (q, i);
             #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
+                // Both divJ and alpha_c_beta_na computed with an IF_IN_BOUNDARY test, so this doesn't need it:
                 k4[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                // Because k1,2,3,4 are 0 if not IN_BOUNDARY, then this is save without IF_IN_BOUNDARY test:
                 a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * sixthdt;
             }
         }
@@ -867,9 +915,9 @@ public:
 
             #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
-                this->betaterm[i][h] = beta[i] * n[h] * pow (a[i][h], k);
+                this->betaterm[i][h] = IF_IN_BOUNDARY (h, (beta[i] * n[h] * pow (a[i][h], k)), 0);
             }
-            DBG2 ("(c) betaterm[" << i << "][0]: " << betaterm[i][0]);
+            DBG2 ("(c) betaterm[" << i << "][4159]: " << betaterm[i][4159]);
 
             // Runge-Kutta integration for C (or ci)
             vector<double> q(nhex,0.);
@@ -878,47 +926,31 @@ public:
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k1[h] * halfdt;
             }
-            DBG2 ("(c) After RK stage 1, q[0]: " << q[0]);
+            DBG2 ("(c) After RK stage 1, q[4159]: " << q[4159]);
 
             vector<double> k2 = compute_dci_dt (q, i);
             #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k2[h] * halfdt;
             }
-            DBG2 ("(c) After RK stage 2, q[0]: " << q[0]);
+            DBG2 ("(c) After RK stage 2, q[4159]: " << q[4159]);
 
             vector<double> k3 = compute_dci_dt (q, i);
             #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k3[h] * dt;
             }
-            DBG2 ("(c) After RK stage 3, q[0]: " << q[0]);
+            DBG2 ("(c) After RK stage 3, q[4159]: " << q[4159]);
 
             vector<double> k4 = compute_dci_dt (q, i);
             #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * sixthdt;
             }
-            DBG2 ("(c) After RK stage 4, c["<<i<<"][0]: " << c[i][0]);
+            DBG2 ("(c) After RK stage 4, c["<<i<<"][4159]: " << c[i][4159]);
+            DBG2 ("(c) After RK stage 4, n["<<i<<"][4159]: " << n[4159]);
 
             DBG2("(c) Debug c["<<i<<"]");
-        }
-    }
-
-    /*!
-     * Examine the value in each Hex of the hexgrid of the scalar
-     * field f. If abs(f[h]) exceeds the size of dangerThresh, then
-     * output debugging information.
-     */
-    void debug_values (vector<double>& f, double dangerThresh) {
-        for (auto h : this->hg->hexen) {
-            if (abs(f[h.vi]) > dangerThresh) {
-                DBG ("Blow-up threshold exceeded at Hex.vi=" << h.vi << " ("<< h.ri <<","<< h.gi <<")" <<  ": " << f[h.vi]);
-                unsigned int wait = 0;
-                while (wait++ < 120) {
-                    usleep (1000000);
-                }
-            }
         }
     }
 
@@ -931,50 +963,93 @@ public:
     void spacegrad2D (vector<double>& f, array<vector<double>, 2>& gradf) {
 
         // Note - East is positive x; North is positive y. Does this match how it's drawn in the display??
-        #pragma omp parallel for schedule(static)
-        for (unsigned int hi=0; hi<this->nhex; ++hi) {
-            Hex* h = this->hg->vhexen[hi];
+        double d = this->hg->getd();
+        double v = this->hg->getv();
+        double twov = v+v;
 
-            gradf[0][h->vi] = 0.0;
-            gradf[1][h->vi] = 0.0;
+        // Num processed. Debugging.
+        unsigned int nproc = 0;
+        unsigned int not_in = 0;
+
+#pragma omp parallel for schedule(static)
+        for (unsigned int hi=0; hi<this->nhex; ++hi) {
+
+            // We have this->hg->d_x[hi] d_y[hi] d_ri, d_gi, d_flags, d_rowlen, d_numrows, d_size
+            // For any hex, here's how to get to the neighbours:
+            // E  : +1
+            // NE : -d_rowlen
+            // NW : -d_rowlen-1
+            // W  : -1
+            // SW : +d_rowlen
+            // SE : +d_rowlen+1
+
+            // h->has_ne becomes (this->hg->d_flags[hi+NE]&HEX_INSIDE_BOUNDARY)
+            // h->ne->vi becomes hi+NE
+
+            // Instead of this use IF_IN_BOUNDARY, having pre-computed the domain edge.
+            if (!IN_BOUNDARY(hi)) {
+                gradf[0][hi] = 0.0;
+                gradf[1][hi] = 0.0;
+                not_in++;
+                continue;
+            }
+
+            nproc++;
 
             // Find x gradient
-            if (h->has_ne && h->has_nw) {
-                gradf[0][h->vi] = (f[h->ne->vi] - f[h->nw->vi]) / ((double)h->d * 2.0);
-            } else if (h->has_ne) {
-                gradf[0][h->vi] = (f[h->ne->vi] - f[h->vi]) / (double)h->d;
-            } else if (h->has_nw) {
-                gradf[0][h->vi] = (f[h->vi] - f[h->nw->vi]) / (double)h->d;
+            if (HAS_NE(hi) && HAS_NW(hi)) {
+                // USE IF_IN_BOUNDARY() here, but there's more to do first.
+                gradf[0][hi] = (f[hi+NE] - f[hi+NW]) / (d * 2.0);
+                if (hi == 4159) {
+                    DBG2("E W. f[ne]:" << f[hi+NE] << ", f[nw]:" << f[hi+NW] << ", f[hi]=" << f[hi] << " x/y" << this->hg->d_x[hi] << "," << this->hg->d_y[hi]);
+                }
+            } else if (HAS_NE(hi)) {
+                gradf[0][hi] = (f[hi+NE] - f[hi]) / d;
+            } else if (HAS_NW(hi)) {
+                gradf[0][hi] = (f[hi] - f[hi+NW]) / d;
             } else {
                 // zero gradient in x direction as no neighbours in
                 // those directions? Or possibly use the average of
                 // the gradient between the nw,ne and sw,se neighbours
+                gradf[0][hi] = 0.0;
             }
 
             // Find y gradient
-            if (h->has_nnw && h->has_nne && h->has_nsw && h->has_nse) {
+            if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
-                gradf[1][h->vi] = ((f[h->nne->vi] - f[h->nse->vi]) + (f[h->nnw->vi] - f[h->nsw->vi])) / (double)h->getV();
+                gradf[1][hi] = ((f[hi+NNE] - f[hi+NSE]) + (f[hi+NNW] - f[hi+NSW])) / v;
 
-            } else if (h->has_nnw && h->has_nne ) {
-                //if (h->vi == 0) { DBG ("y case 2"); }
-                gradf[1][h->vi] = ( (f[h->nne->vi] + f[h->nnw->vi]) / 2.0 - f[h->vi]) / (double)h->getV();
+            } else if (HAS_NNW(hi) && HAS_NNE(hi)) {
+                gradf[1][hi] = ( (f[hi+NNE] + f[hi+NNW]) / 2.0 - f[hi]) / v;
 
-            } else if (h->has_nsw && h->has_nse) {
-                //if (h->vi == 0) { DBG ("y case 3"); }
-                gradf[1][h->vi] = (f[h->vi] - (f[h->nse->vi] + f[h->nsw->vi]) / 2.0) / (double)h->getV();
+            } else if (HAS_NSW(hi) && HAS_NSE(hi)) {
+                gradf[1][hi] = (f[hi] - (f[hi+NSE] + f[hi+NSW]) / 2.0) / v;
 
-            } else if (h->has_nnw && h->has_nsw) {
-                //if (h->vi == 0) { DBG ("y case 4"); }
-                gradf[1][h->vi] = (f[h->nnw->vi] - f[h->nsw->vi]) / (double)h->getTwoV();
+            } else if (HAS_NNW(hi) && HAS_NSW(hi)) {
+                gradf[1][hi] = (f[hi+NNW] - f[hi+NSW]) / twov;
 
-            } else if (h->has_nne && h->has_nse) {
-                //if (h->vi == 0) { DBG ("y case 5"); }
-                gradf[1][h->vi] = (f[h->nne->vi] - f[h->nse->vi]) / (double)h->getTwoV();
+            } else if (HAS_NNE(hi) && HAS_NSE(hi)) {
+                gradf[1][hi] = (f[hi+NNE] - f[hi+NSE]) / twov;
+
             } else {
                 // Leave grady at 0
+                gradf[1][hi] = 0.0;
             }
+#if 0
+            if (hi == 4159) {
+                DBG ("Hex "<<hi<<" has r/g:" << this->hg->d_ri[hi] << "," << this->hg->d_gi[hi]);
+                DBG2 ("Hex "<<hi<<" has neighbours: "
+                     << (HAS_NE(hi)?"NE, ":"no NE, ")
+                     << (HAS_NNE(hi)?"NNE, ":"no NNE, ")
+                     << (HAS_NNW(hi)?"NNW, ":"no NNW, ")
+                     << (HAS_NW(hi)?"NW, ":"no NW, ")
+                     << (HAS_NSW(hi)?"NSW, ":"no NSW, ")
+                     << (HAS_NSE(hi)?"NSE.":"no NSE."));
+                DBG ("gradf[0]["<<hi<<"] = " << gradf[0][hi] << ", gradf[1]["<<hi<<"] = " << gradf[1][hi]);
+            }
+#endif
         }
+        DBG2 ("number of hexes processed: " << nproc << " with " << not_in << " not in region (cf nhex: " << this->nhex << ")");
     }
 
     /*!
@@ -985,7 +1060,7 @@ public:
         vector<double> dci_dt (this->nhex, 0.0);
         #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; h++) {
-            dci_dt[h] = this->betaterm[i][h] - this->alpha[i] * f[h];
+            dci_dt[h] = IF_IN_BOUNDARY (h, (this->betaterm[i][h] - this->alpha[i] * f[h]), 0);
         }
         return dci_dt;
     }
@@ -1006,115 +1081,123 @@ public:
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
+        // Like spacegrad2D, I'll move away from this heavily
+        // conditionaled code to process the majority without
+        // conditions.
+
         #pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
-            Hex* h = this->hg->vhexen[hi];
             // 1. The D Del^2 a_i term
             // Compute the sum around the neighbours
-            double thesum = -6 * fa[h->vi];
-            if (h->has_ne) {
-                thesum += fa[h->ne->vi];
+            double thesum = -6 * fa[hi];
+            if (HAS_NE(hi)) {
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi+NE], 0);
             } else {
                 // Apply boundary condition
             }
-            if (h->has_nne) {
-                thesum += fa[h->nne->vi];
+            if (HAS_NNE(hi)) {
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi+NNE], 0);
             } else {
-                thesum += fa[h->vi]; // A ghost neighbour-east with same value as Hex_0
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi], 0); // A ghost neighbour-east with same value as Hex_0
             }
-            if (h->has_nnw) {
-                thesum += fa[h->nnw->vi];
+            if (HAS_NNW(hi)) {
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi+NNW], 0);
             } else {
-                thesum += fa[h->vi];
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi], 0);
             }
-            if (h->has_nw) {
-                thesum += fa[h->nw->vi];
+            if (HAS_NW(hi)) {
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi+NW], 0);
             } else {
-                thesum += fa[h->vi];
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi], 0);
             }
-            if (h->has_nsw) {
-                thesum += fa[h->nsw->vi];
+            if (HAS_NSW(hi)) {
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi+NSW], 0);
             } else {
-                thesum += fa[h->vi];
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi], 0);
             }
-            if (h->has_nse) {
-                thesum += fa[h->nse->vi];
+            if (HAS_NSE(hi)) {
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi+NSE], 0);
             } else {
-                thesum += fa[h->vi];
+                thesum += IF_IN_BOUNDARY (hi,  fa[hi], 0);
             }
             // Multiply bu 2D/3d^2
             double term1 = (this->D * 2) / (3 * this->d * this->d) * thesum;
 
             // 2. The a div(g) term. Two sums for this.
             double term2 = 0.0;
+
+            // FIXME: Could be incorporated into the code above, to
+            // reduce number of HAS_NE()[etc] calls. However, leave
+            // structure similar until I can say this code produces
+            // the right result.
+            //
             // First sum
-            if (h->has_ne) {
-                term2 += /*cos (0)*/ (this->g[i][0][h->ne->vi] + this->g[i][0][h->vi]);
+            if (HAS_NE(hi)) {
+                term2 += /*cos (0)*/ (this->g[i][0][hi+NE] + this->g[i][0][hi]);
             } else {
                 // Boundary condition _should_ be satisfied by
                 // sigmoidal roll-off of g towards the boundary, so
-                // add only g[i][0][h->vi]
-                term2 += /*cos (0)*/ (this->g[i][0][h->vi]);
+                // add only g[i][0][hi]
+                term2 += /*cos (0)*/ (this->g[i][0][hi]);
             }
-            if (h->has_nne) {
-                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][h->nne->vi] + this->g[i][0][h->vi]);
+            if (HAS_NNE(hi)) {
+                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][hi+NNE] + this->g[i][0][hi]);
             } else {
-                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][h->vi]);
+                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][hi]);
             }
-            if (h->has_nnw) {
-                term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][h->nnw->vi] + this->g[i][0][h->vi]);
+            if (HAS_NNW(hi)) {
+                term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][hi+NNW] + this->g[i][0][hi]);
             } else {
-                term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][h->vi]);
+                term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][hi]);
             }
-            if (h->has_nw) {
-                term2 -= /*cos (180)*/ (this->g[i][0][h->nw->vi] + this->g[i][0][h->vi]);
+            if (HAS_NW(hi)) {
+                term2 -= /*cos (180)*/ (this->g[i][0][hi+NW] + this->g[i][0][hi]);
             } else {
-                term2 -= /*cos (180)*/ (this->g[i][0][h->vi]);
+                term2 -= /*cos (180)*/ (this->g[i][0][hi]);
             }
-            if (h->has_nsw) {
-                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][h->nsw->vi] + this->g[i][0][h->vi]);
+            if (HAS_NSW(hi)) {
+                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][hi+NSW] + this->g[i][0][hi]);
             } else {
-                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][h->vi]);
+                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][hi]);
             }
-            if (h->has_nse) {
-                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][h->nse->vi] + this->g[i][0][h->vi]);
+            if (HAS_NSE(hi)) {
+                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][hi+NSE] + this->g[i][0][hi]);
             } else {
-                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][h->vi]);
+                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][hi]);
             }
             // 2nd sum
-            //term2 += sin (0) * (this->g[i][1][h->ne->vi] + this->g[i][1][h->vi]);
-            if (h->has_nne) {
-                term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][h->nne->vi] + this->g[i][1][h->vi]);
+            //term2 += sin (0) * (this->g[i][1][hi+NE] + this->g[i][1][hi]);
+            if (HAS_NNE(hi)) {
+                term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi+NNE] + this->g[i][1][hi]);
             } else {
-                term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
+                term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
-            if (h->has_nnw) {
-                term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][h->nnw->vi] + this->g[i][1][h->vi]);
+            if (HAS_NNW(hi)) {
+                term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi+NNW] + this->g[i][1][hi]);
             } else {
-                term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
+                term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
-            //term2 += sin (180) * (this->g[i][1][h->nw->vi] + this->g[i][1][h->vi]);
-            if (h->has_nsw) {
-                term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][h->nsw->vi] + this->g[i][1][h->vi]);
+            //term2 += sin (180) * (this->g[i][1][hi+NW] + this->g[i][1][hi]);
+            if (HAS_NSW(hi)) {
+                term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi+NSW] + this->g[i][1][hi]);
             } else {
-                term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
+                term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
-            if (h->has_nse) {
-                term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][h->nse->vi] + this->g[i][1][h->vi]);
+            if (HAS_NSE(hi)) {
+                term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi+NSE] + this->g[i][1][hi]);
             } else {
-                term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
+                term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
 
             term2 /= (3.0 * this->d);
-            term2 *= fa[h->vi];
+            term2 *= fa[hi];
 
             // 3. Third term is this->g . grad a_i. Should not
             // contribute to J, as g(x) decays towards boundary.
-            double term3 = this->g[i][0][h->vi] * this->grad_a[i][0][h->vi]
-                + this->g[i][1][h->vi] * this->grad_a[i][1][h->vi];
+            double term3 = this->g[i][0][hi] * this->grad_a[i][0][hi] + this->g[i][1][hi] * this->grad_a[i][1][hi];
 
-            this->divJ[i][h->vi] = term1 + term2 + term3;
+            this->divJ[i][hi] = term1 + term2 + term3;
         }
     }
 
@@ -1184,12 +1267,13 @@ public:
      * for a long time.
      */
     void runExpressionDynamics (void) {
-        #pragma omp parallel for
         for (unsigned int t=0; t<300000; ++t) { // 300000 matches Stuart's 1D Karbowski model
-            for (auto h : this->hg->hexen) {
-                emx[h.vi] += tau_emx * (-emx[h.vi] + eta_emx[h.vi] / (1. + w2 * fgf[h.vi] + v2 * pax[h.vi]));
-                pax[h.vi] += tau_pax * (-pax[h.vi] + eta_pax[h.vi] / (1. + v1 * emx[h.vi]));
-                fgf[h.vi] += tau_fgf * (-fgf[h.vi] + eta_fgf[h.vi] / (1. + w1 * emx[h.vi]));
+            // FIXME Can be converted to run in alternative way.
+            #pragma omp parallel for
+            for (unsigned int hi = 0; hi<this->nhex; ++hi) {
+                emx[hi] += tau_emx * (-emx[hi] + eta_emx[hi] / (1. + w2 * fgf[hi] + v2 * pax[hi]));
+                pax[hi] += tau_pax * (-pax[hi] + eta_pax[hi] / (1. + v1 * emx[hi]));
+                fgf[hi] += tau_fgf * (-fgf[hi] + eta_fgf[hi] / (1. + w1 * emx[hi]));
             }
         }
     }
@@ -1199,6 +1283,7 @@ public:
      */
     void populateChemoAttractants (void) {
         // chemo-attraction gradient. cf Fig 1 of Karb 2004
+        // NOTE: May parallelise fine. Init function in any case, so not important.
         #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             this->rhoA[h] = (kA/2.)*(1.+tanh((fgf[h]-theta1)/sigmaA));
@@ -1230,13 +1315,15 @@ public:
         double cosphi = (double) cos (phi);
         double sinphi = (double) sin (phi);
 
-        for (auto h : this->hg->hexen) {
-            double x_ = (h.x * cosphi) + (h.y * sinphi);
-            this->rhoA[h.vi] = gain * exp(-((x_-xoffA)*(x_-xoffA)) / sigma);
-            this->rhoB[h.vi] = gain * exp(-((x_-xoffB)*(x_-xoffB)) / sigma);
-            this->rhoC[h.vi] = gain * exp(-((x_-xoffC)*(x_-xoffC)) / sigma);
+        for (unsigned int hi=0; hi<this->nhex; ++hi) {
+            double x_ = (this->hg->d_x[hi] * cosphi) + (this->hg->d_y[hi] * sinphi);
+            this->rhoA[hi] = gain * exp(-((x_-xoffA)*(x_-xoffA)) / sigma);
+            this->rhoB[hi] = gain * exp(-((x_-xoffB)*(x_-xoffB)) / sigma);
+            this->rhoC[hi] = gain * exp(-((x_-xoffC)*(x_-xoffC)) / sigma);
+            if (hi == 4159) {
+                DBG("rhoA/B/C[hi="<<hi<<"]: " << rhoA[hi] << "/" << rhoB[hi] << "/" << rhoC[hi] << " x/y: " << this->hg->d_x[hi] <<"," << this->hg->d_y[hi]);
+            }
         }
     }
-
 
 }; // RD_2D_Karb

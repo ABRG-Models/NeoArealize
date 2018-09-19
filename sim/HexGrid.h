@@ -80,6 +80,11 @@ namespace morph2 {
         alignas(8) vector<unsigned int> d_flags;
 
         /*!
+         * Distance to boundary for any hex.
+         */
+        alignas(8) vector<float> d_distToBoundary;
+
+        /*!
          * The length of a row in the domain. The first Hex in the
          * first row will overhang to the left.
          */
@@ -104,7 +109,7 @@ namespace morph2 {
          * boundary is expected to grow during a simulation.
          */
         //@{
-        unsigned int d_growthbuffer_horz = 0;
+        unsigned int d_growthbuffer_horz = 5;
         unsigned int d_growthbuffer_vert = 0;
         //@}
 
@@ -302,7 +307,13 @@ namespace morph2 {
          * Recursively mark hexes to be kept if they are inside the
          * rectangular hex domain.
          */
-        void markHexesInsideDomain (const array<int, 6>& extnts);
+        void markHexesInsideRectangularDomain (const array<int, 6>& extnts);
+
+        /*!
+         * Mark hexes to be kept if they are in a parallelogram
+         * domain.
+         */
+        void markHexesInsideParallelogramDomain (const array<int, 6>& extnts);
 
         /*!
          * Discard hexes in this->hexen that are outside the boundary

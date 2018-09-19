@@ -157,13 +157,15 @@ morph2::HexGrid::setBoundary (const BezCurvePath& p)
         }
 
         // Check that the boundary is contiguous.
-        set<unsigned int> seen;
-        list<Hex>::iterator hi = nearbyBoundaryPoint;
-        if (this->boundaryContiguous (nearbyBoundaryPoint, hi, seen) == false) {
-            stringstream ee;
-            ee << "The boundary which was constructed from "
-               << p.name << " is not a contiguous sequence of hexes.";
-            throw runtime_error (ee.str());
+        {
+            set<unsigned int> seen;
+            list<Hex>::iterator hi = nearbyBoundaryPoint;
+            if (this->boundaryContiguous (nearbyBoundaryPoint, hi, seen) == false) {
+                stringstream ee;
+                ee << "The boundary which was constructed from "
+                   << p.name << " is not a contiguous sequence of hexes.";
+                throw runtime_error (ee.str());
+            }
         }
 
         if (this->domainMode == false) {
@@ -176,6 +178,17 @@ morph2::HexGrid::setBoundary (const BezCurvePath& p)
             // those hexes outside the regular domain and populate all the
             // d_ vectors.
             this->setDomain();
+
+            // Why doesn't this work?
+            set<unsigned int> seen;
+            list<Hex>::iterator hi = nearbyBoundaryPoint;
+            if (this->boundaryContiguous (nearbyBoundaryPoint, hi, seen) == false) {
+                stringstream ee;
+                ee << "The boundary which was constructed from "
+                   << p.name << " is not a contiguous sequence of hexes now that the parallelogram domain has been set. Increase HexGrid::d_growthbuffer_horz, which is currently " << d_growthbuffer_horz;
+                throw runtime_error (ee.str());
+            }
+
         }
     }
 }
@@ -394,7 +407,7 @@ morph2::HexGrid::markHexesInside (list<Hex>::iterator hi)
 }
 
 void
-morph2::HexGrid::markHexesInsideDomain (const array<int, 6>& extnts)
+morph2::HexGrid::markHexesInsideRectangularDomain (const array<int, 6>& extnts)
 {
     // Check ri,gi,bi and reduce to equivalent ri,gi,bi=0.
     // Use gi to determine whether outside top/bottom region
@@ -466,6 +479,27 @@ morph2::HexGrid::markHexesInsideDomain (const array<int, 6>& extnts)
         } else {
             // inside
             DBG2 ("INSIDE. Horz,vert index: " << hz << "," << hi->gi);
+            hi->insideDomain = true;
+        }
+        ++hi;
+    }
+}
+
+void
+morph2::HexGrid::markHexesInsideParallelogramDomain (const array<int, 6>& extnts)
+{
+    // Check ri,gi,bi and reduce to equivalent ri,gi,bi=0.
+    // Use gi to determine whether outside top/bottom region
+    // Add gi contribution to ri to determine whether outside left/right region
+    auto hi = this->hexen.begin();
+    while (hi != this->hexen.end()) {
+        if (hi->ri < extnts[0]
+            || hi->ri > extnts[1]
+            || hi->gi < extnts[2]
+            || hi->gi > extnts[3]) {
+            // outside
+        } else {
+            // inside
             hi->insideDomain = true;
         }
         ++hi;
@@ -574,6 +608,7 @@ morph2::HexGrid::d_push_back (list<Hex>::iterator hi)
     d_gi.push_back (hi->gi);
     d_bi.push_back (hi->bi);
     d_flags.push_back (hi->getFlags());
+    d_distToBoundary.push_back (hi->distToBoundary);
 }
 
 void
@@ -589,12 +624,38 @@ morph2::HexGrid::setDomain (void)
     this->d_size = this->d_rowlen * this->d_numrows;
     DBG("Initially, d_rowlen=" << d_rowlen << ", d_numrows=" << d_numrows << ", d_size=" << d_size);
 
+#ifdef RECTANGULAR_DOMAINS
     // 2. Mark Hexes inside and outside the domain.
     // Mark those hexes inside the boundary
-    this->markHexesInsideDomain (extnts);
+    this->markHexesInsideRectangularDomain (extnts);
+#else
+    this->markHexesInsideParallelogramDomain (extnts);
+#endif
 
     // 3. Discard hexes outside domain
     this->discardOutsideDomain();
+
+    // 3.5 Mark hexes inside boundary?
+    list<Hex>::iterator centroidHex = this->findHexNearest (this->boundaryCentroid);
+    this->markHexesInside (centroidHex);
+#ifdef DEBUG
+    {
+        // Do a little count of them:
+        unsigned int numInside = 0;
+        unsigned int numOutside = 0;
+        for (auto hi : this->hexen) {
+            if (hi.insideBoundary == true) {
+                ++numInside;
+            } else {
+                ++numOutside;
+            }
+        }
+        DBG ("Num inside: " << numInside << "; num outside: " << numOutside);
+    }
+#endif
+
+    // Before populating d_ vectors, also compute the distance to boundary
+    this->computeDistanceToBoundary();
 
     // 4. Populate d_ vectors
     // Use neighbour relations to go from bottom left to top right.
@@ -630,10 +691,9 @@ morph2::HexGrid::setDomain (void)
     // Now raster through the hexes, building the d_ vectors
     this->d_clear();
 
+#ifdef RECTANGULAR_DOMAINS
     bool next_row_ne = true;
-
     this->d_push_back (hi);
-
     do {
         hi = hi->ne;
 
@@ -662,7 +722,37 @@ morph2::HexGrid::setDomain (void)
             }
         }
     } while (hi->has_ne == true);
+#else
+    this->d_push_back (hi); // Push back the first one, which is guaranteed to have a NE
+    while (hi->has_ne == true) {
 
+        // Step to new hex to the E
+        hi = hi->ne;
+
+        if (hi->has_ne == false) {
+            // New hex has no NE, so it is on end of row.
+            if (hi->gi == extnts[3]) {
+                // on end of top row and no neighbour east, so finished.
+                DBG ("Fin. (top row)");
+                // push back and break
+                this->d_push_back (hi);
+                break;
+            } else {
+                // On end of non-top row, so push back...
+                this->d_push_back (hi);
+                // do the 'carriage return'...
+                hi = blh->nne;
+                // And push that back...
+                this->d_push_back (hi);
+                // Update the new 'start of last row' iterator
+                blh = hi;
+            }
+        } else {
+            // New hex does have neighbour east, so just push it back.
+            this->d_push_back (hi);
+        }
+    }
+#endif
     DBG ("Size of d_x: " << this->d_x.size() << " and d_size=" << this->d_size);
 }
 

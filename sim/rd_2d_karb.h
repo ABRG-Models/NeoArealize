@@ -9,9 +9,6 @@
 #include <array>
 #include <iomanip>
 #include <cmath>
-#ifdef __GLN__ // Currently I've only tested OpenMP on Linux
-#include <omp.h>
-#endif
 #include <hdf5.h>
 #include <unistd.h>
 
@@ -448,7 +445,7 @@ public:
 
         DBG ("called");
         // Create a HexGrid
-        this->hg = new HexGrid (this->hextohex_d, 3);
+        this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid
@@ -821,7 +818,6 @@ public:
         }
 
         // Runge-Kutta:
-        #pragma omp parallel for
         for (unsigned int i=0; i<this->N; ++i) {
 
             DBG2 ("(a) alpha_c_beta_na["<<i<<"][0] = " << this->alpha_c_beta_na[i][0]);
@@ -1018,7 +1014,7 @@ public:
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
-        #pragma omp parallel for
+#pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             Hex* h = this->hg->vhexen[hi];

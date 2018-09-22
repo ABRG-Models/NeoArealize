@@ -334,7 +334,7 @@ public:
      */
     void init (const list<Hex>& pHexes) {
         // Create a HexGrid
-        this->hg = new HexGrid (this->hextohex_d, 3);
+        this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         this->hg->setBoundary (pHexes);
         this->init_common();
     }
@@ -345,7 +345,7 @@ public:
      */
     void init (void) {
         // Create a HexGrid
-        this->hg = new HexGrid (this->hextohex_d, 3);
+        this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid

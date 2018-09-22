@@ -70,7 +70,7 @@ int main (int argc, char **argv)
     }
 
     // Start the loop
-    unsigned int maxSteps = 500;
+    unsigned int maxSteps = 2000;
     bool finished = false;
     while (finished == false) {
         // Step the model

@@ -224,7 +224,7 @@ public:
 
         DBG ("called");
         // Create a HexGrid
-        this->hg = new HexGrid (0.01, 3);
+        this->hg = new HexGrid (0.01, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid

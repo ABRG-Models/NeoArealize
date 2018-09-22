@@ -215,7 +215,7 @@ public:
 
         DBG ("called");
         // Create a HexGrid
-        this->hg = new HexGrid (0.01, 3);
+        this->hg = new HexGrid (0.01, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid
@@ -259,7 +259,6 @@ public:
             DBG ("System computed " << this->stepCount << " times so far...");
         }
 
-        #pragma omp parallel for
         for (unsigned int i=0; i<this->N; ++i) {
 
             this->compute_poiss (n[i],c[i],i);  // compute the non-linear Poission term in Eq1
@@ -289,7 +288,7 @@ public:
 
         double norm  = (2) / (3 * this->d * this->d);
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             Hex* h = this->hg->vhexen[hi];
@@ -341,7 +340,7 @@ public:
 
         // Compute non-linear term
 
-#pragma omp parallel for
+#pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             Hex* h = this->hg->vhexen[hi];

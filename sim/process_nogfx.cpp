@@ -58,5 +58,7 @@ int main (int argc, char **argv)
         }
     }
 
+    RD.saveC();
+
     return rtn;
 };

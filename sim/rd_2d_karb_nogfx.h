@@ -455,7 +455,11 @@ public:
 
         DBG ("called");
         // Create a HexGrid
-        this->hg = new HexGrid (this->hextohex_d, 3, 0, this->domainMode);
+        if (this->domainMode == true) {
+            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph2::HexDomainShape::Parallelogram);
+        } else {
+            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph2::HexDomainShape::Boundary);
+        }
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid

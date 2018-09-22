@@ -28,6 +28,12 @@ using morph::ReadCurves;
 using morph::HdfData;
 
 /*!
+ * Macro to test if hi is in the boundary region (i.e. on the boundary
+ * or inside the boundary).
+ */
+#define IN_BOUNDARY(hi) ((this->hg->d_flags[hi] & HEX_INSIDE_BOUNDARY) > 0)
+
+/*!
  * Macros for testing neighbours. The step along for neighbours on the
  * rows above/below is given by:
  *
@@ -40,34 +46,35 @@ using morph::HdfData;
  */
 //@{
 #define NE (1)
-#define HAS_NE(hi)  (((hi+NE) < this->nhex)  && (this->hg->d_flags[hi+NE]  & HEX_INSIDE_BOUNDARY > 0))
+#define HAS_NE(hi)  (IN_BOUNDARY(hi)   && ((hi+NE) < this->nhex)  && IN_BOUNDARY(hi+NE))
 
 #define NW (-1)
-#define HAS_NW(hi)  ((hi >= -NW)             && (this->hg->d_flags[hi+NW]  & HEX_INSIDE_BOUNDARY > 0))
+#define HAS_NW(hi)  (IN_BOUNDARY(hi)   && (hi >= -NW)             && IN_BOUNDARY(hi+NW))
 
-#define NNE (this->hg->d_rowlen)
-#define HAS_NNE(hi) (((hi+NNE) < this->nhex) && (this->hg->d_flags[hi+NNE] & HEX_INSIDE_BOUNDARY > 0))
+#define NNE (this->rl)
+#define HAS_NNE(hi) (IN_BOUNDARY(hi)   && ((hi+NNE) < this->nhex) && IN_BOUNDARY(hi+NNE))
 
-#define NNW (this->hg->d_rowlen-1)
-#define HAS_NNW(hi) (((hi+NNW) < this->nhex) && (this->hg->d_flags[hi+NNW] & HEX_INSIDE_BOUNDARY > 0))
+#define NNW (this->rl-1)
+#define HAS_NNW(hi) (IN_BOUNDARY(hi)   && ((hi+NNW) < this->nhex) && IN_BOUNDARY(hi+NNW))
 
-#define NSW (-this->hg->d_rowlen)
-#define HAS_NSW(hi) (hi >= -NSW              && (this->hg->d_flags[hi+NSW] & HEX_INSIDE_BOUNDARY > 0))
+#define NSW (-this->rl)
+#define HAS_NSW(hi) (IN_BOUNDARY(hi)   && (hi >= -NSW)            && IN_BOUNDARY(hi+NSW))
 
-#define NSE (1-this->hg->d_rowlen)
-#define HAS_NSE(hi) (hi >= -NSE              && (this->hg->d_flags[hi+NSE] & HEX_INSIDE_BOUNDARY > 0))
+#define NSE (1-this->rl)
+#define HAS_NSE(hi) (IN_BOUNDARY(hi)   && (hi >= -NSE)            && IN_BOUNDARY(hi+NSE))
 //@}
-
-/*!
- * Macro to test if hi is in the boundary region (i.e. on the boundary
- * or inside the boundary).
- */
-#define IN_BOUNDARY(hi) (this->hg->d_flags[hi] & HEX_INSIDE_BOUNDARY)
 
 /*!
  * Macro to set a thing to inval if hi is in the boundary region or outval otherwise.
  */
-#define IF_IN_BOUNDARY(hi, inval, outval) ((this->hg->d_flags[hi] & HEX_INSIDE_BOUNDARY) ? inval : outval)
+#define IF_IN_BOUNDARY(hi, inval, outval) (((this->hg->d_flags[hi] & HEX_INSIDE_BOUNDARY) > 0) ? inval : outval)
+
+#define IF_HAS_NE(hi, yesval, noval) ((HAS_NE(hi))  ? yesval : noval)
+#define IF_HAS_NNE(hi, yesval, noval) (HAS_NNE(hi) ? yesval : noval)
+#define IF_HAS_NNW(hi, yesval, noval) (HAS_NNW(hi) ? yesval : noval)
+#define IF_HAS_NW(hi, yesval, noval) (HAS_NW(hi)  ? yesval : noval)
+#define IF_HAS_NSW(hi, yesval, noval) (HAS_NSW(hi) ? yesval : noval)
+#define IF_HAS_NSE(hi, yesval, noval) (HAS_NSE(hi) ? yesval : noval)
 
 /*!
  * Enumerates the way that the guidance molecules are set up
@@ -373,10 +380,12 @@ public:
     bool domainMode = true;
 
     /*!
-     * Store Hex positions for saving.
+     * Rowlen and numrows in the parallelogram domain.
      */
-    vector<float> hgvx;
-    vector<float> hgvy;
+    //@{
+    unsigned int rl = 0;
+    unsigned int nr = 0;
+    //@}
 
     /*!
      * How to load the guidance molecules?
@@ -492,22 +501,23 @@ public:
 
         DBG ("called");
         // Create a HexGrid
-        this->hg = new HexGrid (this->hextohex_d, 3, 0, this->domainMode);
+        if (this->domainMode == true) {
+            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph2::HexDomainShape::Parallelogram);
+        } else {
+            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph2::HexDomainShape::Boundary);
+        }
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
         // Set the boundary in the HexGrid
         this->hg->setBoundary (r.getCorticalPath());
         // Vector size comes from number of Hexes in the HexGrid
         this->nhex = this->hg->num();
+        // row length and num rows
+        this->rl = this->hg->d_rowlen;
+        this->nr = this->hg->d_numrows;
         // Spatial d comes from the HexGrid, too.
         this->d = this->hg->getd();
-#ifdef XY_NOW_HELD_IN_HG_D_VECTORS
-        // Save hex positions in vectors for datafile saving
-        for (auto h : this->hg->hexen) {
-            this->hgvx.push_back (h.x);
-            this->hgvy.push_back (h.y);
-        }
-#endif
+
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
         this->resize_vector_vector (this->a);
@@ -966,9 +976,7 @@ public:
         double d = this->hg->getd();
         double v = this->hg->getv();
         double twov = v+v;
-
-        unsigned int rl = this->hg->d_rowlen;
-        unsigned int nr = this->hg->d_numrows;
+        double oneover2d = 1.0/(2.0*d);
 
         /*
          * First compute the edges, which have different methods for
@@ -1019,11 +1027,15 @@ public:
          * Everything else
          */
 
-        #pragma omp parallel for
+        unsigned int hstart = 0;
+        unsigned int hmax = 0;
+#pragma omp parallel for private(hstart,hmax)
         for (unsigned int ri=rl; ri<this->nhex-2*rl; ri+=rl) { // Rows
-            for (unsigned int hi=ri+1; hi<(ri+rl-1); ++hi) { // Cols
+            hstart = ri+1;
+            hmax = ri+rl-1;
+            for (unsigned int hi=hstart; hi<hmax; ++hi) { // Cols
                 // Find x gradient
-                gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) / (d * 2.0)), 0);
+                gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) * oneover2d /* / (d * 2.0)*/ ), 0);
                 // Find y gradient
                 gradf[1][hi] = IF_IN_BOUNDARY (hi, (((f[hi+NNE] - f[hi+NSE]) + (f[hi+NNW] - f[hi+NSW])) / v), 0);
             }
@@ -1059,11 +1071,122 @@ public:
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
-        // Like spacegrad2D, I'll move away from this heavily
-        // conditionaled code to process the majority without
-        // conditions.
+        /*
+         * First compute the edges, for which we can make some
+         * assertions, such as those hexes on the bottom row will not
+         * have neighbours to the south. Right? Or does use of
+         * distToBoundary obviate the need for this?
+         */
 
-        #pragma omp parallel for schedule(dynamic,50)
+        /*
+         * Everything else
+         */
+
+        unsigned int hstart = 0;
+        unsigned int hmax = 0;
+#pragma omp parallel for schedule(static) private(hstart,hmax)
+        for (unsigned int ri=rl; ri<this->nhex-2*rl; ri+=rl) { // Rows
+            hstart = ri+1;
+            hmax = ri+rl-1;
+#pragma omp simd
+            for (unsigned int hi=hstart; hi<hmax; ++hi) { // Cols
+
+                // 1. The D Del^2 a_i term
+                // Compute the sum around the neighbours
+                double thesum = -6 * fa[hi];
+
+                // If close to _boundary_, need to test which neighbours count.
+                if (this->hg->d_distToBoundary[hi] >= 0 && this->hg->d_distToBoundary[hi] <= this->d) {
+                    // If not in boundary add 0 to thesum or add:  Real neighbour Ghost neigbour
+                    thesum += IF_IN_BOUNDARY (hi, (IF_HAS_NE  (hi, fa[hi+NE],     (fa[hi]) )),      0.0);
+                    thesum += IF_IN_BOUNDARY (hi, (IF_HAS_NNE (hi, fa[hi+NNE],    fa[hi] )),      0.0);
+                    thesum += IF_IN_BOUNDARY (hi, (IF_HAS_NNW (hi, fa[hi+NNW],    fa[hi] )),      0.0);
+                    thesum += IF_IN_BOUNDARY (hi, (IF_HAS_NW  (hi, fa[hi+NW],     fa[hi] )),      0.0);
+                    thesum += IF_IN_BOUNDARY (hi, (IF_HAS_NSW (hi, fa[hi+NSW],    fa[hi] )),      0.0);
+                    thesum += IF_IN_BOUNDARY (hi, (IF_HAS_NSE (hi, fa[hi+NSE],    fa[hi] )),      0.0);
+                } else if (this->hg->d_distToBoundary[hi] >= 0) {
+                    // If far from boundary (and has all neighbours)
+                    thesum += IF_IN_BOUNDARY (hi,
+                                              fa[hi+NE] + fa[hi+NNE] + fa[hi+NNW] + fa[hi+NW] + fa[hi+NSW] + fa[hi+NSE],
+                                              0);
+                } // else outside boundary
+
+                // Multiply bu 2D/3d^2
+                double term1 = (this->D * 2) / (3 * this->d * this->d) * thesum;
+
+                // 2. The a div(g) term. Two sums for this.
+                double term2 = 0.0;
+
+                // First sum
+
+                // If close to _boundary_, need to test which neighbours count.
+                if (this->hg->d_distToBoundary[hi] >= 0 && this->hg->d_distToBoundary[hi] <= this->d) {
+                    // If not in boundary add 0 to term2 or add:  Real neighbour Ghost neigbour
+                    term2 += IF_IN_BOUNDARY (hi,
+                                             (IF_HAS_NE   (hi, (this->g[i][0][hi+NE] + this->g[i][0][hi]),
+                                                           (this->g[i][0][hi]))),
+                                             0);
+                    term2 += IF_IN_BOUNDARY (hi,
+                                             (IF_HAS_NNE  (hi, (0.5 * (this->g[i][0][hi+NNE] + this->g[i][0][hi])
+                                                                + R3_OVER_2 * (this->g[i][1][hi+NNE] + this->g[i][1][hi])),
+                                                           (0.5 * this->g[i][0][hi]
+                                                            + R3_OVER_2 * this->g[i][1][hi]))),
+                                             0);
+                    term2 -= IF_IN_BOUNDARY (hi,
+                                             (IF_HAS_NNW  (hi, (0.5 * (this->g[i][0][hi+NNW] + this->g[i][0][hi])
+                                                                - R3_OVER_2 * (this->g[i][1][hi+NNW] + this->g[i][1][hi])),
+                                                           (this->g[i][0][hi]
+                                                            - R3_OVER_2 * this->g[i][1][hi]))),
+                                             0);
+                    term2 -= IF_IN_BOUNDARY (hi,
+                                             (IF_HAS_NW   (hi, (this->g[i][0][hi+NW] + this->g[i][0][hi]),
+                                                           (this->g[i][0][hi]))),
+                                             0);
+                    term2 -= IF_IN_BOUNDARY (hi,
+                                             (IF_HAS_NSW  (hi, (0.5 * (this->g[i][0][hi+NSW] + this->g[i][0][hi])
+                                                                + R3_OVER_2 * (this->g[i][1][hi+NSW] + this->g[i][1][hi])),
+                                                           (0.5 * this->g[i][0][hi]
+                                                            + R3_OVER_2 * this->g[i][1][hi]))),
+                                             0);
+                    term2 += IF_IN_BOUNDARY (hi,
+                                             (IF_HAS_NSE  (hi, (0.5 * (this->g[i][0][hi+NSE] + this->g[i][0][hi])
+                                                                - R3_OVER_2 * (this->g[i][1][hi+NSE] + this->g[i][1][hi])),
+                                                           (0.5 * this->g[i][0][hi]
+                                                               - R3_OVER_2 * (this->g[i][1][hi])))),
+                                             0);
+                } else if (this->hg->d_distToBoundary[hi] >= 0) {
+                    // Do something for the case that we know we have all neighbours
+#if 0
+                    double longsum = (this->g[i][0][hi+NE] + this->g[i][0][hi])
+                        + (0.5 * (this->g[i][0][hi+NNE] + this->g[i][0][hi]) + R3_OVER_2 * (this->g[i][1][hi+NNE] + this->g[i][1][hi]))
+                        - (0.5 * (this->g[i][0][hi+NNW] + this->g[i][0][hi]) - R3_OVER_2 * (this->g[i][1][hi+NNW] + this->g[i][1][hi]))
+                        - (this->g[i][0][hi+NW] + this->g[i][0][hi])
+                        - (0.5 * (this->g[i][0][hi+NSW] + this->g[i][0][hi]) + R3_OVER_2 * (this->g[i][1][hi+NSW] + this->g[i][1][hi]))
+                        + (0.5 * (this->g[i][0][hi+NSE] + this->g[i][0][hi]) - R3_OVER_2 * (this->g[i][1][hi+NSE] + this->g[i][1][hi]));
+                    term2 += IF_IN_BOUNDARY (hi, (longsum), 0);
+#endif
+                    term2 += IF_IN_BOUNDARY (hi, ((this->g[i][0][hi+NE] + this->g[i][0][hi])
+                                                  + (0.5 * (this->g[i][0][hi+NNE] + this->g[i][0][hi]) + R3_OVER_2 * (this->g[i][1][hi+NNE] + this->g[i][1][hi]))
+                                                  - (0.5 * (this->g[i][0][hi+NNW] + this->g[i][0][hi]) - R3_OVER_2 * (this->g[i][1][hi+NNW] + this->g[i][1][hi]))
+                                                  - (this->g[i][0][hi+NW] + this->g[i][0][hi])
+                                                  - (0.5 * (this->g[i][0][hi+NSW] + this->g[i][0][hi]) + R3_OVER_2 * (this->g[i][1][hi+NSW] + this->g[i][1][hi]))
+                                                  + (0.5 * (this->g[i][0][hi+NSE] + this->g[i][0][hi]) - R3_OVER_2 * (this->g[i][1][hi+NSE] + this->g[i][1][hi]))), 0);
+
+                } // else outside boundary
+
+                // 2nd sum
+                term2 /= (3.0 * this->d);
+                term2 *= fa[hi];
+
+                // 3. Third term is this->g . grad a_i. Should not
+                // contribute to J, as g(x) decays towards boundary.
+                double term3 = IF_IN_BOUNDARY (hi, (this->g[i][0][hi] * this->grad_a[i][0][hi] + this->g[i][1][hi] * this->grad_a[i][1][hi]), 0);
+
+                this->divJ[i][hi] = term1 + term2 + term3;
+            }
+        }
+#if 0 // Old code
+        //#pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term
@@ -1177,6 +1300,7 @@ public:
 
             this->divJ[i][hi] = term1 + term2 + term3;
         }
+#endif
     }
 
     /*!

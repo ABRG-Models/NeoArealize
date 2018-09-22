@@ -24,6 +24,16 @@ using morph2::Hex;
 
 namespace morph2 {
 
+    /*!
+     * Enumerates the way that the guidance molecules are set up
+     */
+    enum class HexDomainShape {
+        Rectangle,
+        Parallelogram,
+        Hexagon,
+        Boundary // The shape of the arbitrary boundary set with HexGrid::setBoundary
+    };
+
     const float SQRT_OF_3_OVER_2_F = 0.866025404;
     /*!
      * This class is used to build an hexagonal grid of hexagons. The
@@ -137,7 +147,8 @@ namespace morph2 {
          * identifier if several HexGrids are being managed by client
          * code, but it not otherwise made use of.
          */
-        HexGrid (float d_, float x_span_, float z_ = 0.0f, bool domainMode = true);
+        HexGrid (float d_, float x_span_, float z_ = 0.0f,
+                 HexDomainShape shape = HexDomainShape::Parallelogram);
 
         /*!
          * Initialise with the passed-in parameters; a hex to hex
@@ -231,11 +242,16 @@ namespace morph2 {
         void computeDistanceToBoundary (void);
 
         /*!
-         * Set to true or false during constructor. False gives old
-         * behaviour of discarding all hexes outside the domain. True
-         * gives newer domain mode.
+         * Populate d_ vectors, paying attention to domainShape.
          */
-        bool domainMode = true;
+        void populate_d_vectors (const array<int, 6>& extnts);
+
+        /*!
+         * What shape domain to set? Set this to the non-default
+         * BEFORE calling HexGrid::setBoundary (const BezCurvePath& p)
+         * - that's where the domainShape is applied.
+         */
+        HexDomainShape domainShape = HexDomainShape::Parallelogram;
 
         /*!
          * The list of hexes that make up this HexGrid.
@@ -314,6 +330,11 @@ namespace morph2 {
          * domain.
          */
         void markHexesInsideParallelogramDomain (const array<int, 6>& extnts);
+
+        /*!
+         * Mark ALL hexes as inside the domain
+         */
+        void markAllHexesInsideDomain (void);
 
         /*!
          * Discard hexes in this->hexen that are outside the boundary

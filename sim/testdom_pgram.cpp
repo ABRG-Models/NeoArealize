@@ -16,7 +16,7 @@ int main()
         string curvepath = "../sim/trial.svg";
         morph::ReadCurves r(curvepath);
 
-        morph2::HexGrid hg(0.01, 3);
+        morph2::HexGrid hg(0.01, 3, 0, morph2::HexDomainShape::Parallelogram);
         hg.setBoundary (r.getCorticalPath());
 
         cout << hg.extent() << endl;

@@ -43,12 +43,12 @@ morph2::HexGrid::HexGrid ()
 {
 }
 
-morph2::HexGrid::HexGrid (float d_, float x_span_, float z_, bool dommode)
+morph2::HexGrid::HexGrid (float d_, float x_span_, float z_, morph2::HexDomainShape shape)
 {
     this->d = d_;
     this->x_span = x_span_;
     this->z = z_;
-    this->domainMode = dommode;
+    this->domainShape = shape;
 
     this->init();
 }
@@ -100,9 +100,11 @@ morph2::HexGrid::setBoundary (const list<Hex>& pHexes)
         throw runtime_error (ee.str());
     }
 
-    if (this->domainMode == false) {
+    if (this->domainShape == morph2::HexDomainShape::Boundary) {
         // Boundary IS contiguous, discard hexes outside the boundary.
         this->discardOutsideBoundary();
+    } else {
+        throw runtime_error ("For now, setBoundary (const list<Hex>& pHexes) doesn't know what to do if domain shape is not HexDomainShape::Boundary.");
     }
 }
 
@@ -168,27 +170,18 @@ morph2::HexGrid::setBoundary (const BezCurvePath& p)
             }
         }
 
-        if (this->domainMode == false) {
+        if (this->domainShape == morph2::HexDomainShape::Boundary) {
             this->discardOutsideBoundary();
+            // Fixme: Set d_ vectors.
         } else {
-            // Given that the boundary IS contiguous, can now set a domain
-            // of hexes (rectangular region, such that computations can be
+            // Given that the boundary IS contiguous, can now set a
+            // domain of hexes (rectangular, parallelogram or
+            // hexagonal region, such that computations can be
             // efficient) and discard hexes outside the domain.
             // setDomain() will define a regular domain, then discard
-            // those hexes outside the regular domain and populate all the
-            // d_ vectors.
+            // those hexes outside the regular domain and populate all
+            // the d_ vectors.
             this->setDomain();
-
-            // Why doesn't this work?
-            set<unsigned int> seen;
-            list<Hex>::iterator hi = nearbyBoundaryPoint;
-            if (this->boundaryContiguous (nearbyBoundaryPoint, hi, seen) == false) {
-                stringstream ee;
-                ee << "The boundary which was constructed from "
-                   << p.name << " is not a contiguous sequence of hexes now that the parallelogram domain has been set. Increase HexGrid::d_growthbuffer_horz, which is currently " << d_growthbuffer_horz;
-                throw runtime_error (ee.str());
-            }
-
         }
     }
 }
@@ -507,6 +500,16 @@ morph2::HexGrid::markHexesInsideParallelogramDomain (const array<int, 6>& extnts
 }
 
 void
+morph2::HexGrid::markAllHexesInsideDomain (void)
+{
+    list<Hex>::iterator hi = this->hexen.begin();
+    while (hi != this->hexen.end()) {
+        hi->insideDomain = true;
+        hi++;
+    }
+}
+
+void
 morph2::HexGrid::computeDistanceToBoundary (void)
 {
     list<Hex>::iterator h = this->hexen.begin();
@@ -514,16 +517,21 @@ morph2::HexGrid::computeDistanceToBoundary (void)
         if (h->boundaryHex == true) {
             h->distToBoundary = 0.0f;
         } else {
-            // Not a boundary hex
-            list<Hex>::iterator bh = this->hexen.begin();
-            while (bh != this->hexen.end()) {
-                if (bh->boundaryHex == true) {
-                    float delta = h->distanceFrom (*bh);
-                    if (delta < h->distToBoundary || h->distToBoundary < 0.0f) {
-                        h->distToBoundary = delta;
+            if (h->insideBoundary == false) {
+                // Set to a dummy, negative value
+                h->distToBoundary = -100.0;
+            } else {
+                // Not a boundary hex, but inside boundary
+                list<Hex>::iterator bh = this->hexen.begin();
+                while (bh != this->hexen.end()) {
+                    if (bh->boundaryHex == true) {
+                        float delta = h->distanceFrom (*bh);
+                        if (delta < h->distToBoundary || h->distToBoundary < 0.0f) {
+                            h->distToBoundary = delta;
+                        }
                     }
+                    ++bh;
                 }
-                ++bh;
             }
         }
         DBG2 ("Hex: " << h->vi <<"  d to bndry: " << h->distToBoundary
@@ -624,18 +632,24 @@ morph2::HexGrid::setDomain (void)
     this->d_size = this->d_rowlen * this->d_numrows;
     DBG("Initially, d_rowlen=" << d_rowlen << ", d_numrows=" << d_numrows << ", d_size=" << d_size);
 
-#ifdef RECTANGULAR_DOMAINS
-    // 2. Mark Hexes inside and outside the domain.
-    // Mark those hexes inside the boundary
-    this->markHexesInsideRectangularDomain (extnts);
-#else
-    this->markHexesInsideParallelogramDomain (extnts);
-#endif
+    if (this->domainShape == morph2::HexDomainShape::Rectangle) {
+        // 2. Mark Hexes inside and outside the domain.
+        // Mark those hexes inside the boundary
+        this->markHexesInsideRectangularDomain (extnts);
+    } else if (this->domainShape == morph2::HexDomainShape::Parallelogram) {
+        this->markHexesInsideParallelogramDomain (extnts);
+    } else if (this->domainShape == morph2::HexDomainShape::Hexagon) {
+        // The original domain was hexagonal, so just mark ALL of them
+        // as being in the domain.
+        this->markAllHexesInsideDomain();
+    } else {
+        throw runtime_error ("Unknown HexDomainShape");
+    }
 
     // 3. Discard hexes outside domain
     this->discardOutsideDomain();
 
-    // 3.5 Mark hexes inside boundary?
+    // 3.5 Mark hexes inside boundary
     list<Hex>::iterator centroidHex = this->findHexNearest (this->boundaryCentroid);
     this->markHexesInside (centroidHex);
 #ifdef DEBUG
@@ -658,101 +672,127 @@ morph2::HexGrid::setDomain (void)
     this->computeDistanceToBoundary();
 
     // 4. Populate d_ vectors
-    // Use neighbour relations to go from bottom left to top right.
-    // Find hex on bottom row.
-    list<Hex>::iterator hi = this->hexen.begin(); // FIXME: better to reverse traverse?
-    while (hi != this->hexen.end()) {
-        if (hi->gi == extnts[2]) {
-            // We're on the bottom row
-            break;
+    this->populate_d_vectors (extnts);
+}
+
+void
+morph2::HexGrid::populate_d_vectors (const array<int, 6>& extnts)
+{
+    // First, find the starting hex. For Rectangular and parallelogram
+    // domains, that's the bottom left hex.
+    list<Hex>::iterator hi = this->hexen.begin();
+    // bottom left hex.
+    list<Hex>::iterator blh = this->hexen.end();
+
+    if (this->domainShape == morph2::HexDomainShape::Rectangle
+        || this->domainShape == morph2::HexDomainShape::Parallelogram) {
+
+        // Use neighbour relations to go from bottom left to top right.
+        // Find hex on bottom row.
+        while (hi != this->hexen.end()) {
+            if (hi->gi == extnts[2]) {
+                // We're on the bottom row
+                break;
+            }
+            ++hi;
         }
-        ++hi;
-    }
-    DBG ("hi is on bottom row, posn xy:" << hi->x << "," << hi->y << " or rg:" << hi->ri << "," << hi->gi);
-    while (hi->has_nw == true) {
-        hi = hi->nw;
-    }
-    DBG ("hi is at bottom left posn xy:" << hi->x << "," << hi->y << " or rg:" << hi->ri << "," << hi->gi);
+        DBG ("hi is on bottom row, posn xy:" << hi->x << "," << hi->y << " or rg:" << hi->ri << "," << hi->gi);
+        while (hi->has_nw == true) {
+            hi = hi->nw;
+        }
+        DBG ("hi is at bottom left posn xy:" << hi->x << "," << hi->y << " or rg:" << hi->ri << "," << hi->gi);
 
-    // hi should now be the bottom left hex.
-    list<Hex>::iterator blh = hi;
+        // hi should now be the bottom left hex.
+        blh = hi;
 
-    // Sanity check
-    if (blh->has_nne == false || blh->has_ne == false || blh->has_nnw == true) {
-        stringstream ee;
-        ee << "We expect the bottom left hex to have an east and a "
-           << "north east neighbour, but no north west neighbour. This has: "
-           << (blh->has_nne == true ? "Neighbour NE ":"NO Neighbour NE ")
-           << (blh->has_ne == true ? "Neighbour E ":"NO Neighbour E ")
-           << (blh->has_nnw == true ? "Neighbour NW ":"NO Neighbour NW ");
-        throw runtime_error (ee.str());
-    }
+        // Sanity check
+        if (blh->has_nne == false || blh->has_ne == false || blh->has_nnw == true) {
+            stringstream ee;
+            ee << "We expect the bottom left hex to have an east and a "
+               << "north east neighbour, but no north west neighbour. This has: "
+               << (blh->has_nne == true ? "Neighbour NE ":"NO Neighbour NE ")
+               << (blh->has_ne == true ? "Neighbour E ":"NO Neighbour E ")
+               << (blh->has_nnw == true ? "Neighbour NW ":"NO Neighbour NW ");
+            throw runtime_error (ee.str());
+        }
 
-    // Now raster through the hexes, building the d_ vectors
+    } // else Hexagon or Boundary starts from 0, hi already set to hexen.begin();
+
+    // Clear the d_ vectors.
     this->d_clear();
 
-#ifdef RECTANGULAR_DOMAINS
-    bool next_row_ne = true;
-    this->d_push_back (hi);
-    do {
-        hi = hi->ne;
-
+    // Now raster through the hexes, building the d_ vectors.
+    if (this->domainShape == morph2::HexDomainShape::Rectangle) {
+        bool next_row_ne = true;
         this->d_push_back (hi);
+        do {
+            hi = hi->ne;
 
-        DBG2 ("Pushed back flags: " << hi->getFlags() << " for r/g: " << hi->ri << "," << hi->gi);
+            this->d_push_back (hi);
 
-        if (hi->has_ne == false) {
-            if (hi->gi == extnts[3]) {
-                // last (i.e. top) row and no neighbour east, so finished.
-                DBG ("Fin. (top row)");
-                break;
-            } else {
+            DBG2 ("Pushed back flags: " << hi->getFlags() << " for r/g: " << hi->ri << "," << hi->gi);
 
-                if (next_row_ne == true) {
-                    hi = blh->nne;
-                    next_row_ne = false;
-                    blh = hi;
+            if (hi->has_ne == false) {
+                if (hi->gi == extnts[3]) {
+                    // last (i.e. top) row and no neighbour east, so finished.
+                    DBG ("Fin. (top row)");
+                    break;
                 } else {
-                    hi = blh->nnw;
-                    next_row_ne = true;
+
+                    if (next_row_ne == true) {
+                        hi = blh->nne;
+                        next_row_ne = false;
+                        blh = hi;
+                    } else {
+                        hi = blh->nnw;
+                        next_row_ne = true;
+                        blh = hi;
+                    }
+
+                    this->d_push_back (hi);
+                }
+            }
+        } while (hi->has_ne == true);
+
+    } else if (this->domainShape == morph2::HexDomainShape::Parallelogram) {
+
+        this->d_push_back (hi); // Push back the first one, which is guaranteed to have a NE
+        while (hi->has_ne == true) {
+
+            // Step to new hex to the E
+            hi = hi->ne;
+
+            if (hi->has_ne == false) {
+                // New hex has no NE, so it is on end of row.
+                if (hi->gi == extnts[3]) {
+                    // on end of top row and no neighbour east, so finished.
+                    DBG ("Fin. (top row)");
+                    // push back and break
+                    this->d_push_back (hi);
+                    break;
+                } else {
+                    // On end of non-top row, so push back...
+                    this->d_push_back (hi);
+                    // do the 'carriage return'...
+                    hi = blh->nne;
+                    // And push that back...
+                    this->d_push_back (hi);
+                    // Update the new 'start of last row' iterator
                     blh = hi;
                 }
-
+            } else {
+                // New hex does have neighbour east, so just push it back.
                 this->d_push_back (hi);
             }
         }
-    } while (hi->has_ne == true);
-#else
-    this->d_push_back (hi); // Push back the first one, which is guaranteed to have a NE
-    while (hi->has_ne == true) {
 
-        // Step to new hex to the E
-        hi = hi->ne;
+    } else { // Hexagon or Boundary
 
-        if (hi->has_ne == false) {
-            // New hex has no NE, so it is on end of row.
-            if (hi->gi == extnts[3]) {
-                // on end of top row and no neighbour east, so finished.
-                DBG ("Fin. (top row)");
-                // push back and break
-                this->d_push_back (hi);
-                break;
-            } else {
-                // On end of non-top row, so push back...
-                this->d_push_back (hi);
-                // do the 'carriage return'...
-                hi = blh->nne;
-                // And push that back...
-                this->d_push_back (hi);
-                // Update the new 'start of last row' iterator
-                blh = hi;
-            }
-        } else {
-            // New hex does have neighbour east, so just push it back.
+        while (hi != this->hexen.end()) {
             this->d_push_back (hi);
+            hi++;
         }
     }
-#endif
     DBG ("Size of d_x: " << this->d_x.size() << " and d_size=" << this->d_size);
 }
 

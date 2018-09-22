@@ -382,7 +382,7 @@ namespace morph2 {
 
         /*!
          * Set true if this Hex is known to be inside the a
-         * rectangular 'domain'.
+         * rectangular, parallelogram or hexagonal 'domain'.
          */
         bool insideDomain = false;
 

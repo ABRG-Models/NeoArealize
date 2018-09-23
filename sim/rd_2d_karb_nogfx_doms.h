@@ -1,6 +1,15 @@
+/*
+ * Parallel domains version
+ *
+ * This version uses a hex grid on a parallelogram shaped domain, and
+ * therefore with lots of "dummy" hexes. The neighbour relations are
+ * found with fixed strides in the d_ vectors which hold the HexGrid
+ * data.
+ */
+
 #include <morph/tools.h>
 #include <morph/ReadCurves.h>
-#include "HexGrid.h"
+#include <morph/HexGrid.h>
 #include <morph/HdfData.h>
 #include <iostream>
 #include <sstream>
@@ -23,7 +32,7 @@ using std::cerr;
 using std::endl;
 using std::runtime_error;
 
-using morph2::HexGrid;
+using morph::HexGrid;
 using morph::ReadCurves;
 using morph::HdfData;
 
@@ -327,6 +336,18 @@ public:
     alignas(8) double d = 1.0;
 
     /*!
+     * Various other parameters
+     */
+    //@{
+    alignas(8) double oneoverd = 1.0/this->d;
+    alignas(8) double v = 1;
+    alignas(8) double oneoverv = 1.0/this->v;
+    alignas(8) double twov = this->v+this->v;
+    alignas(8) double oneover2v = 1.0/this->twov;
+    alignas(8) double oneover2d = 1.0/(this->d+this->d);
+    //@}
+
+    /*!
      * Memory to hold an intermediate result
      */
     alignas(8) vector<vector<double> > betaterm;
@@ -502,9 +523,9 @@ public:
         DBG ("called");
         // Create a HexGrid
         if (this->domainMode == true) {
-            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph2::HexDomainShape::Parallelogram);
+            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Parallelogram);
         } else {
-            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph2::HexDomainShape::Boundary);
+            this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         }
         // Read the curves which make a boundary
         ReadCurves r("./trial.svg");
@@ -515,8 +536,15 @@ public:
         // row length and num rows
         this->rl = this->hg->d_rowlen;
         this->nr = this->hg->d_numrows;
-        // Spatial d comes from the HexGrid, too.
+        // Spatial d and v come from the HexGrid, too.
         this->d = this->hg->getd();
+        this->v = this->hg->getv();
+        // Various 1-overs and permutations
+        this->oneoverd = 1.0/this->d;
+        this->oneoverv = 1.0/this->v;
+        this->twov = this->v+this->v;
+        this->oneover2v = 1.0/this->twov;
+        this->oneover2d = 1.0/(this->d+this->d);
 
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
@@ -830,6 +858,8 @@ public:
      * Do a step through the model.
      *
      * T460s manages about 20 of these per second.
+     *
+     * On Alienware, and at 23 Sept 2018, I'm doing 660 per second.
      */
     void step (void) {
 
@@ -973,10 +1003,6 @@ public:
     void spacegrad2D (vector<double>& f, array<vector<double>, 2>& gradf) {
 
         // Note - East is positive x; North is positive y. Does this match how it's drawn in the display??
-        double d = this->hg->getd();
-        double v = this->hg->getv();
-        double twov = v+v;
-        double oneover2d = 1.0/(2.0*d);
 
         /*
          * First compute the edges, which have different methods for
@@ -984,35 +1010,35 @@ public:
          */
 
         // Bottom edge
-        gradf[0][0] = IF_IN_BOUNDARY (0, ((f[/*0+*/NE] - f[0]) / d), 0);
+        gradf[0][0] = IF_IN_BOUNDARY (0, ((f[/*0+*/NE] - f[0]) * oneoverd), 0);
         gradf[1][0] = 0;
         for (unsigned int hi=1; hi<rl-1; ++hi) {
             // Find x gradient
-            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) / (d * 2.0)), 0);
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) * oneover2d), 0);
             // Find y gradient
-            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NNW] - f[hi]) / v), 0);
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NNW] - f[hi]) * oneoverv), 0);
         }
-        gradf[0][rl-1] = IF_IN_BOUNDARY (rl-1, ((f[rl-1] - f[rl-1+NW]) / d), 0);
+        gradf[0][rl-1] = IF_IN_BOUNDARY (rl-1, ((f[rl-1] - f[rl-1+NW]) * oneoverd), 0);
         gradf[1][rl-1] = 0;
 
         // Right Edge
         for (unsigned int hi=2*rl-1; hi<this->nhex-1; hi += rl) {
             // x gradient
-            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - f[hi+NW]) / d), 0);
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - f[hi+NW]) * oneoverd), 0);
             // y gradient
-            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - (f[hi+NSE] + f[hi+NSW]) / 2.0) / v), 0);
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - (f[hi+NSE] + f[hi+NSW]) * 0.5) * oneoverv), 0);
         }
 
         // Top Edge
-        gradf[0][this->nhex-rl-1] = IF_IN_BOUNDARY (this->nhex-rl-1, ((f[this->nhex-rl-1]-f[this->nhex-rl-1+NW]) / d), 0);
+        gradf[0][this->nhex-rl-1] = IF_IN_BOUNDARY (this->nhex-rl-1, ((f[this->nhex-rl-1]-f[this->nhex-rl-1+NW]) * oneoverd), 0);
         gradf[1][this->nhex-rl-1] = 0;
         for (unsigned int hi=this->nhex-rl+1; hi<this->nhex-1; ++hi) {
             // Find x gradient
-            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) / (d * 2.0)), 0);
+            gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) * oneover2d), 0);
             // Find y gradient
-            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - f[hi+NSW]) / v), 0);
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi] - f[hi+NSW]) * oneoverv), 0);
         }
-        gradf[0][this->nhex-1] = IF_IN_BOUNDARY (this->nhex-1, ((f[this->nhex-1]-f[this->nhex-1+NW]) / d), 0);
+        gradf[0][this->nhex-1] = IF_IN_BOUNDARY (this->nhex-1, ((f[this->nhex-1]-f[this->nhex-1+NW]) * oneoverd), 0);
         gradf[1][this->nhex-1] = 0;
 
         // Left Edge
@@ -1020,7 +1046,7 @@ public:
             // x gradient
             gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi]) / d), 0);
             // y gradient
-            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NNE] - f[hi+NSE]) / twov), 0);
+            gradf[1][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NNE] - f[hi+NSE]) * oneover2v), 0);
         }
 
         /*
@@ -1037,7 +1063,7 @@ public:
                 // Find x gradient
                 gradf[0][hi] = IF_IN_BOUNDARY (hi, ((f[hi+NE] - f[hi+NW]) * oneover2d /* / (d * 2.0)*/ ), 0);
                 // Find y gradient
-                gradf[1][hi] = IF_IN_BOUNDARY (hi, (((f[hi+NNE] - f[hi+NSE]) + (f[hi+NNW] - f[hi+NSW])) / v), 0);
+                gradf[1][hi] = IF_IN_BOUNDARY (hi, (((f[hi+NNE] - f[hi+NSE]) + (f[hi+NNW] - f[hi+NSW])) * oneoverv), 0);
             }
         }
     }

@@ -819,7 +819,7 @@ public:
 
         // Pre-compute intermediate val:
         for (unsigned int i=0; i<this->N; ++i) {
-            #pragma omp parallel for shared(i,k)
+            #pragma omp parallel for shared(i) // gcc 4.9 doesn't like ,k in shared()
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k);
             }

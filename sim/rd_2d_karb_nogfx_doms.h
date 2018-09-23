@@ -894,7 +894,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
             DBG2 ("After coupling compute, c["<<i<<"][4159]: " << c[i][4159]);
             DBG2 ("After coupling compute, n["<<i<<"][4159]: " << n[4159]);
-            #pragma omp parallel for shared(i,k)
+            #pragma omp parallel for shared(i)
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->alpha_c_beta_na[i][h] = IF_IN_BOUNDARY (h, (alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k)), 0);
             }

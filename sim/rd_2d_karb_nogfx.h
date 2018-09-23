@@ -1021,6 +1021,7 @@ public:
                 thesum += fa[h->ne->vi];
             } else {
                 // Apply boundary condition
+                // FIXME: Why no thesum += fa[h->vi]?????
             }
             if (h->has_nne) {
                 thesum += fa[h->nne->vi];

@@ -30,6 +30,7 @@ int main (int argc, char **argv)
     // Instantiate the model object
     RD_2D_Karb RD;
     RD.domainMode = false;
+    RD.hextohex_d = 0.005;
     try {
         RD.init();
     } catch (const exception& e) {

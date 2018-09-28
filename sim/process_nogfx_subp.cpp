@@ -1,12 +1,12 @@
-#include "rd_2d_karb_nogfx_dvecs.h"
+#ifdef __ICC__
+#include <ittnotify.h>
+#endif
+
+#include "rd_2d_karb_nogfx_subp.h"
 
 #include <iostream>
 #include <vector>
 #include <string>
-
-#ifdef __ICC__
-#include <ittnotify.h>
-#endif
 
 // Provides the max steps parameter, which can be shared across
 // process_nogfx_*.cpp programs for easy comparisons.
@@ -45,6 +45,7 @@ int main (int argc, char **argv)
 #ifdef __ICC__
     __itt_resume();
 #endif
+    // Do requisite number of steps
     for (unsigned int st = 0; st < PROCESS_MAXSTEPS; ++st) {
         RD.step();
     }

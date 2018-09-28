@@ -334,6 +334,7 @@ public:
     alignas(8) double twov = this->v+this->v;
     alignas(8) double oneover2v = 1.0/this->twov;
     alignas(8) double oneover2d = 1.0/(this->d+this->d);
+    alignas(8) double twoDover3dd = 0.0;
     //@}
 
     /*!
@@ -407,6 +408,7 @@ public:
      */
     string logpath = "logs";
 
+    string svgpath = "./trial.svg";
     /*!
      * Setter which attempts to ensure the path exists.
      */
@@ -517,7 +519,7 @@ public:
             this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         }
         // Read the curves which make a boundary
-        ReadCurves r("./trial.svg");
+        ReadCurves r(this->svgpath);
         // Set the boundary in the HexGrid
         this->hg->setBoundary (r.getCorticalPath());
         // Vector size comes from number of Hexes in the HexGrid
@@ -534,6 +536,7 @@ public:
         this->twov = this->v+this->v;
         this->oneover2v = 1.0/this->twov;
         this->oneover2d = 1.0/(this->d+this->d);
+        this->twoDover3dd = (this->D * 2) / (3 * this->d * this->d);
 
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
@@ -883,7 +886,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
             DBG2 ("After coupling compute, c["<<i<<"][4159]: " << c[i][4159]);
             DBG2 ("After coupling compute, n["<<i<<"][4159]: " << n[4159]);
-            #pragma omp parallel for shared(i)
+#pragma omp parallel for shared(i,k)
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->alpha_c_beta_na[i][h] = (alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k));
             }
@@ -1007,10 +1010,10 @@ public:
                 gradf[1][hi] = ((f[NNE(hi)] - f[NSE(hi)]) + (f[NNW(hi)] - f[NSW(hi)])) * oneoverv;
 
             } else if (HAS_NNW(hi) && HAS_NNE(hi)) {
-                gradf[1][hi] = ( (f[NNE(hi)] + f[NNW(hi)]) / 2.0 - f[hi]) * oneoverv;
+                gradf[1][hi] = ( (f[NNE(hi)] + f[NNW(hi)]) * 0.5 - f[hi]) * oneoverv;
 
             } else if (HAS_NSW(hi) && HAS_NSE(hi)) {
-                gradf[1][hi] = (f[hi] - (f[NSE(hi)] + f[NSW(hi)]) / 2.0) * oneoverv;
+                gradf[1][hi] = (f[hi] - (f[NSE(hi)] + f[NSW(hi)]) * 0.5) * oneoverv;
 
             } else if (HAS_NNW(hi) && HAS_NSW(hi)) {
                 gradf[1][hi] = (f[NNW(hi)] - f[NSW(hi)]) * oneover2v;
@@ -1060,39 +1063,15 @@ public:
             // Compute the sum around the neighbours
             double thesum = -6 * fa[hi];
 
-            if (HAS_NE(hi)) {
-                thesum += fa[NE(hi)];
-            } else {
-                // Apply boundary condition
-            }
-            if (HAS_NNE(hi)) {
-                thesum += fa[NNE(hi)];
-            } else {
-                thesum += fa[hi]; // A ghost neighbour-east with same value as Hex_0
-            }
-            if (HAS_NNW(hi)) {
-                thesum += fa[NNW(hi)];
-            } else {
-                thesum += fa[hi];
-            }
-            if (HAS_NW(hi)) {
-                thesum += fa[NW(hi)];
-            } else {
-                thesum += fa[hi];
-            }
-            // thesum += fa[(HAS_NSW(hi)?NSW(hi):hi)];
-            if (HAS_NSW(hi)) {
-                thesum += fa[NSW(hi)];
-            } else {
-                thesum += fa[hi];
-            }
-            if (HAS_NSE(hi)) {
-                thesum += fa[NSE(hi)];
-            } else {
-                thesum += fa[hi];
-            }
+            thesum += fa[(HAS_NE(hi)?NE(hi):hi)];
+            thesum += fa[(HAS_NNE(hi)?NNE(hi):hi)];
+            thesum += fa[(HAS_NNW(hi)?NNW(hi):hi)];
+            thesum += fa[(HAS_NW(hi)?NW(hi):hi)];
+            thesum += fa[(HAS_NSW(hi)?NSW(hi):hi)];
+            thesum += fa[(HAS_NSE(hi)?NSE(hi):hi)];
+
             // Multiply bu 2D/3d^2
-            double term1 = (this->D * 2) / (3 * this->d * this->d) * thesum;
+            double term1 = this->twoDover3dd * thesum;
 
             // 2. The a div(g) term. Two sums for this.
             double term2 = 0.0;
@@ -1106,14 +1085,18 @@ public:
                 term2 += /*cos (0)*/ (this->g[i][0][hi]);
             }
             if (HAS_NNE(hi)) {
-                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi]);
+                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])
+                    + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]);
             } else {
-                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][hi]);
+                term2 += /*cos (60)*/ 0.5 * (this->g[i][0][hi])
+                    + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
             if (HAS_NNW(hi)) {
-                term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]);
+                term2 += -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))
+                    + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]);
             } else {
-                term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][hi]);
+                term2 += -(/*cos (120)*/ 0.5 * (this->g[i][0][hi]))
+                    + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
             if (HAS_NW(hi)) {
                 term2 -= /*cos (180)*/ (this->g[i][0][NW(hi)] + this->g[i][0][hi]);
@@ -1121,37 +1104,18 @@ public:
                 term2 -= /*cos (180)*/ (this->g[i][0][hi]);
             }
             if (HAS_NSW(hi)) {
-                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi]);
+                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])
+                    - (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi]));
             } else {
-                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][hi]);
+                term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][hi])
+                    - (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi]));
             }
             if (HAS_NSE(hi)) {
-                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi]);
+                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi])
+                    - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
             } else {
-                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][hi]);
-            }
-            // 2nd sum
-            //term2 += sin (0) * (this->g[i][1][h->ne->vi] + this->g[i][1][hi]);
-            if (HAS_NNE(hi)) {
-                term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]);
-            } else {
-                term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]);
-            }
-            if (HAS_NNW(hi)) {
-                term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]);
-            } else {
-                term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]);
-            }
-            //term2 += sin (180) * (this->g[i][1][h->nw->vi] + this->g[i][1][hi]);
-            if (HAS_NSW(hi)) {
-                term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi]);
-            } else {
-                term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi]);
-            }
-            if (HAS_NSE(hi)) {
-                term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]);
-            } else {
-                term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi]);
+                term2 += /*cos (300)*/ 0.5 * (this->g[i][0][hi])      // 1st sum
+                    - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi])); // 2nd sum
             }
 
             term2 /= (3.0 * this->d);

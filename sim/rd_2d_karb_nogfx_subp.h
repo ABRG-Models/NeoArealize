@@ -725,6 +725,10 @@ public:
         // Total number of hexes comes from number of Hexes in the HexGrid
         this->nhex = this->hg->num();
         this->nhex_d = this->hg->d_x.size();
+        DBG("Number of hexes: " << nhex);
+        DBG("Number of non-subp hexes: " << nhex_d);
+        DBG("Number of subp hexes: " << this->hg->sp_veclen[0]);
+        DBG("These add up to: " << (nhex_d + this->hg->sp_veclen[0]));
         // row length and num rows
         //this->d_rl = this->hg->d_rowlen;
         //this->d_nr = this->hg->d_numrows;

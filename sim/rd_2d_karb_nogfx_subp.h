@@ -1158,12 +1158,13 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
             DBG2 ("After coupling compute, c["<<i<<"][4159]: " << c[i][4159]);
             DBG2 ("After coupling compute, n["<<i<<"][4159]: " << n[4159]);
-//#pragma omp parallel for shared(i,k)
 #pragma omp simd
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
                 this->alpha_c_beta_na_d[i][hi] = (alpha[i] * c_d[i][hi] - beta[i] * n_d[hi] * pow (a_d[i][hi], k));
             }
+
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
+// NB In the next one, memory access is much worse. Nested vectors not a good idea?
 //#pragma omp parallel for
 #pragma omp simd
                 for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {

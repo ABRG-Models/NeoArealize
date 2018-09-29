@@ -489,6 +489,22 @@ public:
     alignas(8) vector<double*> grad_rhoB_sp;
     alignas(8)        double*  grad_rhoC_d;
     alignas(8) vector<double*> grad_rhoC_sp;
+    //@
+
+    /*!
+     * Temporary variables used in step()
+     */
+    //@{
+    alignas(8) double* q_d;
+    alignas(8) vector<double*> q_sp;
+    alignas(8) double* k1_d;
+    alignas(8) vector<double*> k1_sp;
+    alignas(8) double* k2_d;
+    alignas(8) vector<double*> k2_sp;
+    alignas(8) double* k3_d;
+    alignas(8) vector<double*> k3_sp;
+    alignas(8) double* k4_d;
+    alignas(8) vector<double*> k4_sp;
     //@}
 
     /*!
@@ -835,12 +851,24 @@ public:
 
         this->alloc_d_vector_variable (this->n_d);
         this->alloc_sp_vector_variable (this->n_sp);
+
         this->alloc_d_vector_variable (this->rhoA_d);
         this->alloc_sp_vector_variable (this->rhoA_sp);
         this->alloc_d_vector_variable (this->rhoB_d);
         this->alloc_sp_vector_variable (this->rhoB_sp);
         this->alloc_d_vector_variable (this->rhoC_d);
         this->alloc_sp_vector_variable (this->rhoC_sp);
+
+        this->alloc_d_vector_variable (this->q_d);
+        this->alloc_sp_vector_variable (this->q_sp);
+        this->alloc_d_vector_variable (this->k1_d);
+        this->alloc_sp_vector_variable (this->k1_sp);
+        this->alloc_d_vector_variable (this->k2_d);
+        this->alloc_sp_vector_variable (this->k2_sp);
+        this->alloc_d_vector_variable (this->k3_d);
+        this->alloc_sp_vector_variable (this->k3_sp);
+        this->alloc_d_vector_variable (this->k4_d);
+        this->alloc_sp_vector_variable (this->k4_sp);
 
         this->resize_d_vector_variable (this->eta_emx_d);
         this->resize_sp_vector_variable (this->eta_emx_sp);
@@ -959,9 +987,9 @@ public:
                 this->g_d[i][gi] = (this->gammaA[i] * this->grad_rhoA_d[gi]
                                        + this->gammaB[i] * this->grad_rhoB_d[gi]
                                        + this->gammaC[i] * this->grad_rhoC_d[gi]) * bSig;
-                this->g_d[i][++gi] = (this->gammaA[i] * this->grad_rhoA_d[1][gi]
-                                       + this->gammaB[i] * this->grad_rhoB_d[1][gi]
-                                       + this->gammaC[i] * this->grad_rhoC_d[1][gi]) * bSig;
+                this->g_d[i][++gi] = (this->gammaA[i] * this->grad_rhoA_d[gi]
+                                       + this->gammaB[i] * this->grad_rhoB_d[gi]
+                                       + this->gammaC[i] * this->grad_rhoC_d[gi]) * bSig;
             }
             unsigned int inv = i * this->nv;
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
@@ -973,7 +1001,7 @@ public:
                                            + this->gammaB[i] * this->grad_rhoB_sp[vi][gi]
                                            + this->gammaC[i] * this->grad_rhoC_sp[vi][gi]) * bSig;
                     // NB: gi is incremented once here and once in the for clause, above to make for +2 per loop
-                    this->g_sp[ivi][1][++gi] = (this->gammaA[i] * this->grad_rhoA_sp[vi][gi]
+                    this->g_sp[ivi][++gi] = (this->gammaA[i] * this->grad_rhoA_sp[vi][gi]
                                            + this->gammaB[i] * this->grad_rhoB_sp[vi][gi]
                                            + this->gammaC[i] * this->grad_rhoC_sp[vi][gi]) * bSig;
                 }
@@ -1131,19 +1159,8 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 
             // Runge-Kutta integration for A
-            vector<double> q_d(this->nhex_d, 0.0);
-            vector<vector<double> > q_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                q_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
-
             this->compute_divJ (a_d[i], a_sp, i); // populates divJ_d/sp[i]
 
-            vector<double> k1_d(this->nhex_d, 0.0);
-            vector<vector<double> > k1_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k1_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             //#pragma omp parallel for
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
                 k1_d[hi] = this->divJ_d[i][hi] + this->alpha_c_beta_na_d[i][hi];
@@ -1157,11 +1174,6 @@ public:
                 }
             }
 
-            vector<double> k2_d(this->nhex_d, 0.0);
-            vector<vector<double> > k2_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k2_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             this->compute_divJ (q_d, q_sp, i);
             //#pragma omp parallel for
 #pragma omp simd
@@ -1178,11 +1190,6 @@ public:
                 }
             }
 
-            vector<double> k3_d(this->nhex_d, 0.0);
-            vector<vector<double> > k3_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k3_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             this->compute_divJ (q_d, q_sp, i);
             //#pragma omp parallel for
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
@@ -1197,11 +1204,6 @@ public:
                 }
             }
 
-            vector<double> k4_d(this->nhex_d, 0.0);
-            vector<vector<double> > k4_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k4_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             this->compute_divJ (q_d, q_sp, i);
             //#pragma omp parallel for
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
@@ -1235,19 +1237,7 @@ public:
             }
 
             // Runge-Kutta integration for C (or ci)
-            vector<double> q_d(this->nhex_d, 0.0);
-            vector<vector<double> > q_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                q_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
-
-            vector<double> k1_d(this->nhex_d, 0.0);
-            vector<vector<double> > k1_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k1_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
-            compute_dci_dt (c_d[i], c_sp[i], i, k1_d, k1_sp);
-
+            compute_dci_dt (c_d[i], c_sp, i, k1_d, k1_sp);
             //#pragma omp parallel for
             for (unsigned int hi=0; hi<this->nhex_d; hi++) {
                 q_d[hi] = c_d[i][hi] + k1_d[hi] * halfdt;
@@ -1260,11 +1250,6 @@ public:
             }
             DBG2 ("(c) After RK stage 1, q[4159]: " << q[4159]);
 
-            vector<double> k2_d(this->nhex_d, 0.0);
-            vector<vector<double> > k2_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k2_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             compute_dci_dt (q_d, q_sp, i, k2_d, k2_sp);
 
             //#pragma omp parallel for
@@ -1279,11 +1264,6 @@ public:
             }
             DBG2 ("(c) After RK stage 2, q[4159]: " << q[4159]);
 
-            vector<double> k3_d(this->nhex_d, 0.0);
-            vector<vector<double> > k3_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k3_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             compute_dci_dt (q_d, q_sp, i, k3_d, k3_sp);
 
             //#pragma omp parallel for
@@ -1298,11 +1278,6 @@ public:
             }
             DBG2 ("(c) After RK stage 3, q[4159]: " << q[4159]);
 
-            vector<double> k4_d(this->nhex_d, 0.0);
-            vector<vector<double> > k4_sp(this->hg->sp_numvecs);
-            for (unsigned int vi=0; vi<this->hg->sp_numvecs; ++vi) {
-                k4_sp[vi].resize(this->hg->sp_veclen[vi], 0.0);
-            }
             compute_dci_dt (q_d, q_sp, i, k4_d, k4_sp);
 
             //#pragma omp parallel for
@@ -1326,16 +1301,17 @@ public:
      * Does: f = (alpha * f) + betaterm. c.f. Karb2004, Eq 1. f is
      * c[i] or q from the RK algorithm.
      */
-    void compute_dci_dt (vector<double>& f_d, vector<vector<double> >& f_sp, unsigned int i,
-                         vector<double>& dci_dt_d, vector<vector<double> >& dci_dt_sp) {
+    void compute_dci_dt (double* f_d, vector<double*>& f_sp, unsigned int i,
+                         double* dci_dt_d, vector<double*>& dci_dt_sp) {
         //#pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex_d; hi++) {
             dci_dt_d[hi] = (this->betaterm_d[i][hi] - this->alpha[i] * f_d[hi]);
         }
+        unsigned int inv = i * this->nv;
         for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
             //#pragma omp parallel for
             for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                dci_dt_sp[vi][hi] = (this->betaterm_sp[vi+(i*this->nv)][hi] - this->alpha[i] * f_sp[vi][hi]);
+                dci_dt_sp[vi][hi] = (this->betaterm_sp[inv+vi][hi] - this->alpha[i] * f_sp[vi][hi]);
             }
         }
     }
@@ -1397,7 +1373,7 @@ public:
                 double _se = (this->hg->d_v_nse[hi] == -1) ? f_d[D_NSE(hi)] : f_sp[inv+this->hg->d_v_nse[hi]][D_NSE(hi)];
                 gradf_d[gi] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
 
-            } else if (D_HAS_NNW(hi) && D_HAS_NNE(hi)) {IIIII
+            } else if (D_HAS_NNW(hi) && D_HAS_NNE(hi)) {
                 double _nw = (this->hg->d_v_nnw[hi] == -1) ? f_d[D_NNW(hi)] : f_sp[inv+this->hg->d_v_nnw[hi]][D_NNW(hi)];
                 double _ne = (this->hg->d_v_nne[hi] == -1) ? f_d[D_NNE(hi)] : f_sp[inv+this->hg->d_v_nne[hi]][D_NNE(hi)];
                 gradf_d[gi] = ( (_ne + _nw) * 0.5 - f_d[hi]) * oneoverv;
@@ -1570,12 +1546,12 @@ public:
 //    __itt_resume();
 #endif
             //#pragma omp parallel for
-#pragma omp simd
             unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
             unsigned int sp_offs_nse = SP_OFFS_NSE(rl);
             unsigned int sp_offs_nnw = SP_OFFS_NNW(rl);
             unsigned int sp_offs_nsw = SP_OFFS_NSW(rl);
-            for (unsigned int hi=rl+1, gi=?; hi < vl-rl-1; ++hi, ++gi) {
+#pragma omp simd
+            for (unsigned int hi=rl+1, gi=2*(rl+1); hi < vl-rl-1; ++hi, ++gi) {
                 // All neighbours guaranteed so:
                 gradf_sp[ivi][gi] = (f_sp[ivi][hi+SP_OFFS_NE] - f_sp[ivi][hi+SP_OFFS_NW]) * oneover2d;
                 gradf_sp[ivi][++gi] = ( (f_sp[ivi][hi+sp_offs_nne] - f_sp[ivi][hi+sp_offs_nse])
@@ -1602,7 +1578,7 @@ public:
         // Three terms to compute; see Eq. 14 in methods_notes.pdf
 
         // Compute gradient of a_i(x), for use computing the third term, below.
-        this->spacegrad2D (fa_d, fa_sp, i, this->grad_a_d[i], this->grad_a_sp[i]);
+        this->spacegrad2D (fa_d, fa_sp, i, this->grad_a_d[i], this->grad_a_sp);
 
         unsigned int inv = i * this->nv;
         /*
@@ -1629,65 +1605,64 @@ public:
         }
 
 //#pragma omp simd // No benefit from SIMD - unavoidable memory access
-        for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
+        for (unsigned int hi=0, gi=0, giy=1; hi<this->nhex_d; ++hi, gi+=2, giy+=2) {
 
             // 2. The a div(g) term. Two sums for this.
             // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
             term2_d[hi] = 0.0;
             // First sum
             if (D_HAS_NE(hi)) {
-                term2_d[hi] += /*cos (0)*/ ((D_V_NE(hi) == -1)  ? g_d[i][0][D_NE(hi)]  : g_sp[i][D_V_NE(hi)][0][D_NE(hi)]) + g_d[i][0][hi];
+                term2_d[hi] += /*cos (0)*/ ((D_V_NE(hi) == -1)  ? g_d[i][D_NE(hi)<<1]  : g_sp[inv+D_V_NE(hi)][D_NE(hi)<<1]) + g_d[i][gi];
             } else {
                 // Boundary condition _should_ be satisfied by
                 // sigmoidal roll-off of g towards the boundary, so
                 // add only g[i][0][hi]
-                term2_d[hi] += /*cos (0)*/ (this->g_d[i][0][hi]);
+                term2_d[hi] += /*cos (0)*/ (this->g_d[i][hi<<1]);
             }
             if (D_HAS_NNE(hi)) {
-                term2_d[hi] += /*cos (60)*/ 0.5 *    ( ((D_V_NNE(hi) == -1)  ? g_d[i][0][D_NNE(hi)]  : g_sp[i][D_V_NNE(hi)][0][D_NNE(hi)])   + g_d[i][0][hi])
-                    + /*sin (60)*/ R3_OVER_2 * ( ((D_V_NNE(hi) == -1)  ? g_d[i][1][D_NNE(hi)]  : g_sp[i][D_V_NNE(hi)][1][D_NNE(hi)])   + g_d[i][1][hi]);
+                term2_d[hi] += /*cos (60)*/ 0.5 * ( ((D_V_NNE(hi) == -1) ? g_d[i][D_NNE(hi)<<1]    : g_sp[inv+D_V_NNE(hi)][D_NNE(hi)<<1])     + g_d[i][gi])
+                    + /*sin (60)*/ R3_OVER_2 *    ( ((D_V_NNE(hi) == -1) ? g_d[i][1+(D_NNE(hi)<<1)]: g_sp[inv+D_V_NNE(hi)][1+(D_NNE(hi)<<1)]) + g_d[i][giy]);
             } else {
-                term2_d[hi] += /*cos (60)*/ 0.5 * (this->g_d[i][0][hi])
-                    + /*sin (60)*/ R3_OVER_2 * (this->g_d[i][1][hi]);
+                term2_d[hi] += /*cos (60)*/ 0.5 * (this->g_d[i][gi])
+                    + /*sin (60)*/ R3_OVER_2 * (this->g_d[i][giy]);
             }
             if (D_HAS_NNW(hi)) {
-                term2_d[hi] += -(/*cos (120)*/ 0.5 *  ( ((D_V_NNW(hi) == -1)  ? g_d[i][0][D_NNW(hi)]  : g_sp[i][D_V_NNW(hi)][0][D_NNW(hi)])  + g_d[i][0][hi]))
-                    + /*sin (120)*/ R3_OVER_2 * ( ((D_V_NNW(hi) == -1)  ? g_d[i][1][D_NNW(hi)]  : g_sp[i][D_V_NNW(hi)][1][D_NNW(hi)])  + g_d[i][1][hi]);
+                term2_d[hi] += -(/*cos (120)*/ 0.5 *  ( ((D_V_NNW(hi) == -1)  ? g_d[i][D_NNW(hi)<<1]  : g_sp[inv+D_V_NNW(hi)][D_NNW(hi)<<1])  + g_d[i][gi]))
+                    + /*sin (120)*/ R3_OVER_2 * ( ((D_V_NNW(hi) == -1)  ? g_d[i][1+(D_NNW(hi)<<1)]  : g_sp[inv+D_V_NNW(hi)][1+(D_NNW(hi)<<1)])  + g_d[i][giy]);
             } else {
-                term2_d[hi] += -(/*cos (120)*/ 0.5 * (this->g_d[i][0][hi]))
-                    + /*sin (120)*/ R3_OVER_2 * (this->g_d[i][1][hi]);
+                term2_d[hi] += -(/*cos (120)*/ 0.5 * (this->g_d[i][gi]))
+                    + /*sin (120)*/ R3_OVER_2 * (this->g_d[i][giy]);
             }
             if (D_HAS_NW(hi)) {
-                term2_d[hi] -= /*cos (180)*/ ( ((D_V_NW(hi) == -1)  ? g_d[i][0][D_NW(hi)]  : g_sp[i][D_V_NW(hi)][0][D_NW(hi)]) + g_d[i][0][hi]);
+                term2_d[hi] -= /*cos (180)*/ ( ((D_V_NW(hi) == -1)  ? g_d[i][D_NW(hi)<<1]  : g_sp[inv+D_V_NW(hi)][D_NW(hi)<<1]) + g_d[i][gi]);
             } else {
-                term2_d[hi] -= /*cos (180)*/ (this->g_d[i][0][hi]);
+                term2_d[hi] -= /*cos (180)*/ (this->g_d[i][gi]);
             }
             if (D_HAS_NSW(hi)) {
-                term2_d[hi] -= /*cos (240)*/ 0.5     * ( ((D_V_NSW(hi) == -1)  ? g_d[i][0][D_NSW(hi)]  : g_sp[i][D_V_NSW(hi)][0][D_NSW(hi)])  + g_d[i][0][hi])
-                    - (/*sin (240)*/ R3_OVER_2 * ( ((D_V_NSW(hi) == -1)  ? g_d[i][1][D_NSW(hi)]  : g_sp[i][D_V_NSW(hi)][1][D_NSW(hi)])  + g_d[i][1][hi]));
+                term2_d[hi] -= /*cos (240)*/ 0.5     * ( ((D_V_NSW(hi) == -1)  ? g_d[i][D_NSW(hi)<<1]  : g_sp[inv+D_V_NSW(hi)][D_NSW(hi)<<1])  + g_d[i][gi])
+                    - (/*sin (240)*/ R3_OVER_2 * ( ((D_V_NSW(hi) == -1)  ? g_d[i][1+(D_NSW(hi)<<1)]  : g_sp[inv+D_V_NSW(hi)][1+(D_NSW(hi)<<1)])  + g_d[i][giy]));
             } else {
-                term2_d[hi] -= /*cos (240)*/ 0.5 * (this->g_d[i][0][hi])
-                    - (/*sin (240)*/ R3_OVER_2 * (this->g_d[i][1][hi]));
+                term2_d[hi] -= /*cos (240)*/ 0.5 * (this->g_d[i][gi])
+                    - (/*sin (240)*/ R3_OVER_2 * (this->g_d[i][giy]));
             }
             if (D_HAS_NSE(hi)) {
-                term2_d[hi] += /*cos (300)*/ 0.5     * ( ((D_V_NSE(hi) == -1)  ? g_d[i][0][D_NSE(hi)]  : g_sp[i][D_V_NSE(hi)][0][D_NSE(hi)])  + g_d[i][0][hi])
-                    - (/*sin (300)*/ R3_OVER_2 * ( ((D_V_NSE(hi) == -1)  ? g_d[i][1][D_NSE(hi)]  : g_sp[i][D_V_NSE(hi)][1][D_NSE(hi)])  + g_d[i][1][hi]));
+                term2_d[hi] += /*cos (300)*/ 0.5     * ( ((D_V_NSE(hi) == -1)  ? g_d[i][D_NSE(hi)<<1]  : g_sp[inv+D_V_NSE(hi)][D_NSE(hi)<<1])  + g_d[i][gi])
+                    - (/*sin (300)*/ R3_OVER_2 * ( ((D_V_NSE(hi) == -1)  ? g_d[i][1+(D_NSE(hi)<<1)]  : g_sp[inv+D_V_NSE(hi)][1+(D_NSE(hi)<<1)])  + g_d[i][giy]));
             } else {
-                term2_d[hi] += /*cos (300)*/ 0.5 * (this->g_d[i][0][hi])       // 1st sum
-                    - (/*sin (300)*/ R3_OVER_2 * (this->g_d[i][1][hi])); // 2nd sum
+                term2_d[hi] += /*cos (300)*/ 0.5 * (this->g_d[i][gi])       // 1st sum
+                    - (/*sin (300)*/ R3_OVER_2 * (this->g_d[i][giy])); // 2nd sum
             }
 
             term2_d[hi] /= (3.0 * this->d);
             term2_d[hi] *= fa_d[hi];
-
         }
 
 #pragma omp simd
-        for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
+        for (unsigned int hi=0, gi=0, giy=1; hi<this->nhex_d; ++hi,gi+=2,giy+=2) {
             // 3. Third term is this->g . grad a_i. Should not
             // contribute to J, as g(x) decays towards boundary.
-            term3_d[hi] = this->g_d[i][0][hi] * this->grad_a_d[i][0][hi]
-                + this->g_d[i][1][hi] * this->grad_a_d[i][1][hi];
+            term3_d[hi] = this->g_d[i][gi] * this->grad_a_d[i][gi]
+                + this->g_d[i][giy] * this->grad_a_d[i][giy];
 
             this->divJ_d[i][hi] = term1_d[hi] + term2_d[hi] + term3_d[hi];
         }
@@ -1732,19 +1707,34 @@ public:
             /*
              * Main body of parallelogram. Neighbours guaranteed.
              */
+
+            unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
+            unsigned int sp_offs_nse = SP_OFFS_NSE(rl);
+            unsigned int sp_offs_nnw = SP_OFFS_NNW(rl);
+            unsigned int sp_offs_nsw = SP_OFFS_NSW(rl);
+            // These ones are the offsets in a gradeint, and are hence*2
+            unsigned int sp_offs_nne_2 = SP_OFFS_NNE(rl)<<1;
+            unsigned int sp_offs_nse_2 = SP_OFFS_NSE(rl)<<1;
+            unsigned int sp_offs_nnw_2 = SP_OFFS_NNW(rl)<<1;
+            unsigned int sp_offs_nsw_2 = SP_OFFS_NSW(rl)<<1;
+            unsigned int sp_offs_ne_2 = SP_OFFS_NE<<1;
+            unsigned int sp_offs_nw_2 = SP_OFFS_NW<<1;
+
+            unsigned int ivi = inv + vi;
+
             //#pragma omp parallel for
 #pragma omp simd // Gives vectorization in this loop! ADDITIONAL SPEEDUP POTENTIAL - stuck between L1 and L2 cache.
-            for (unsigned int hi=rl+1; hi < vl-rl-1; ++hi) {
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 // 1. The D Del^2 a_i term
                 // Compute the sum around the neighbours
-                double thesum = -6 * fa_sp[vi+inv][hi];
+                double thesum = -6 * fa_sp[ivi][hi];
 
-                thesum += fa_sp[vi+inv][hi+SP_OFFS_NE];
-                thesum += fa_sp[vi+inv][hi+SP_OFFS_NNE(rl)];
-                thesum += fa_sp[vi+inv][hi+SP_OFFS_NNW(rl)];
-                thesum += fa_sp[vi+inv][hi+SP_OFFS_NW];
-                thesum += fa_sp[vi+inv][hi+SP_OFFS_NSW(rl)];
-                thesum += fa_sp[vi+inv][hi+SP_OFFS_NSE(rl)];
+                thesum += fa_sp[ivi][hi+SP_OFFS_NE];
+                thesum += fa_sp[ivi][hi+sp_offs_nne];
+                thesum += fa_sp[ivi][hi+sp_offs_nnw];
+                thesum += fa_sp[ivi][hi+SP_OFFS_NW];
+                thesum += fa_sp[ivi][hi+sp_offs_nsw];
+                thesum += fa_sp[ivi][hi+sp_offs_nse];
 
                 // Multiply bu 2D/3d^2
                 double term1 = this->twoDover3dd * thesum;
@@ -1753,33 +1743,32 @@ public:
                 // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
                 double term2 = 0.0;
                 // First and second sums together:
-                term2 += /*cos (0)*/ g_sp[i][vi][0][hi+SP_OFFS_NE] + g_sp[i][vi][0][hi];
+                term2 += /*cos (0)*/ g_sp[ivi][(hi+SP_OFFS_NE)<<1] + g_sp[ivi][gi];
 
-                term2 += /*cos (60)*/ 0.5 *    (g_sp[i][vi][0][hi+SP_OFFS_NNE(rl)]   + g_sp[i][vi][0][hi])
-                    + /*sin (60)*/ R3_OVER_2 * (g_sp[i][vi][1][hi+SP_OFFS_NNE(rl)]   + g_sp[i][vi][1][hi]);
+                term2 += /*cos (60)*/ 0.5 *    (g_sp[ivi][gi+sp_offs_nne_2]   + g_sp[ivi][gi])
+                    + /*sin (60)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nne_2]   + g_sp[ivi][giy]);
 
-                term2 += -(/*cos (120)*/ 0.5 *  (g_sp[i][vi][0][hi+SP_OFFS_NNW(rl)]  + g_sp[i][vi][0][hi]))
-                    + /*sin (120)*/ R3_OVER_2 * (g_sp[i][vi][1][hi+SP_OFFS_NNW(rl)]  + g_sp[i][vi][1][hi]);
+                term2 += -(/*cos (120)*/ 0.5 *  (g_sp[ivi][gi+sp_offs_nnw_2]  + g_sp[ivi][gi]))
+                    + /*sin (120)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nnw_2]  + g_sp[ivi][giy]);
 
-                term2 -= /*cos (180)*/ (g_sp[i][vi][0][hi+SP_OFFS_NW] + g_d[i][0][hi]);
+                term2 -= /*cos (180)*/ (g_sp[ivi][gi+sp_offs_nw_2] + g_d[i][gi]);
 
-                term2 -= /*cos (240)*/ 0.5     * (g_sp[i][vi][0][hi+SP_OFFS_NSW(rl)]  + g_sp[i][vi][0][hi])
-                    - (/*sin (240)*/ R3_OVER_2 * (g_sp[i][vi][1][hi+SP_OFFS_NSW(rl)]  + g_sp[i][vi][1][hi]));
+                term2 -= /*cos (240)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nsw_2]  + g_sp[ivi][gi])
+                    - (/*sin (240)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nsw_2]  + g_sp[ivi][giy]));
 
-                term2 += /*cos (300)*/ 0.5     * (g_sp[i][vi][0][hi+SP_OFFS_NSE(rl)]  + g_sp[i][vi][0][hi])
-                    - (/*sin (300)*/ R3_OVER_2 * (g_sp[i][vi][1][hi+SP_OFFS_NSE(rl)]  + g_sp[i][vi][1][hi]));
+                term2 += /*cos (300)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nse_2]  + g_sp[ivi][gi])
+                    - (/*sin (300)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nse_2]  + g_sp[ivi][giy]));
 
                 term2 /= (3.0 * this->d);
-                term2 *= fa_sp[vi+inv][hi];
+                term2 *= fa_sp[ivi][hi];
 
                 // 3. Third term is this->g . grad a_i. Should not
                 // contribute to J, as g(x) decays towards boundary.
-                double term3 = this->g_sp[i][vi][0][hi] * this->grad_a_sp[i][vi][0][hi]
-                    + this->g_sp[i][vi][1][hi] * this->grad_a_sp[i][vi][1][hi];
+                double term3 = this->g_sp[ivi][gi] * this->grad_a_sp[ivi][gi]
+                    + this->g_sp[ivi][giy] * this->grad_a_sp[ivi][giy];
 
-                this->divJ_sp[vi+inv][hi] = term1 + term2 + term3;
+                this->divJ_sp[ivi][hi] = term1 + term2 + term3;
             }
-
         }
         /*
          * Done computing for fa_sp

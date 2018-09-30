@@ -56,29 +56,29 @@ using morph::HdfData;
  * slightly for the case where a neighbour is in a subparallelogram.
  */
 //@{
-#define D_NE(hi) (this->hg->d_ne[hi])   // iterator into vector to find the NE neigbour
-#define D_V_NE(hi) (this->hg->d_v_ne[hi]) // *which* vector to iterate into to find NE neighbour
-#define D_HAS_NE(hi) (this->hg->d_ne[hi] == -1 ? false : true)
+#define D_NE(hi) (this->hg->d64_ne[hi])   // iterator into vector to find the NE neigbour
+#define D_V_NE(hi) (this->hg->d64_v_ne[hi]) // *which* vector to iterate into to find NE neighbour
+#define D_HAS_NE(hi) (this->hg->d64_ne[hi] == -1 ? false : true)
 
-#define D_NW(hi) (this->hg->d_nw[hi])
-#define D_V_NW(hi) (this->hg->d_v_nw[hi])
-#define D_HAS_NW(hi) (this->hg->d_nw[hi] == -1 ? false : true)
+#define D_NW(hi) (this->hg->d64_nw[hi])
+#define D_V_NW(hi) (this->hg->d64_v_nw[hi])
+#define D_HAS_NW(hi) (this->hg->d64_nw[hi] == -1 ? false : true)
 
-#define D_NNE(hi) (this->hg->d_nne[hi])
-#define D_V_NNE(hi) (this->hg->d_v_nne[hi])
-#define D_HAS_NNE(hi) (this->hg->d_nne[hi] == -1 ? false : true)
+#define D_NNE(hi) (this->hg->d64_nne[hi])
+#define D_V_NNE(hi) (this->hg->d64_v_nne[hi])
+#define D_HAS_NNE(hi) (this->hg->d64_nne[hi] == -1 ? false : true)
 
-#define D_NNW(hi) (this->hg->d_nnw[hi])
-#define D_V_NNW(hi) (this->hg->d_v_nnw[hi])
-#define D_HAS_NNW(hi) (this->hg->d_nnw[hi] == -1 ? false : true)
+#define D_NNW(hi) (this->hg->d64_nnw[hi])
+#define D_V_NNW(hi) (this->hg->d64_v_nnw[hi])
+#define D_HAS_NNW(hi) (this->hg->d64_nnw[hi] == -1 ? false : true)
 
-#define D_NSE(hi) (this->hg->d_nse[hi])
-#define D_V_NSE(hi) (this->hg->d_v_nse[hi])
-#define D_HAS_NSE(hi) (this->hg->d_nse[hi] == -1 ? false : true)
+#define D_NSE(hi) (this->hg->d64_nse[hi])
+#define D_V_NSE(hi) (this->hg->d64_v_nse[hi])
+#define D_HAS_NSE(hi) (this->hg->d64_nse[hi] == -1 ? false : true)
 
-#define D_NSW(hi) (this->hg->d_nsw[hi])
-#define D_V_NSW(hi) (this->hg->d_v_nsw[hi])
-#define D_HAS_NSW(hi) (this->hg->d_nsw[hi] == -1 ? false : true)
+#define D_NSW(hi) (this->hg->d64_nsw[hi])
+#define D_V_NSW(hi) (this->hg->d64_v_nsw[hi])
+#define D_HAS_NSW(hi) (this->hg->d64_nsw[hi] == -1 ? false : true)
 //@}
 
 //@}
@@ -97,29 +97,29 @@ using morph::HdfData;
  * computational drawbacks.
  */
 //@{
-#define SP_NE(vi,hi) (this->hg->sp_ne[vi][hi])
-#define SP_V_NE(vi,hi) (this->hg->sp_v_ne[vi][hi])
-#define SP_HAS_NE(vi,hi) (this->hg->sp_nsw[vi][hi] == -1 ? false : true)
+#define SP_NE(vi,hi) (this->hg->sp64_ne[vi][hi])
+#define SP_V_NE(vi,hi) (this->hg->sp64_v_ne[vi][hi])
+#define SP_HAS_NE(vi,hi) (this->hg->sp64_nsw[vi][hi] == -1 ? false : true)
 
-#define SP_NW(vi,hi) (this->hg->sp_nw[vi][hi])
-#define SP_V_NW(vi,hi) (this->hg->sp_v_nw[vi][hi])
-#define SP_HAS_NW(vi,hi) (this->hg->sp_nw[vi][hi] == -1 ? false : true)
+#define SP_NW(vi,hi) (this->hg->sp64_nw[vi][hi])
+#define SP_V_NW(vi,hi) (this->hg->sp64_v_nw[vi][hi])
+#define SP_HAS_NW(vi,hi) (this->hg->sp64_nw[vi][hi] == -1 ? false : true)
 
-#define SP_NNE(vi,hi) (this->hg->sp_nne[vi][hi])
-#define SP_V_NNE(vi,hi) (this->hg->sp_v_nne[vi][hi])
-#define SP_HAS_NNE(vi,hi) (this->hg->sp_nne[vi][hi] == -1 ? false : true)
+#define SP_NNE(vi,hi) (this->hg->sp64_nne[vi][hi])
+#define SP_V_NNE(vi,hi) (this->hg->sp64_v_nne[vi][hi])
+#define SP_HAS_NNE(vi,hi) (this->hg->sp64_nne[vi][hi] == -1 ? false : true)
 
-#define SP_NNW(vi,hi) (this->hg->sp_nnw[vi][hi])
-#define SP_V_NNW(vi,hi) (this->hg->sp_v_nnw[vi][hi])
-#define SP_HAS_NNW(vi,hi) (this->hg->sp_nnw[vi][hi] == -1 ? false : true)
+#define SP_NNW(vi,hi) (this->hg->sp64_nnw[vi][hi])
+#define SP_V_NNW(vi,hi) (this->hg->sp64_v_nnw[vi][hi])
+#define SP_HAS_NNW(vi,hi) (this->hg->sp64_nnw[vi][hi] == -1 ? false : true)
 
-#define SP_NSW(vi,hi) (this->hg->sp_nsw[vi][hi])
-#define SP_V_NSW(vi,hi) (this->hg->sp_v_nsw[vi][hi])
-#define SP_HAS_NSW(vi,hi) (this->hg->sp_nsw[vi][hi] == -1 ? false : true)
+#define SP_NSW(vi,hi) (this->hg->sp64_nsw[vi][hi])
+#define SP_V_NSW(vi,hi) (this->hg->sp64_v_nsw[vi][hi])
+#define SP_HAS_NSW(vi,hi) (this->hg->sp64_nsw[vi][hi] == -1 ? false : true)
 
-#define SP_NSE(vi,hi) (this->hg->sp_nse[vi][hi])
-#define SP_V_NSE(vi,hi) (this->hg->sp_v_nse[vi][hi])
-#define SP_HAS_NSE(vi,hi) (this->hg->sp_nse[vi][hi] == -1 ? false : true)
+#define SP_NSE(vi,hi) (this->hg->sp64_nse[vi][hi])
+#define SP_V_NSE(vi,hi) (this->hg->sp64_v_nse[vi][hi])
+#define SP_HAS_NSE(vi,hi) (this->hg->sp64_nse[vi][hi] == -1 ? false : true)
 //@}
 
 /*!
@@ -1239,17 +1239,26 @@ public:
         // 3. Do integration of c
         for (unsigned int i=0; i<this->N; ++i) {
 
+            unsigned int inv = i * this->nv;
             // Pre-compute betaterm
             //#pragma omp parallel for
 #pragma omp simd
             for (unsigned int hi=0; hi<this->nhex_d; hi++) {
+#ifdef USE_POW
                 this->betaterm_d[i][hi] = (beta[i] * n_d[hi] * pow (a_d[i][hi], k));
+#else
+                this->betaterm_d[i][hi] = (beta[i] * n_d[hi] * a_d[i][hi] * a_d[i][hi] * a_d[i][hi] );
+#endif
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
 #pragma omp simd
                 for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    this->betaterm_sp[vi+(i*this->nv)][hi] = (beta[i] * n_sp[vi][hi] * pow (a_sp[vi+(i*this->nv)][hi], k));
+#ifdef USE_POW
+                    this->betaterm_sp[inv+vi][hi] = (beta[i] * n_sp[vi][hi] * pow (a_sp[inv+vi][hi], k));
+#else
+                    this->betaterm_sp[inv+vi][hi] = (beta[i] * n_sp[vi][hi] * a_sp[inv+vi][hi] * a_sp[inv+vi][hi] * a_sp[inv+vi][hi] );
+#endif
                 }
             }
 
@@ -1327,6 +1336,7 @@ public:
         unsigned int inv = i * this->nv;
         for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
             //#pragma omp parallel for
+#pragma omp simd
             for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
                 dci_dt_sp[vi][hi] = (this->betaterm_sp[inv+vi][hi] - this->alpha[i] * f_sp[vi][hi]);
             }
@@ -1360,16 +1370,16 @@ public:
             // Find x gradient
             if (D_HAS_NE(hi) && D_HAS_NW(hi)) {
                 // A neighbour hex may either be found in f_d *or* in f_sp!
-                double _w = (this->hg->d_v_nw[hi] == -1) ? f_d[D_NW(hi)] : f_sp[this->hg->d_v_nw[hi]][D_NW(hi)];
-                double _e = (this->hg->d_v_ne[hi] == -1) ? f_d[D_NE(hi)] : f_sp[this->hg->d_v_ne[hi]][D_NE(hi)];
+                double _w = (D_V_NW(hi) == -1) ? f_d[D_NW(hi)] : f_sp[D_V_NW(hi)][D_NW(hi)];
+                double _e = (D_V_NE(hi) == -1) ? f_d[D_NE(hi)] : f_sp[D_V_NE(hi)][D_NE(hi)];
                 gradf_d[gi] = (_e - _w) * oneover2d;
 
             } else if (D_HAS_NE(hi)) {
-                double _e = (this->hg->d_v_ne[hi] == -1) ? f_d[D_NE(hi)] : f_sp[this->hg->d_v_ne[hi]][D_NE(hi)];
+                double _e = (D_V_NE(hi) == -1) ? f_d[D_NE(hi)] : f_sp[D_V_NE(hi)][D_NE(hi)];
                 gradf_d[gi] = (_e - f_d[hi]) * oneoverd;
 
             } else if (D_HAS_NW(hi)) {
-                double _w = (this->hg->d_v_nw[hi] == -1) ? f_d[D_NW(hi)] : f_sp[this->hg->d_v_nw[hi]][D_NW(hi)];
+                double _w = (D_V_NW(hi) == -1) ? f_d[D_NW(hi)] : f_sp[D_V_NW(hi)][D_NW(hi)];
                 gradf_d[gi] = (f_d[hi] - _w) * oneoverd;
             } else {
                 // zero gradient in x direction as no neighbours in
@@ -1385,30 +1395,30 @@ public:
             // Find y gradient
             if (D_HAS_NNW(hi) && D_HAS_NNE(hi) && D_HAS_NSW(hi) && D_HAS_NSE(hi)) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
-                double _nw = (this->hg->d_v_nnw[hi] == -1) ? f_d[D_NNW(hi)] : f_sp[inv+this->hg->d_v_nnw[hi]][D_NNW(hi)];
-                double _ne = (this->hg->d_v_nne[hi] == -1) ? f_d[D_NNE(hi)] : f_sp[inv+this->hg->d_v_nne[hi]][D_NNE(hi)];
-                double _sw = (this->hg->d_v_nsw[hi] == -1) ? f_d[D_NSW(hi)] : f_sp[inv+this->hg->d_v_nsw[hi]][D_NSW(hi)];
-                double _se = (this->hg->d_v_nse[hi] == -1) ? f_d[D_NSE(hi)] : f_sp[inv+this->hg->d_v_nse[hi]][D_NSE(hi)];
+                double _nw = (D_V_NNW(hi) == -1) ? f_d[D_NNW(hi)] : f_sp[inv+D_V_NNW(hi)][D_NNW(hi)];
+                double _ne = (D_V_NNE(hi) == -1) ? f_d[D_NNE(hi)] : f_sp[inv+D_V_NNE(hi)][D_NNE(hi)];
+                double _sw = (D_V_NSW(hi) == -1) ? f_d[D_NSW(hi)] : f_sp[inv+D_V_NSW(hi)][D_NSW(hi)];
+                double _se = (D_V_NSE(hi) == -1) ? f_d[D_NSE(hi)] : f_sp[inv+D_V_NSE(hi)][D_NSE(hi)];
                 gradf_d[gi] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
 
             } else if (D_HAS_NNW(hi) && D_HAS_NNE(hi)) {
-                double _nw = (this->hg->d_v_nnw[hi] == -1) ? f_d[D_NNW(hi)] : f_sp[inv+this->hg->d_v_nnw[hi]][D_NNW(hi)];
-                double _ne = (this->hg->d_v_nne[hi] == -1) ? f_d[D_NNE(hi)] : f_sp[inv+this->hg->d_v_nne[hi]][D_NNE(hi)];
+                double _nw = (D_V_NNW(hi) == -1) ? f_d[D_NNW(hi)] : f_sp[inv+D_V_NNW(hi)][D_NNW(hi)];
+                double _ne = (D_V_NNE(hi) == -1) ? f_d[D_NNE(hi)] : f_sp[inv+D_V_NNE(hi)][D_NNE(hi)];
                 gradf_d[gi] = ( (_ne + _nw) * 0.5 - f_d[hi]) * oneoverv;
 
             } else if (D_HAS_NSW(hi) && D_HAS_NSE(hi)) {
-                double _sw = (this->hg->d_v_nsw[hi] == -1) ? f_d[D_NSW(hi)] : f_sp[inv+this->hg->d_v_nsw[hi]][D_NSW(hi)];
-                double _se = (this->hg->d_v_nse[hi] == -1) ? f_d[D_NSE(hi)] : f_sp[inv+this->hg->d_v_nse[hi]][D_NSE(hi)];
+                double _sw = (D_V_NSW(hi) == -1) ? f_d[D_NSW(hi)] : f_sp[inv+D_V_NSW(hi)][D_NSW(hi)];
+                double _se = (D_V_NSE(hi) == -1) ? f_d[D_NSE(hi)] : f_sp[inv+D_V_NSE(hi)][D_NSE(hi)];
                 gradf_d[gi] = (f_d[hi] - (_se + _sw) * 0.5) * oneoverv;
 
             } else if (D_HAS_NNW(hi) && D_HAS_NSW(hi)) {
-                double _nw = (this->hg->d_v_nnw[hi] == -1) ? f_d[D_NNW(hi)] : f_sp[inv+this->hg->d_v_nnw[hi]][D_NNW(hi)];
-                double _sw = (this->hg->d_v_nsw[hi] == -1) ? f_d[D_NSW(hi)] : f_sp[inv+this->hg->d_v_nsw[hi]][D_NSW(hi)];
+                double _nw = (D_V_NNW(hi) == -1) ? f_d[D_NNW(hi)] : f_sp[inv+D_V_NNW(hi)][D_NNW(hi)];
+                double _sw = (D_V_NSW(hi) == -1) ? f_d[D_NSW(hi)] : f_sp[inv+D_V_NSW(hi)][D_NSW(hi)];
                 gradf_d[gi] = (_nw - _sw) * oneover2v;
 
             } else if (D_HAS_NNE(hi) && D_HAS_NSE(hi)) {
-                double _ne = (this->hg->d_v_nne[hi] == -1) ? f_d[D_NNE(hi)] : f_sp[inv+this->hg->d_v_nne[hi]][D_NNE(hi)];
-                double _se = (this->hg->d_v_nse[hi] == -1) ? f_d[D_NSE(hi)] : f_sp[inv+this->hg->d_v_nse[hi]][D_NSE(hi)];
+                double _ne = (D_V_NNE(hi) == -1) ? f_d[D_NNE(hi)] : f_sp[inv+D_V_NNE(hi)][D_NNE(hi)];
+                double _se = (D_V_NSE(hi) == -1) ? f_d[D_NSE(hi)] : f_sp[inv+D_V_NSE(hi)][D_NSE(hi)];
                 gradf_d[gi] = (_ne - _se) * oneover2v;
             } else {
                 // Leave grady at 0
@@ -1563,17 +1573,16 @@ public:
 #ifdef __ICC__
 //    __itt_resume();
 #endif
-            //#pragma omp parallel for
             unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
             unsigned int sp_offs_nse = SP_OFFS_NSE(rl);
             unsigned int sp_offs_nnw = SP_OFFS_NNW(rl);
             unsigned int sp_offs_nsw = SP_OFFS_NSW(rl);
+//#pragma omp parallel for
 #pragma omp simd
             for (unsigned int hi=rl+1, gi=2*(rl+1); hi < vl-rl-1; ++hi, ++gi) {
                 // All neighbours guaranteed so:
                 gradf_sp[ivi][gi] = (f_sp[ivi][hi+SP_OFFS_NE] - f_sp[ivi][hi+SP_OFFS_NW]) * oneover2d;
-                gradf_sp[ivi][++gi] = ( (f_sp[ivi][hi+sp_offs_nne] - f_sp[ivi][hi+sp_offs_nse])
-                                        + (f_sp[ivi][hi+sp_offs_nnw] - f_sp[ivi][hi+sp_offs_nsw]) ) * oneoverv;
+                gradf_sp[ivi][++gi] = ( (f_sp[ivi][hi+sp_offs_nne] - f_sp[ivi][hi+sp_offs_nse]) + (f_sp[ivi][hi+sp_offs_nnw] - f_sp[ivi][hi+sp_offs_nsw]) ) * oneoverv;
             }
 
 #ifdef __ICC__
@@ -1602,8 +1611,8 @@ public:
         /*
          * Compute for fa_d...
          */
-        ////#pragma omp parallel for schedule(dynamic,50)
 //#pragma omp simd // Makes this loop *slower* due to vector register spilling
+//#pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
 
             // 1. The D Del^2 a_i term
@@ -1623,7 +1632,8 @@ public:
         }
 
 //#pragma omp simd // No benefit from SIMD - unavoidable memory access
-        for (unsigned int hi=0, gi=0, giy=1; hi<this->nhex_d; ++hi, gi+=2, giy+=2) {
+//#pragma omp parallel for schedule(dynamic,50) // Neither from parallel for...
+            for (unsigned int hi=0, gi=0, giy=1; hi<this->nhex_d; ++hi, gi+=2, giy+=2) {
 
             // 2. The a div(g) term. Two sums for this.
             // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
@@ -1723,7 +1733,7 @@ public:
             }
 
             /*
-             * Main body of parallelogram. Neighbours guaranteed. Should be fast!
+             * Main body of parallelogram. Neighbours guaranteed. Should be fast.
              */
 
             unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
@@ -1767,10 +1777,20 @@ public:
                 term2_sp[vi][hi] = 0.0;
                 // First and second sums together:
                 term2_sp[vi][hi] += /*cos (0)*/ g_sp[ivi][(hi+SP_OFFS_NE)<<1] + g_sp[ivi][gi];
+            }
 
-                term2_sp[vi][hi] += /*cos (60)*/ 0.5 *    (g_sp[ivi][gi+sp_offs_nne_2]   + g_sp[ivi][gi])
-                    + /*sin (60)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nne_2]   + g_sp[ivi][giy]);
 
+//#pragma omp parallel for
+#pragma omp simd // YELLOW
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
+
+                double a = (g_sp[ivi][gi+sp_offs_nne_2]    + g_sp[ivi][gi]);
+                double b = (g_sp[ivi][giy+sp_offs_nne_2]   + g_sp[ivi][giy]);
+                term2_sp[vi][hi] += /*cos (60)*/ 0.5 * a + R3_OVER_2 * b;
+            }
+
+#pragma omp simd // YELLOW
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 term2_sp[vi][hi] += -(/*cos (120)*/ 0.5 *  (g_sp[ivi][gi+sp_offs_nnw_2]  + g_sp[ivi][gi]))
                     + /*sin (120)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nnw_2]  + g_sp[ivi][giy]);
             }
@@ -1778,12 +1798,23 @@ public:
             for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 term2_sp[vi][hi] -= /*cos (180)*/ (g_sp[ivi][gi+sp_offs_nw_2] + g_d[i][gi]);
 
+            }
+
+#pragma omp simd // YELLOW
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 term2_sp[vi][hi] -= /*cos (240)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nsw_2]  + g_sp[ivi][gi])
                     - (/*sin (240)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nsw_2]  + g_sp[ivi][giy]));
 
+            }
+
+#pragma omp simd // YELLOW
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 term2_sp[vi][hi] += /*cos (300)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nse_2]  + g_sp[ivi][gi])
                     - (/*sin (300)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nse_2]  + g_sp[ivi][giy]));
 
+            }
+#pragma omp simd
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 term2_sp[vi][hi] *= oneover3d;
                 term2_sp[vi][hi] *= fa_sp[ivi][hi];
             }

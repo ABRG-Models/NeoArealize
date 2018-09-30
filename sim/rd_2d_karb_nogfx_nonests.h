@@ -327,7 +327,9 @@ public:
      * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
      * paper.
      */
-    alignas(8) double k = 3.0;
+    // Makes no difference whether double or int, as far as pow() call goes.
+    //alignas(8) double k = 3.0;
+    alignas(8) int k = 3;
 
     /*!
      * The diffusion parameter.
@@ -467,12 +469,12 @@ public:
      * them at initialisation.
      */
     //@{
-    alignas(8)        double* rhoA_d;
-    alignas(8) vector<double*> rhoA_sp;
-    alignas(8)        double* rhoB_d;
-    alignas(8) vector<double*> rhoB_sp;
-    alignas(8)        double* rhoC_d;
-    alignas(8) vector<double*> rhoC_sp;
+    double* rhoA_d;
+    vector<double*> rhoA_sp;
+    double* rhoB_d;
+    vector<double*> rhoB_sp;
+    double* rhoC_d;
+    vector<double*> rhoC_sp;
     //@}
 
     /*!
@@ -523,6 +525,7 @@ public:
     alignas(8) double twov = this->v+this->v;
     alignas(8) double oneover2v = 1.0/this->twov;
     alignas(8) double oneover2d = 1.0/(this->d+this->d);
+    alignas(8) double oneover3d = 1.0/(3.0 * this->d);
     alignas(8) double twoDover3dd = 0.0;
     //@}
 
@@ -674,8 +677,9 @@ public:
     /*!
      * Resize a variable that'll be nhex elements long
      */
-    void alloc_d_vector_variable (double* v) {
-        v = (double*)_mm_malloc (this->nhex_d*sizeof(double), 64);
+    void alloc_d_vector_variable (double*& v) {
+        v = (double*)aligned_alloc (64, this->nhex_d*sizeof(double)); // FIXME choose aligned_alloc or _mm_malloc throughout.
+        DBG ("v has value " << std::hex << v << std::dec);
     }
     void alloc_sp_vector_variable (vector<double*>& vv) {
         vv.resize (this->hg->sp_numvecs);
@@ -718,7 +722,7 @@ public:
     /*!
      * A gradient field is just interleaved
      */
-    void alloc_d_gradient_field (double* gf) {
+    void alloc_d_gradient_field (double*& gf) {
         gf = (double*)_mm_malloc (2*this->nhex_d*sizeof(double), 64);
     }
     void alloc_sp_gradient_field (vector<double*>& gfs) {
@@ -836,6 +840,9 @@ public:
         this->alloc_d_vector_variable (this->term1_d);
         this->alloc_d_vector_variable (this->term2_d);
         this->alloc_d_vector_variable (this->term3_d);
+        this->alloc_sp_vector_variable (this->term1_sp);
+        this->alloc_sp_vector_variable (this->term2_sp);
+        this->alloc_sp_vector_variable (this->term3_sp);
 
         // Resize and zero-initialise the various containers
         this->alloc_d_vector_vector (this->c_d);
@@ -853,6 +860,7 @@ public:
         this->alloc_sp_vector_variable (this->n_sp);
 
         this->alloc_d_vector_variable (this->rhoA_d);
+        DBG ("rhoA_d has value " << std::hex << rhoA_d << std::dec);
         this->alloc_sp_vector_variable (this->rhoA_sp);
         this->alloc_d_vector_variable (this->rhoB_d);
         this->alloc_sp_vector_variable (this->rhoB_sp);
@@ -1141,14 +1149,23 @@ public:
             DBG2 ("After coupling compute, n["<<i<<"][4159]: " << n[4159]);
 #pragma omp simd
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
+#ifdef USE_POW
                 this->alpha_c_beta_na_d[i][hi] = (alpha[i] * c_d[i][hi] - beta[i] * n_d[hi] * pow (a_d[i][hi], k));
+#else
+                this->alpha_c_beta_na_d[i][hi] = (alpha[i] * c_d[i][hi] - beta[i] * n_d[hi] * a_d[i][hi] * a_d[i][hi] * a_d[i][hi] );
+#endif
             }
 
+            unsigned int inv = i * this->nv;
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
 // NB In the next one, memory access is much worse. Nested vectors not a good idea?
 #pragma omp simd
                 for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    this->alpha_c_beta_na_sp[vi+(i*this->nv)][hi] = (alpha[i] * c_sp[vi+(i*this->nv)][hi] - beta[i] * n_sp[vi][hi] * pow (a_sp[vi+(i*this->nv)][hi], k));
+#ifdef USE_POW
+                    this->alpha_c_beta_na_sp[inv+vi][hi] = (alpha[i] * c_sp[inv+vi][hi] - beta[i] * n_sp[vi][hi] * pow (a_sp[inv+vi][hi], k));
+#else
+                    this->alpha_c_beta_na_sp[inv+vi][hi] = (alpha[i] * c_sp[inv+vi][hi] - beta[i] * n_sp[vi][hi] * a_sp[inv+vi][hi] * a_sp[inv+vi][hi] * a_sp[inv+vi][hi] );
+#endif
                 }
             }
         }
@@ -1174,7 +1191,7 @@ public:
                 }
             }
 
-            this->compute_divJ (q_d, q_sp, i);
+            this->compute_divJ (q_d, q_sp, 0);
             //#pragma omp parallel for
 #pragma omp simd
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
@@ -1190,7 +1207,7 @@ public:
                 }
             }
 
-            this->compute_divJ (q_d, q_sp, i);
+            this->compute_divJ (q_d, q_sp, 0);
             //#pragma omp parallel for
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
                 k3_d[hi] = this->divJ_d[i][hi] + this->alpha_c_beta_na_d[i][hi];
@@ -1204,7 +1221,7 @@ public:
                 }
             }
 
-            this->compute_divJ (q_d, q_sp, i);
+            this->compute_divJ (q_d, q_sp, 0);
             //#pragma omp parallel for
             for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
                 k4_d[hi] = this->divJ_d[i][hi] + this->alpha_c_beta_na_d[i][hi];
@@ -1364,6 +1381,7 @@ public:
 
 //#pragma omp simd // No benefit from SIMD
         for (unsigned int hi=0, gi=1; hi<nhd; ++hi, gi+=2) {
+            DBG2("hi=" << hi << " gi=" << gi);
             // Find y gradient
             if (D_HAS_NNW(hi) && D_HAS_NNE(hi) && D_HAS_NSW(hi) && D_HAS_NSE(hi)) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
@@ -1653,7 +1671,7 @@ public:
                     - (/*sin (300)*/ R3_OVER_2 * (this->g_d[i][giy])); // 2nd sum
             }
 
-            term2_d[hi] /= (3.0 * this->d);
+            term2_d[hi] *= oneover3d;
             term2_d[hi] *= fa_d[hi];
         }
 
@@ -1705,7 +1723,7 @@ public:
             }
 
             /*
-             * Main body of parallelogram. Neighbours guaranteed.
+             * Main body of parallelogram. Neighbours guaranteed. Should be fast!
              */
 
             unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
@@ -1737,37 +1755,47 @@ public:
                 thesum += fa_sp[ivi][hi+sp_offs_nse];
 
                 // Multiply bu 2D/3d^2
-                double term1 = this->twoDover3dd * thesum;
+                term1_sp[vi][hi] = this->twoDover3dd * thesum;
+            }
+
+            // Note: experimentally dividing up term2 computation...
+#pragma omp simd
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
 
                 // 2. The a div(g) term. Two sums for this.
                 // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
-                double term2 = 0.0;
+                term2_sp[vi][hi] = 0.0;
                 // First and second sums together:
-                term2 += /*cos (0)*/ g_sp[ivi][(hi+SP_OFFS_NE)<<1] + g_sp[ivi][gi];
+                term2_sp[vi][hi] += /*cos (0)*/ g_sp[ivi][(hi+SP_OFFS_NE)<<1] + g_sp[ivi][gi];
 
-                term2 += /*cos (60)*/ 0.5 *    (g_sp[ivi][gi+sp_offs_nne_2]   + g_sp[ivi][gi])
+                term2_sp[vi][hi] += /*cos (60)*/ 0.5 *    (g_sp[ivi][gi+sp_offs_nne_2]   + g_sp[ivi][gi])
                     + /*sin (60)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nne_2]   + g_sp[ivi][giy]);
 
-                term2 += -(/*cos (120)*/ 0.5 *  (g_sp[ivi][gi+sp_offs_nnw_2]  + g_sp[ivi][gi]))
+                term2_sp[vi][hi] += -(/*cos (120)*/ 0.5 *  (g_sp[ivi][gi+sp_offs_nnw_2]  + g_sp[ivi][gi]))
                     + /*sin (120)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nnw_2]  + g_sp[ivi][giy]);
+            }
+#pragma omp simd
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
+                term2_sp[vi][hi] -= /*cos (180)*/ (g_sp[ivi][gi+sp_offs_nw_2] + g_d[i][gi]);
 
-                term2 -= /*cos (180)*/ (g_sp[ivi][gi+sp_offs_nw_2] + g_d[i][gi]);
-
-                term2 -= /*cos (240)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nsw_2]  + g_sp[ivi][gi])
+                term2_sp[vi][hi] -= /*cos (240)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nsw_2]  + g_sp[ivi][gi])
                     - (/*sin (240)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nsw_2]  + g_sp[ivi][giy]));
 
-                term2 += /*cos (300)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nse_2]  + g_sp[ivi][gi])
+                term2_sp[vi][hi] += /*cos (300)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nse_2]  + g_sp[ivi][gi])
                     - (/*sin (300)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nse_2]  + g_sp[ivi][giy]));
 
-                term2 /= (3.0 * this->d);
-                term2 *= fa_sp[ivi][hi];
+                term2_sp[vi][hi] *= oneover3d;
+                term2_sp[vi][hi] *= fa_sp[ivi][hi];
+            }
 
+#pragma omp simd
+            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
                 // 3. Third term is this->g . grad a_i. Should not
                 // contribute to J, as g(x) decays towards boundary.
-                double term3 = this->g_sp[ivi][gi] * this->grad_a_sp[ivi][gi]
+                term3_sp[vi][hi] = this->g_sp[ivi][gi] * this->grad_a_sp[ivi][gi]
                     + this->g_sp[ivi][giy] * this->grad_a_sp[ivi][giy];
 
-                this->divJ_sp[ivi][hi] = term1 + term2 + term3;
+                this->divJ_sp[ivi][hi] = term1_sp[vi][hi] + term2_sp[vi][hi] + term3_sp[vi][hi];
             }
         }
         /*

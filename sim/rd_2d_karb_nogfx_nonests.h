@@ -165,7 +165,8 @@ public:
     const alignas(8) double ROOT3 = 1.73205080756888;
     //! Passed to HdfData constructor to say we want to read the data
     const alignas(4) bool READ_DATA = true;
-    //@}
+    const alignas(4) unsigned int avx2dbls = 4; // AVX2 is 256 bits or 4 doubles wide.
+        //@}
 
     /*!
      * Hex to hex d for the grid. Make smaller to increase the number
@@ -662,7 +663,11 @@ public:
      */
     void alloc_d_vector_vector (array<double*, NL>& vv) {
         for (unsigned int i=0; i<this->N; ++i) {
-            vv[i] = (double*)_mm_malloc (this->hg->d_x.size()*sizeof(double), 64);
+            vv[i] = (double*)_mm_malloc (this->nhex_d*sizeof(double), 64);
+            for (unsigned int ii=0; ii<this->nhex_d; ++ii) {
+                vv[i][ii] = 0.0;
+            }
+
         }
     }
     void alloc_sp_vector_vector (vector<double*>& vvv) {
@@ -670,6 +675,9 @@ public:
         for (unsigned int i = 0; i < NL; ++i) {
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 vvv[vi+(i*this->nv)] = (double*)_mm_malloc (this->hg->sp_veclen[vi]*sizeof(double), 64);
+                for (unsigned int ii=0; ii<this->hg->sp_veclen[vi]; ++ii) {
+                    vvv[vi+(i*this->nv)][ii] = 0.0;
+                }
             }
         }
     }
@@ -680,11 +688,17 @@ public:
     void alloc_d_vector_variable (double*& v) {
         v = (double*)aligned_alloc (64, this->nhex_d*sizeof(double)); // FIXME choose aligned_alloc or _mm_malloc throughout.
         DBG ("v has value " << std::hex << v << std::dec);
+        for (unsigned int ii=0; ii<this->nhex_d; ++ii) {
+            v[ii] = 0.0;
+        }
     }
     void alloc_sp_vector_variable (vector<double*>& vv) {
         vv.resize (this->hg->sp_numvecs);
         for (unsigned int j=0; j<this->hg->sp_numvecs; ++j) {
             vv[j] = (double*)_mm_malloc (this->hg->sp_veclen[j]*sizeof(double), 64);
+            for (unsigned int ii=0; ii<this->hg->sp_veclen[j]; ++ii) {
+                vv[j][ii] = 0.0;
+            }
         }
     }
 
@@ -724,11 +738,17 @@ public:
      */
     void alloc_d_gradient_field (double*& gf) {
         gf = (double*)_mm_malloc (2*this->nhex_d*sizeof(double), 64);
+        for (unsigned int ii=0; ii<2*this->nhex_d; ++ii) {
+            gf[ii] = 0.0;
+        }
     }
     void alloc_sp_gradient_field (vector<double*>& gfs) {
         gfs.resize (this->hg->sp_numvecs);
         for (unsigned int j=0; j<this->hg->sp_numvecs; ++j) {
             gfs[j] = (double*)_mm_malloc (2*this->hg->sp_veclen[j]*sizeof(double), 64);
+            for (unsigned int ii=0; ii<2*this->hg->sp_veclen[j]; ++ii) {
+                gfs[j][ii] = 0.0;
+            }
         }
     }
 
@@ -752,6 +772,9 @@ public:
     void alloc_d_vector_array_vector (array<double*, NL>& vav) {
         for (unsigned int i = 0; i<this->N; ++i) {
             vav[i] = (double*)_mm_malloc (2*this->nhex_d*sizeof(double), 64);
+            for (unsigned int ii=0; ii<2*this->nhex_d; ++ii) {
+                vav[i][ii] = 0.0;
+            }
         }
     }
     void alloc_sp_vector_array_vector (vector<double*>& vvav) {
@@ -759,6 +782,9 @@ public:
         for (unsigned int i = 0; i<NL; ++i) {
             for (unsigned int j = 0; j<(this->nv); ++j) {
                 vvav[(i*this->nv)+j] = (double*)_mm_malloc (2*this->hg->sp_veclen[j]*sizeof(double), 64);
+                for (unsigned int ii=0; ii<2*this->hg->sp_veclen[j]; ++ii) {
+                    vvav[(i*this->nv)+j][ii] = 0.0;
+                }
             }
         }
     }
@@ -775,7 +801,7 @@ public:
         double randNoiseGain = 0.1;
         for (unsigned int i = 0; i<this->N; ++i) {
             //#pragma omp parallel for
-            for (unsigned int hi=0; hi < this->hg->d_x.size(); ++hi) {
+            for (unsigned int hi=0; hi < this->nhex_d; ++hi) {
                 // boundarySigmoid. Jumps sharply (100, larger is
                 // sharper) over length scale 0.05 to 1. So if
                 // distance from boundary > 0.05, noise has normal
@@ -788,9 +814,9 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 DBG ("this->hg->sp_numvecs=" << this->hg->sp_numvecs << ", this->hg->sp_veclen[vi]=" << this->hg->sp_veclen[vi]);
+                unsigned int ivi = vi+(i*this->nv);
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    unsigned int ivi = vi+(i*this->nv);
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
                     vvv_sp[ivi][hi] = morph::Tools::randDouble() * randNoiseGain + randNoiseOffset;
                     if (hg->sp_distToBoundary[vi][hi] > -0.5) { // It's possible that distToBoundary is set to -1.0
                         double bSig = 1.0 / ( 1.0 + exp (-100.0*(hg->sp_distToBoundary[vi][hi]-0.02)) );
@@ -979,9 +1005,10 @@ public:
         }
 
         // Compute gradients of guidance molecule concentrations once only
-        this->spacegrad2D (this->rhoA_d, this->rhoA_sp, 0, this->grad_rhoA_d, this->grad_rhoA_sp);
-        this->spacegrad2D (this->rhoB_d, this->rhoB_sp, 0, this->grad_rhoB_d, this->grad_rhoB_sp);
-        this->spacegrad2D (this->rhoC_d, this->rhoC_sp, 0, this->grad_rhoC_d, this->grad_rhoC_sp);
+        unsigned int idummy = 0;
+        this->spacegrad2D (this->rhoA_d, this->rhoA_sp, idummy, this->grad_rhoA_d, this->grad_rhoA_sp);
+        this->spacegrad2D (this->rhoB_d, this->rhoB_sp, idummy, this->grad_rhoB_d, this->grad_rhoB_sp);
+        this->spacegrad2D (this->rhoC_d, this->rhoC_sp, idummy, this->grad_rhoC_d, this->grad_rhoC_sp);
 
         // Having computed gradients, build this->g; has
         // to be done once only. Note that a sigmoid is applied so
@@ -1026,7 +1053,69 @@ public:
     //@{
 
     /*!
-     * Save the c variable.
+     * Save a variable set iterated over i TC types.
+     */
+    void save_i_vectors (const string basepath, HdfData& dat, array<double*, NL>& data_d, vector<double*>& data_sp) {
+        for (unsigned int i = 0; i<this->N; ++i) {
+            unsigned int inv = this->nv * i;
+            stringstream path;
+            path << basepath << i;
+            // Copy _d and _sp components into a vector:
+            vector<double> data;
+            data.resize (this->nhex, 0.0);
+            unsigned int jj = 0; // Iterator into c, the new vector
+
+            // data_d
+            unsigned int mainiterations_d = avx2dbls * (this->nhex_d/avx2dbls);
+#ifdef DEBUG
+            unsigned int leftover_d = this->nhex_d % avx2dbls;
+            DBG ("nhex_d=" << this->nhex_d);
+            DBG ("               mainterations_d: " << mainiterations_d << " leftover_d: " << leftover_d);
+#endif
+            // Mainloop
+//#pragma omp parallel for
+            for (unsigned int ii=0; ii<mainiterations_d; ii+=avx2dbls) {
+#pragma omp simd
+                for (unsigned int iii=ii; iii < avx2dbls+ii; ++iii) {
+                    data[jj++] = data_d[i][iii];
+                }
+            }
+            // Leftover loop
+            for (unsigned int iii=mainiterations_d; iii < this->nhex_d; ++iii) {
+                data[jj++] = data_d[i][iii];
+            }
+
+            for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
+                unsigned int mainiterations = avx2dbls * (this->hg->sp_veclen[vi]/avx2dbls);
+#ifdef DEBUG
+                unsigned int leftover = this->hg->sp_veclen[vi] % avx2dbls;
+                DBG ("sp_veclen["<<vi<<"]=" << this->hg->sp_veclen[vi]);
+                DBG ("               mainterations: " << mainiterations << " leftover: " << leftover);
+#endif
+                // Preloop
+                for (unsigned int iii=0; iii<avx2dbls; ++iii) {
+                    data[jj++] = data_sp[inv+vi][iii];
+                }
+                // Main loop (a double-for-loop to leverage simd and multithreading)
+//#pragma omp parallel for
+                for (unsigned int ii=avx2dbls; ii<mainiterations; ii+=avx2dbls) {
+#pragma omp simd
+                    for (unsigned int iii=ii; iii < avx2dbls+ii; ++iii) {
+                        data[jj++] = data_sp[inv+vi][iii];
+                    }
+                }
+                // Leftover loop
+                for (unsigned int iii=mainiterations; iii < this->hg->sp_veclen[vi]; ++iii) {
+                    data[jj++] = data_sp[inv+vi][iii];
+                }
+                DBG("At end, jj is " << jj);
+            }
+            dat.add_double_vector (path.str().c_str(), data);
+        }
+    }
+
+    /*!
+     * Save some variables.
      */
     void saveC (void) {
         stringstream fname;
@@ -1034,16 +1123,12 @@ public:
         fname.width(5);
         fname.fill('0');
         fname << this->stepCount << ".h5";
-        HdfData data(fname.str());
-        for (unsigned int i = 0; i<this->N; ++i) {
-            stringstream path;
-            path << "/c" << i;
-#if 0
-            data.add_double_vector (path.str().c_str(), this->c_d[i]);
-#endif
-        }
-        //FIXME also save c_sp!
-        this->saveHexPositions (data);
+        HdfData dat(fname.str());
+
+        this->save_i_vectors ("/c", dat, this->c_d, this->c_sp);
+        this->save_i_vectors ("/a", dat, this->a_d, this->a_sp);
+        this->save_i_vectors ("/tmp_alphacbeta", dat, this->alpha_c_beta_na_d, this->alpha_c_beta_na_sp);
+        this->saveHexPositions (dat);
     }
 
     /*!
@@ -1052,10 +1137,59 @@ public:
      * to fit in with the HDF API.
       */
     void saveHexPositions (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hg->d_x);
-        dat.add_float_vector ("/y", this->hg->d_y);
+        //dat.add_float_vector ("/x", this->hg->d_x);
+        //dat.add_float_vector ("/y", this->hg->d_y);
         // And hex to hex distance:
         dat.add_double ("/d", this->d);
+
+        vector<float> x(this->nhex, 0.0);
+        vector<float> y(this->nhex, 0.0);
+
+        unsigned int jj = 0; // Iterator into x/y
+
+        // d_ vectors
+        unsigned int mainiterations_d = avx2dbls * (this->nhex_d/avx2dbls);
+//#pragma omp parallel for
+        for (unsigned int ii=0; ii<mainiterations_d; ii+=avx2dbls) {
+#pragma omp simd
+            for (unsigned int iii=ii; iii < avx2dbls+ii; ++iii) {
+                x[jj] = this->hg->d_x[iii];
+                y[jj++] = this->hg->d_y[iii];
+            }
+        }
+        // leftover:
+        for (unsigned int iii=mainiterations_d; iii < this->nhex_d; ++iii) {
+                x[jj] = this->hg->d_x[iii];
+                y[jj++] = this->hg->d_y[iii];
+        }
+
+        // sp_ vectors
+        for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
+            // Double for loop to leverage simd and multithreading
+            unsigned int mainiterations = avx2dbls * (this->hg->sp_veclen[vi]/avx2dbls);
+            // Preloop
+            for (unsigned int iii=0; iii<avx2dbls; ++iii) {
+                x[jj] = this->hg->sp_x[vi][iii];
+                y[jj++] = this->hg->sp_y[vi][iii];
+            }
+            // Main loop
+//#pragma omp parallel for
+            for (unsigned int ii=avx2dbls; ii<mainiterations; ii+=avx2dbls) {
+#pragma omp simd
+                for (unsigned int iii=ii; iii < avx2dbls+ii; ++iii) {
+                    x[jj] = this->hg->sp_x[vi][iii];
+                    y[jj++] = this->hg->sp_y[vi][iii];
+                }
+            }
+            // Leftover loop
+            for (unsigned int iii=mainiterations; iii < this->hg->sp_veclen[vi]; ++iii) {
+                x[jj] = this->hg->sp_x[vi][iii];
+                y[jj++] = this->hg->sp_y[vi][iii];
+            }
+            DBG("At end, jj is " << jj);
+        }
+        dat.add_float_vector ("/x", x);
+        dat.add_float_vector ("/y", y);
     }
 
     //@} // HDF5
@@ -1099,22 +1233,28 @@ public:
 
         this->stepCount++;
 
-        if (this->stepCount % 100 == 0) {
+        if (this->stepCount % 1 == 0) {
             DBG ("System computed " << this->stepCount << " times so far...");
         }
 
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         double nsum = 0.0;
-        double csum = 0.0;
+        double csum = 0.0; // nsum, csum for debugging only.
         //#pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
             n_d[hi] = 0;
             for (unsigned int i=0; i<N; ++i) {
+#if 1
+                if (hi<30) {
+                    DBG ("c_d[i=" << i << "][hi="<< hi << "]" << c_d[i][hi]);
+                    DBG ("n_d[hi="<< hi << "]" << n_d[hi]);
+                }
+#endif
                 n_d[hi] += c_d[i][hi];
             }
             // Make csum, nsum operate only within boundary.
             csum += c_d[0][hi];
-            n_d[hi] = 1. - n_d[hi];
+            n_d[hi] = 1.0 - n_d[hi];
             nsum += n_d[hi];
         }
         for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
@@ -1136,7 +1276,7 @@ public:
             csum += csum1;
         }
 
-        if (this->stepCount % 100 == 0) {
+        if (this->stepCount % 1 == 0) {
             DBG ("sum of all n is " << nsum);
             DBG ("sum of all c for i=0 is " << csum);
         }
@@ -1160,7 +1300,7 @@ public:
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
 // NB In the next one, memory access is much worse. Nested vectors not a good idea?
 #pragma omp simd
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
 #ifdef USE_POW
                     this->alpha_c_beta_na_sp[inv+vi][hi] = (alpha[i] * c_sp[inv+vi][hi] - beta[i] * n_sp[vi][hi] * pow (a_sp[inv+vi][hi], k));
 #else
@@ -1175,6 +1315,8 @@ public:
         // enough to load the threads up.
         for (unsigned int i=0; i<this->N; ++i) {
 
+            unsigned int inv = i * this->nv;
+
             // Runge-Kutta integration for A
             this->compute_divJ (a_d[i], a_sp, i); // populates divJ_d/sp[i]
 
@@ -1185,9 +1327,9 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    k1_sp[vi][hi] = this->divJ_sp[vi+(i*this->nv)][hi] + this->alpha_c_beta_na_sp[vi+(i*this->nv)][hi];
-                    q_sp[vi][hi] = this->a_sp[vi+(i*this->nv)][hi] + k1_sp[vi][hi] * halfdt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    k1_sp[vi][hi] = this->divJ_sp[inv+vi][hi] + this->alpha_c_beta_na_sp[inv+vi][hi];
+                    q_sp[vi][hi] = this->a_sp[inv+vi][hi] + k1_sp[vi][hi] * halfdt;
                 }
             }
 
@@ -1201,9 +1343,9 @@ public:
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
 #pragma omp simd
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    k2_sp[vi][hi] = this->divJ_sp[vi+(i*this->nv)][hi] + this->alpha_c_beta_na_sp[vi+(i*this->nv)][hi];
-                    q_sp[vi][hi] = this->a_sp[vi+(i*this->nv)][hi] + k2_sp[vi][hi] * halfdt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    k2_sp[vi][hi] = this->divJ_sp[inv+vi][hi] + this->alpha_c_beta_na_sp[inv+vi][hi];
+                    q_sp[vi][hi] = this->a_sp[inv+vi][hi] + k2_sp[vi][hi] * halfdt;
                 }
             }
 
@@ -1215,9 +1357,9 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    k3_sp[vi][hi] = this->divJ_sp[vi+(i*this->nv)][hi] + this->alpha_c_beta_na_sp[vi+(i*this->nv)][hi];
-                    q_sp[vi][hi] = this->a_sp[vi+(i*this->nv)][hi] + k3_sp[vi][hi] * dt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    k3_sp[vi][hi] = this->divJ_sp[inv+vi][hi] + this->alpha_c_beta_na_sp[inv+vi][hi];
+                    q_sp[vi][hi] = this->a_sp[inv+vi][hi] + k3_sp[vi][hi] * dt;
                 }
             }
 
@@ -1229,9 +1371,9 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    k4_sp[vi][hi] = this->divJ_sp[vi+(i*this->nv)][hi] + this->alpha_c_beta_na_sp[vi+(i*this->nv)][hi];
-                    a_sp[vi+(i*this->nv)][hi] += (k1_sp[vi][hi] + 2.0 * (k2_sp[vi][hi] + k3_sp[vi][hi]) + k4_sp[vi][hi]) * sixthdt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    k4_sp[vi][hi] = this->divJ_sp[inv+vi][hi] + this->alpha_c_beta_na_sp[inv+vi][hi];
+                    a_sp[inv+vi][hi] += (k1_sp[vi][hi] + 2.0 * (k2_sp[vi][hi] + k3_sp[vi][hi]) + k4_sp[vi][hi]) * sixthdt;
                 }
             }
         } // end for each i in N
@@ -1253,7 +1395,7 @@ public:
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
 #pragma omp simd
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
 #ifdef USE_POW
                     this->betaterm_sp[inv+vi][hi] = (beta[i] * n_sp[vi][hi] * pow (a_sp[inv+vi][hi], k));
 #else
@@ -1270,8 +1412,8 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    q_sp[vi][hi] = c_sp[vi+(i*this->nv)][hi] + k1_sp[vi][hi] * halfdt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    q_sp[vi][hi] = c_sp[inv+vi][hi] + k1_sp[vi][hi] * halfdt;
                 }
             }
             DBG2 ("(c) After RK stage 1, q[4159]: " << q[4159]);
@@ -1284,8 +1426,8 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    q_sp[vi][hi] = c_sp[vi+(i*this->nv)][hi] + k2_sp[vi][hi] * halfdt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    q_sp[vi][hi] = c_sp[inv+vi][hi] + k2_sp[vi][hi] * halfdt;
                 }
             }
             DBG2 ("(c) After RK stage 2, q[4159]: " << q[4159]);
@@ -1298,8 +1440,8 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    q_sp[vi][hi] = c_sp[vi+(i*this->nv)][hi] + k3_sp[vi][hi] * dt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    q_sp[vi][hi] = c_sp[inv+vi][hi] + k3_sp[vi][hi] * dt;
                 }
             }
             DBG2 ("(c) After RK stage 3, q[4159]: " << q[4159]);
@@ -1312,8 +1454,8 @@ public:
             }
             for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
                 //#pragma omp parallel for
-                for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
-                    c_sp[vi+(i*this->nv)][hi] += (k1_sp[vi][hi] + 2.0 * (k2_sp[vi][hi] + k3_sp[vi][hi]) + k4_sp[vi][hi]) * sixthdt;
+                for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
+                    c_sp[inv+vi][hi] += (k1_sp[vi][hi] + 2.0 * (k2_sp[vi][hi] + k3_sp[vi][hi]) + k4_sp[vi][hi]) * sixthdt;
                 }
             }
             DBG2 ("(c) After RK stage 4, c["<<i<<"][4159]: " << c[i][4159]);
@@ -1335,9 +1477,10 @@ public:
         }
         unsigned int inv = i * this->nv;
         for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
+            // THIS is the SECOND FASTEST loop.
             //#pragma omp parallel for
 #pragma omp simd
-            for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
+            for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
                 dci_dt_sp[vi][hi] = (this->betaterm_sp[inv+vi][hi] - this->alpha[i] * f_sp[vi][hi]);
             }
         }
@@ -1359,13 +1502,13 @@ public:
          * Carry out the computations on the different data
          * containers. First up, the d_ vector, then the sp_ vectors.
          */
-        unsigned int nhd = this->nhex_d;
         unsigned int inv = i * this->nv; // offset into f_sp.
 
         // Note - East is positive x; North is positive y. Does this match how it's drawn in the display??
         //#pragma omp parallel for schedule(static)
+
 //#pragma omp simd // THIS LOOP DOESN'T BENEFIT FROM VECTORIZATION - (unavoidable memory access issues)
-        for (unsigned int hi=0, gi=0; hi<nhd; ++hi, gi+=2) {
+        for (unsigned int hi=0, gi=0; hi<this->nhex_d; ++hi, gi+=2) {
 
             // Find x gradient
             if (D_HAS_NE(hi) && D_HAS_NW(hi)) {
@@ -1390,7 +1533,7 @@ public:
         }
 
 //#pragma omp simd // No benefit from SIMD
-        for (unsigned int hi=0, gi=1; hi<nhd; ++hi, gi+=2) {
+        for (unsigned int hi=0, gi=1; hi<this->nhex_d; ++hi, gi+=2) {
             DBG2("hi=" << hi << " gi=" << gi);
             // Find y gradient
             if (D_HAS_NNW(hi) && D_HAS_NNE(hi) && D_HAS_NSW(hi) && D_HAS_NSE(hi)) {
@@ -1442,8 +1585,8 @@ public:
             // Each sub-parallelogram vector has a row length and a vector length.
             unsigned int rl = this->hg->sp_rowlens[vi];
             unsigned int vl = this->hg->sp_veclen[vi];
-
             unsigned int ivi = inv + vi;
+
 
             /*
              * Compute bottom edge, for which most of the top
@@ -1452,66 +1595,80 @@ public:
              * Do first and last hexes outside of loop, then also have
              * guarantee of left and right hexes.
              *
-             * At hi==1, neighbour NE, NW & E guaranteed, and in the
+             * At hi==0, neighbour NE, NW & E guaranteed, and in the
              * same vector; neighbour W, SE, SW are not
              *
-             * At hi==rl-1, neighbour NW, NE & W guaranteed, and in
+             * At hi==rl-2, neighbour NW, NE & W guaranteed, and in
              * the same vector; neighbour E, SW, SE are not
              */
 
-            // x gradient for *Hex* at position 1
-            gradf_sp[ivi][2] = SP_HAS_NW(vi,1) ?                                \
-                ((f_sp[ivi][2] - f_sp[inv+SP_V_NW(vi,1)][SP_NW(vi,1)]) * oneover2d) \
-                : ((f_sp[ivi][2] - f_sp[ivi][1]) * oneoverd);
-            // x gradient for Hex at position rl-1
-            gradf_sp[ivi][2*(rl-1)] = SP_HAS_NE(vi,rl-1) ?                                   \
-                (f_sp[inv+SP_V_NE(vi,rl-1)][SP_NE(vi,rl-1)] - (f_sp[ivi][rl-2]) * oneover2d) \
-                : ((f_sp[ivi][rl-1] - f_sp[ivi][rl-2]) * oneoverd);
-            // y gradient for Hex at position 1
-            if (SP_HAS_NSW(vi,1) && SP_HAS_NSE(vi,1)) {
-                double _nw = f_sp[ivi][1+SP_OFFS_NNW(rl)];
-                double _ne = f_sp[ivi][1+SP_OFFS_NNE(rl)];
-                double _sw = (SP_V_NSW(vi,1) == -1) ? f_d[SP_NSW(vi,1)] : f_sp[inv+SP_V_NSW(vi,1)][SP_NSW(vi,1)];
-                double _se = (SP_V_NSE(vi,1) == -1) ? f_d[SP_NSE(vi,1)] : f_sp[inv+SP_V_NSE(vi,1)][SP_NSE(vi,1)];
-                gradf_sp[ivi][3] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
-            } else if (SP_HAS_NSW(vi,1)) {
-                double _nw = f_sp[ivi][1+SP_OFFS_NNW(rl)];
-                double _sw = (SP_V_NSW(vi,1) == -1) ? f_d[SP_NSW(vi,1)] : f_sp[inv+SP_V_NSW(vi,1)][SP_NSW(vi,1)];
-                gradf_sp[ivi][3] = (_nw - _sw) * oneover2v;
-            } else if (SP_HAS_NSE(vi,1)) {
-                double _ne = f_sp[ivi][1+SP_OFFS_NNE(rl)];
-                double _se = (SP_V_NSE(vi,1) == -1) ? f_d[SP_NSE(vi,1)] : f_sp[inv+SP_V_NSE(vi,1)][SP_NSE(vi,1)];
-                gradf_sp[ivi][3] = (_ne - _se) * oneover2v;
+            // "neighbour offset"
+            int nos = 0;
+            double f_nei = 0.0;
+
+            // x gradient for *Hex* at position 0 - the first hex on the first (short) row.
+            if (SP_HAS_NW(vi,0)) {
+                // if nos is -1, then neighbour is in f_d, else it's in f_sp:
+                f_nei = ((nos = SP_V_NW(vi,0)) == -1) ? f_d[SP_NW(vi,0)] : f_sp[inv+nos][SP_NW(vi,0)];
+                gradf_sp[ivi][0] = (f_sp[ivi][1] - f_nei) * oneover2d;
             } else {
-                gradf_sp[ivi][3] = 0.0;
+                gradf_sp[ivi][0] = (f_sp[ivi][1] - f_sp[ivi][0]) * oneoverd;
             }
-            // y gradient for Hex at position rl-1
-            if (SP_HAS_NSW(vi,rl-1) && SP_HAS_NSE(vi,rl-1)) {
-                double _nw = f_sp[ivi][rl-1+SP_OFFS_NNW(rl)];
-                double _ne = f_sp[ivi][rl-1+SP_OFFS_NNE(rl)];
-                double _sw = (SP_V_NSW(vi,rl-1) == -1) ? f_d[SP_NSW(vi,rl-1)] : f_sp[inv+SP_V_NSW(vi,rl-1)][SP_NSW(vi,rl-1)];
-                double _se = (SP_V_NSE(vi,rl-1) == -1) ? f_d[SP_NSE(vi,rl-1)] : f_sp[inv+SP_V_NSE(vi,rl-1)][SP_NSE(vi,rl-1)];
-                // [2*rl-1] == [2*(rl-1)-1]
-                gradf_sp[ivi][2*rl-1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
-            } else if (SP_HAS_NSW(vi,rl-1)) {
-                double _nw = f_sp[vi+ivi][rl-1+SP_OFFS_NNW(rl)];
-                double _sw = (SP_V_NSW(vi,rl-1) == -1) ? f_d[SP_NSW(vi,rl-1)] : f_sp[inv+SP_V_NSW(vi,rl-1)][SP_NSW(vi,rl-1)];
-                gradf_sp[ivi][2*rl-1] = (_nw - _sw) * oneover2v;
-            } else if (SP_HAS_NSE(vi,rl-1)) {
-                double _ne = f_sp[vi+ivi][rl-1+SP_OFFS_NNE(rl)];
-                double _se = (SP_V_NSE(vi,rl-1) == -1) ? f_d[SP_NSE(vi,rl-1)] : f_sp[inv+SP_V_NSE(vi,rl-1)][SP_NSE(vi,rl-1)];
-                gradf_sp[ivi][2*rl-1] = (_ne - _se) * oneover2v;
+
+            // x gradient for Hex at position rl-2 (last hex in bottom row)
+            if (SP_HAS_NE(vi,rl-2)) {
+                f_nei = ((nos = SP_V_NE(vi,rl-2)) == -1) ? f_d[SP_NE(vi,rl-2)] : f_sp[inv+nos][SP_NE(vi,rl-2)];
+                gradf_sp[ivi][2*(rl-2)] = (f_nei - f_sp[ivi][rl-3]) * oneover2d;
             } else {
-                gradf_sp[ivi][2*rl-1] = 0.0;
+                gradf_sp[ivi][2*(rl-2)] = ((f_sp[ivi][rl-2] - f_sp[ivi][rl-3]) * oneoverd);
+            }
+
+            // y gradient for Hex at position 0
+            if (SP_HAS_NSW(vi,0) && SP_HAS_NSE(vi,0)) {
+                double _nw = f_sp[ivi][0+SP_OFFS_NNW(rl)];
+                double _ne = f_sp[ivi][0+SP_OFFS_NNE(rl)];
+                double _sw = (SP_V_NSW(vi,0) == -1) ? f_d[SP_NSW(vi,0)] : f_sp[inv+SP_V_NSW(vi,0)][SP_NSW(vi,0)];
+                double _se = (SP_V_NSE(vi,0) == -1) ? f_d[SP_NSE(vi,0)] : f_sp[inv+SP_V_NSE(vi,0)][SP_NSE(vi,0)];
+                gradf_sp[ivi][1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+            } else if (SP_HAS_NSW(vi,0)) {
+                double _nw = f_sp[ivi][0+SP_OFFS_NNW(rl)];
+                double _sw = (SP_V_NSW(vi,0) == -1) ? f_d[SP_NSW(vi,0)] : f_sp[inv+SP_V_NSW(vi,0)][SP_NSW(vi,0)];
+                gradf_sp[ivi][1] = (_nw - _sw) * oneover2v;
+            } else if (SP_HAS_NSE(vi,0)) {
+                double _ne = f_sp[ivi][0+SP_OFFS_NNE(rl)];
+                double _se = (SP_V_NSE(vi,0) == -1) ? f_d[SP_NSE(vi,0)] : f_sp[inv+SP_V_NSE(vi,0)][SP_NSE(vi,0)];
+                gradf_sp[ivi][1] = (_ne - _se) * oneover2v;
+            } else {
+                gradf_sp[ivi][1] = 0.0;
+            }
+
+            // y gradient for Hex at position rl-2
+            if (SP_HAS_NSW(vi,rl-2) && SP_HAS_NSE(vi,rl-2)) {
+                double _nw = f_sp[ivi][rl-2+SP_OFFS_NNW(rl)];
+                double _ne = f_sp[ivi][rl-2+SP_OFFS_NNE(rl)];
+                double _sw = (SP_V_NSW(vi,rl-2) == -1) ? f_d[SP_NSW(vi,rl-2)] : f_sp[inv+SP_V_NSW(vi,rl-2)][SP_NSW(vi,rl-2)];
+                double _se = (SP_V_NSE(vi,rl-2) == -1) ? f_d[SP_NSE(vi,rl-2)] : f_sp[inv+SP_V_NSE(vi,rl-2)][SP_NSE(vi,rl-2)];
+                // [2*(rl-2)+1] == 2rl -4 + 1 == 2rl - 3
+                gradf_sp[ivi][2*rl-3] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+            } else if (SP_HAS_NSW(vi,rl-2)) {
+                double _nw = f_sp[vi+ivi][rl-2+SP_OFFS_NNW(rl)];
+                double _sw = (SP_V_NSW(vi,rl-2) == -1) ? f_d[SP_NSW(vi,rl-2)] : f_sp[inv+SP_V_NSW(vi,rl-2)][SP_NSW(vi,rl-2)];
+                gradf_sp[ivi][2*rl-3] = (_nw - _sw) * oneover2v;
+            } else if (SP_HAS_NSE(vi,rl-2)) {
+                double _ne = f_sp[vi+ivi][rl-2+SP_OFFS_NNE(rl)];
+                double _se = (SP_V_NSE(vi,rl-2) == -1) ? f_d[SP_NSE(vi,rl-2)] : f_sp[inv+SP_V_NSE(vi,rl-2)][SP_NSE(vi,rl-2)];
+                gradf_sp[ivi][2*rl-3] = (_ne - _se) * oneover2v;
+            } else {
+                gradf_sp[ivi][2*rl-3] = 0.0;
             }
             // Now loop along the main part of the bottom edge
             // Compute x gradient for main bottom edge
             //#pragma omp parallel for
-            for (unsigned int hi=2, gi=4; hi < rl-1; ++hi, gi+=2) {
+            for (unsigned int hi=1, gi=2; hi < rl-2; ++hi, gi+=2) {
                 gradf_sp[ivi][gi] = (f_sp[ivi][hi+1] - f_sp[ivi][hi-1]) * oneover2d;
             }
-            // Compute y gradient for main bottom edge
-            for (unsigned int hi=2, gi=5; hi < rl-1; ++hi, gi+=2) {
+            // Compute y gradient for main bottom edge (excluding first and last hex, computed separately)
+            for (unsigned int hi=1, gi=3; hi < rl-2; ++hi, gi+=2) {
                 // Find y gradient for hex in vector vi, position hi.
                 if (SP_HAS_NSW(vi,hi) && SP_HAS_NSE(vi,hi)) {
                     // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
@@ -1542,26 +1699,231 @@ public:
                 }
             }
 
+
             /*
-             * left edge
+             * Compute left edge. This excludes the left-most hex in the SP
+             * and the top-right hex in the SP.
              */
-            for (unsigned int hi=rl; hi <= vl-rl; hi += rl) {
-                // WRITEME
-                //throw runtime_error ("Writeme");
+
+            // Compute rl-1 separately, which does not have a
+            // guaranteed SW neighbour (other hexes along the left
+            // edge DO).
+
+            // x gradient for Hex at position rl-1
+            if (SP_HAS_NW(vi,rl-1)) {
+                f_nei = ((nos = SP_V_NW(vi,rl-1)) == -1) ? f_d[SP_NW(vi,rl-1)] : f_sp[inv+nos][SP_NW(vi,rl-1)];
+                gradf_sp[ivi][2*(rl-1)] = (f_sp[ivi][rl] - f_nei) * oneover2d;
+            } else {
+                gradf_sp[ivi][2*(rl-1)] = (f_sp[ivi][rl] - f_sp[ivi][rl-1]) * oneoverd;
             }
+
+            // y gradient for Hex at position rl-1
+            // Guaranteed: NNE, NSE. Not guaranteed: NNW, NSW.
+            if (SP_HAS_NSW(vi,rl-1) && SP_HAS_NNW(vi,rl-1)) {
+                // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                double _nw = (SP_V_NNW(vi,rl-1) == -1) ? f_d[SP_NNW(vi,rl-1)] : f_sp[inv+SP_V_NNW(vi,rl-1)][SP_NNW(vi,rl-1)];
+                double _sw = (SP_V_NSW(vi,rl-1) == -1) ? f_d[SP_NSW(vi,rl-1)] : f_sp[inv+SP_V_NSW(vi,rl-1)][SP_NSW(vi,rl-1)];
+                // The neighbours here are guaranteed to be in f_sp[ivi]
+                double _ne = f_sp[ivi][SP_NNE(vi,rl-1)];
+                double _se = f_sp[ivi][SP_NSE(vi,rl-1)];
+                gradf_sp[ivi][2*(rl-1)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+            } else if (SP_HAS_NSW(vi,rl-1)) {
+                // Use SW, SE only to compute grad y
+                double _sw = (SP_V_NSW(vi,rl-1) == -1) ? f_d[SP_NSW(vi,rl-1)] : f_sp[inv+SP_V_NSW(vi,rl-1)][SP_NSW(vi,rl-1)];
+                double _se = f_sp[ivi][SP_NSE(vi,rl-1)];
+                gradf_sp[ivi][2*(rl-1)+1] = (f_sp[ivi][rl-1] - (_se + _sw) * 0.5) * oneoverv;
+
+            } else if (SP_HAS_NNW(vi,rl-1)) {
+                // Use NW, NE only
+                double _nw = (SP_V_NNW(vi,rl-1) == -1) ? f_d[SP_NNW(vi,rl-1)] : f_sp[inv+SP_V_NNW(vi,rl-1)][SP_NNW(vi,rl-1)];
+                double _ne = f_sp[ivi][SP_NNE(vi,rl-1)];
+                gradf_sp[ivi][2*(rl-1)+1] = ( (_ne + _nw) * 0.5 - f_sp[ivi][rl-1]) * oneoverv;
+
+            } else {
+                double _ne = f_sp[ivi][SP_NNE(vi,rl-1)];
+                double _se = f_sp[ivi][SP_NSE(vi,rl-1)];
+                gradf_sp[ivi][2*(rl-1)+1] = (_ne - _se) * oneover2v;
+            }
+
+            // Now compute the rest of the left edge.
+            for (unsigned int hi=(rl<<1)-1; hi < vl-rl; hi += rl) {
+                int nos = 0;
+                // x gradient for Hex at position hi
+                if (SP_HAS_NW(vi,hi)) {
+                    f_nei = ((nos = SP_V_NW(vi,hi)) == -1) ? f_d[SP_NW(vi,hi)] : f_sp[inv+nos][SP_NW(vi,hi)];
+                    gradf_sp[ivi][2*(hi)] = (f_sp[ivi][hi+1] - f_nei) * oneover2d;
+                } else {
+                    gradf_sp[ivi][2*(hi)] = (f_sp[ivi][hi+1] - f_sp[ivi][hi]) * oneoverd;
+                }
+
+                // y gradient for Hex at position hi
+                // Guaranteed: NSW, NNE, NSE. Not guaranteed: NNW.
+                if (SP_HAS_NNW(vi,hi)) {
+                    // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                    double _nw = (SP_V_NNW(vi,hi) == -1) ? f_d[SP_NNW(vi,hi)] : f_sp[inv+SP_V_NNW(vi,hi)][SP_NNW(vi,hi)];
+                    double _sw = f_sp[ivi][SP_NSW(vi,hi)];
+                    // The neighbours here are guaranteed to be in f_sp[ivi]
+                    double _ne = f_sp[ivi][SP_NNE(vi,hi)];
+                    double _se = f_sp[ivi][SP_NSE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+                } else {
+                    // Use SW, SE only to compute grad y
+                    double _sw = (SP_V_NSW(vi,hi) == -1) ? f_d[SP_NSW(vi,hi)] : f_sp[inv+SP_V_NSW(vi,hi)][SP_NSW(vi,hi)];
+                    double _se = f_sp[ivi][SP_NSE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)+1] = (f_sp[ivi][hi] - (_se + _sw) * 0.5) * oneoverv;
+                }
+            }
+
 
             /*
              * right edge
              */
-            for (unsigned int hi=rl-1; hi < vl-1; hi += rl) {
-                // WRITEME
+            // Compute hex at vl-rl separately - no guaranteed
+            // neighbour NE, whereas others along right edge DO
+
+            // x gradient for Hex at position vl-rl
+            if (SP_HAS_NW(vi,vl-rl)) {
+                f_nei = ((nos = SP_V_NE(vi,vl-rl)) == -1) ? f_d[SP_NE(vi,vl-rl)] : f_sp[inv+nos][SP_NE(vi,vl-rl)];
+                gradf_sp[ivi][2*(vl-rl)] = (f_nei - f_sp[ivi][vl-rl-1]) * oneover2d;
+            } else {
+                gradf_sp[ivi][2*(vl-rl)] = (f_sp[ivi][vl-rl] - f_sp[ivi][vl-rl-1]) * oneoverd;
+            }
+
+            // y gradient for Hex at position vl-rl
+            // Guaranteed: NNW, NSW. Not guaranteed: NNE, NSE.
+            if (SP_HAS_NSE(vi,vl-rl) && SP_HAS_NNE(vi,vl-rl)) {
+                // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                double _nw = f_sp[ivi][SP_NNW(vi,vl-rl)];
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-rl)];
+                // The neighbours here are guaranteed to be in f_sp[ivi]
+                double _ne = (SP_V_NNE(vi,vl-rl) == -1) ? f_d[SP_NNE(vi,vl-rl)] : f_sp[inv+SP_V_NNE(vi,vl-rl)][SP_NNE(vi,vl-rl)];
+                double _se = (SP_V_NSE(vi,vl-rl) == -1) ? f_d[SP_NSE(vi,vl-rl)] : f_sp[inv+SP_V_NSE(vi,vl-rl)][SP_NSE(vi,vl-rl)];
+                gradf_sp[ivi][2*(vl-rl)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+            } else if (SP_HAS_NSE(vi,vl-rl)) {
+                // Use SW, SE only to compute grad y
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-rl)];
+                double _se = (SP_V_NSE(vi,vl-rl) == -1) ? f_d[SP_NSE(vi,vl-rl)] : f_sp[inv+SP_V_NSE(vi,vl-rl)][SP_NSE(vi,vl-rl)];
+                gradf_sp[ivi][2*(vl-rl)+1] = (f_sp[ivi][vl-rl] - (_se + _sw) * 0.5) * oneoverv;
+
+            } else if (SP_HAS_NNE(vi,vl-rl)) {
+                // Use NW, NE only
+                double _nw = f_sp[ivi][SP_NNW(vi,vl-rl)];
+                double _ne = (SP_V_NNE(vi,vl-rl) == -1) ? f_d[SP_NNE(vi,vl-rl)] : f_sp[inv+SP_V_NNE(vi,vl-rl)][SP_NNE(vi,vl-rl)];
+                gradf_sp[ivi][2*(vl-rl)+1] = ( (_ne + _nw) * 0.5 - f_sp[ivi][vl-rl]) * oneoverv;
+
+            } else {
+                double _nw = f_sp[ivi][SP_NNW(vi,vl-rl)];
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-rl)];
+                gradf_sp[ivi][2*(vl-rl)+1] = (_nw - _sw) * oneover2v;
+            }
+
+            for (unsigned int hi=(rl<<1)-2; hi < vl-rl; hi += rl) {
+                // x gradient
+                if (SP_HAS_NW(vi,hi)) {
+                    f_nei = ((nos = SP_V_NE(vi,hi)) == -1) ? f_d[SP_NE(vi,hi)] : f_sp[inv+nos][SP_NE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)] = (f_nei - f_sp[ivi][hi-1]) * oneover2d;
+                } else {
+                    gradf_sp[ivi][2*(hi)] = (f_sp[ivi][hi] - f_sp[ivi][hi-1]) * oneoverd;
+                }
+
+                // y gradient
+                // Guaranteed: NNW, NSW, NNE. Not guaranteed: NSE.
+                if (SP_HAS_NSE(vi,hi)) {
+                    // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                    double _nw = f_sp[ivi][SP_NNW(vi,hi)];
+                    double _sw = f_sp[ivi][SP_NSW(vi,hi)];
+                    // The neighbours here are guaranteed to be in f_sp[ivi]
+                    double _ne = f_sp[ivi][SP_NNE(vi,hi)];
+                    double _se = (SP_V_NSE(vi,hi) == -1) ? f_d[SP_NSE(vi,hi)] : f_sp[inv+SP_V_NSE(vi,hi)][SP_NSE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+                } else {
+                    // Use NW, NE only
+                    double _nw = f_sp[ivi][SP_NNW(vi,hi)];
+                    double _ne = f_sp[ivi][SP_NNE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)+1] = ( (_ne + _nw) * 0.5 - f_sp[ivi][hi]) * oneoverv;
+                }
+            }
+
+
+            /*
+             * Compute gradients for top edge
+             */
+
+            // Compute vl-rl+1 and vl-1 separately
+
+            // x gradient, vl-rl+1.
+            if (SP_HAS_NW(vi,vl-rl+1)) {
+                f_nei = ((nos = SP_V_NE(vi,vl-rl+1)) == -1) ? f_d[SP_NE(vi,vl-rl+1)] : f_sp[inv+nos][SP_NE(vi,vl-rl+1)];
+                gradf_sp[ivi][2*(vl-rl+1)] = (f_nei - f_sp[ivi][vl-rl]) * oneover2d;
+            } else {
+                gradf_sp[ivi][2*(vl-rl+1)] = (f_sp[ivi][vl-rl+1] - f_sp[ivi][vl-rl]) * oneoverd;
+            }
+            // x gradient, vl-1.
+            if (SP_HAS_NE(vi,vl-1)) {
+                f_nei = ((nos = SP_V_NE(vi,vl-1)) == -1) ? f_d[SP_NE(vi,vl-1)] : f_sp[inv+nos][SP_NE(vi,vl-1)];
+                gradf_sp[ivi][2*(vl-1)] = (f_nei - f_sp[ivi][rl-3]) * oneover2d;
+            } else {
+                gradf_sp[ivi][2*(vl-1)] = ((f_sp[ivi][vl-1] - f_sp[ivi][rl-3]) * oneoverd);
+            }
+
+            // y gradient for Hex at position vl-rl+1
+            // Guaranteed: NSW, NSE. Not guaranteed: NNE, NNW
+            if (SP_HAS_NNW(vi,vl-rl+1) && SP_HAS_NNE(vi,vl-rl+1)) {
+                // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-rl+1)];
+                double _se = f_sp[ivi][SP_NSE(vi,vl-rl+1)];
+                double _nw = (SP_V_NNW(vi,vl-rl+1) == -1) ? f_d[SP_NNW(vi,vl-rl+1)] : f_sp[inv+SP_V_NNW(vi,vl-rl+1)][SP_NNW(vi,vl-rl+1)];
+                double _ne = (SP_V_NNE(vi,vl-rl+1) == -1) ? f_d[SP_NNE(vi,vl-rl+1)] : f_sp[inv+SP_V_NNE(vi,vl-rl+1)][SP_NNE(vi,vl-rl+1)];
+                gradf_sp[ivi][2*(vl-rl+1)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+            } else {
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-rl+1)];
+                double _se = f_sp[ivi][SP_NSE(vi,vl-rl+1)];
+                gradf_sp[ivi][2*(vl-rl+1)+1] = (f_sp[ivi][vl-rl] - (_se + _sw) * 0.5) * oneoverv;
+            }
+
+            // y gradient for Hex at position vl-1
+            // Guaranteed: NSW, NSE. Not guaranteed: NNE, NNW
+            if (SP_HAS_NNW(vi,vl-1) && SP_HAS_NNE(vi,vl-1)) {
+                // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-1)];
+                double _se = f_sp[ivi][SP_NSE(vi,vl-1)];
+                double _nw = (SP_V_NNW(vi,vl-1) == -1) ? f_d[SP_NNW(vi,vl-1)] : f_sp[inv+SP_V_NNW(vi,vl-1)][SP_NNW(vi,vl-1)];
+                double _ne = (SP_V_NNE(vi,vl-1) == -1) ? f_d[SP_NNE(vi,vl-1)] : f_sp[inv+SP_V_NNE(vi,vl-1)][SP_NNE(vi,vl-1)];
+                gradf_sp[ivi][2*(vl-1)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+            } else {
+                double _sw = f_sp[ivi][SP_NSW(vi,vl-1)];
+                double _se = f_sp[ivi][SP_NSE(vi,vl-1)];
+                gradf_sp[ivi][2*(vl-1)+1] = (f_sp[ivi][vl-rl] - (_se + _sw) * 0.5) * oneoverv;
             }
 
             /*
-             * top edge
+             * Rest of top row
              */
-            for (unsigned int hi=vl-rl; hi < vl-1; ++hi) {
-                // WRITEME
+            for (unsigned int hi=vl-rl+2; hi < vl-1; ++hi) {
+                // x gradient
+                gradf_sp[ivi][2*(hi)] = (f_sp[ivi][hi+1] - f_sp[ivi][hi-1]) * oneover2d;
+
+                // y gradient for Hex at position hi
+                // Guaranteed: NSW, NSE. Not guaranteed: NNE, NNW
+                if (SP_HAS_NNW(vi,hi) && SP_HAS_NNE(vi,hi)) {
+                    // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
+                    double _sw = f_sp[ivi][SP_NSW(vi,hi)];
+                    double _se = f_sp[ivi][SP_NSE(vi,hi)];
+                    double _nw = (SP_V_NNW(vi,hi) == -1) ? f_d[SP_NNW(vi,hi)] : f_sp[inv+SP_V_NNW(vi,hi)][SP_NNW(vi,hi)];
+                    double _ne = (SP_V_NNE(vi,hi) == -1) ? f_d[SP_NNE(vi,hi)] : f_sp[inv+SP_V_NNE(vi,hi)][SP_NNE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)+1] = ((_ne - _se) + (_nw - _sw)) * oneoverv;
+
+                } else {
+                    double _sw = f_sp[ivi][SP_NSW(vi,hi)];
+                    double _se = f_sp[ivi][SP_NSE(vi,hi)];
+                    gradf_sp[ivi][2*(hi)+1] = (f_sp[ivi][vl-rl] - (_se + _sw) * 0.5) * oneoverv;
+                }
             }
 
             /*
@@ -1570,24 +1932,20 @@ public:
              * of the Hexes.
              */
 
-#ifdef __ICC__
-//    __itt_resume();
-#endif
             unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
             unsigned int sp_offs_nse = SP_OFFS_NSE(rl);
             unsigned int sp_offs_nnw = SP_OFFS_NNW(rl);
             unsigned int sp_offs_nsw = SP_OFFS_NSW(rl);
+
+// THIS is the FOURTH SLOWEST loop. 0.174 seconds.
 //#pragma omp parallel for
 #pragma omp simd
-            for (unsigned int hi=rl+1, gi=2*(rl+1); hi < vl-rl-1; ++hi, ++gi) {
+            for (unsigned int hi=rl, gi=rl<<1; hi < vl-rl; ++hi, ++gi) {
                 // All neighbours guaranteed so:
-                gradf_sp[ivi][gi] = (f_sp[ivi][hi+SP_OFFS_NE] - f_sp[ivi][hi+SP_OFFS_NW]) * oneover2d;
+                gradf_sp[ivi][gi]   = (  f_sp[ivi][hi+SP_OFFS_NE]  - f_sp[ivi][hi+SP_OFFS_NW] ) * oneover2d;
                 gradf_sp[ivi][++gi] = ( (f_sp[ivi][hi+sp_offs_nne] - f_sp[ivi][hi+sp_offs_nse]) + (f_sp[ivi][hi+sp_offs_nnw] - f_sp[ivi][hi+sp_offs_nsw]) ) * oneoverv;
             }
 
-#ifdef __ICC__
-//    __itt_pause();
-#endif
         } // end for over sp_ vectors
     }
 
@@ -1628,12 +1986,11 @@ public:
 
             // Multiply bu 2D/3d^2
             term1_d[hi] = this->twoDover3dd * thesum;
-
         }
 
 //#pragma omp simd // No benefit from SIMD - unavoidable memory access
 //#pragma omp parallel for schedule(dynamic,50) // Neither from parallel for...
-            for (unsigned int hi=0, gi=0, giy=1; hi<this->nhex_d; ++hi, gi+=2, giy+=2) {
+        for (unsigned int hi=0, gi=0, giy=1; hi<this->nhex_d; ++hi, gi+=2, giy+=2) {
 
             // 2. The a div(g) term. Two sums for this.
             // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
@@ -1706,14 +2063,16 @@ public:
             /*
              * Bottom edge (excluding first and last hexes, handled separately)
              */
-            ////#pragma omp parallel for
-            for (unsigned int hi=2; hi < rl-1; ++hi) {
+            // Compute hi=0, hi=rl-2 separately
+            for (unsigned int hi=1, gi=2; hi < rl-2; ++hi, gi+=2) {
                 // Compute stuff
             }
+
             /*
              * left edge
              */
-            for (unsigned int hi=rl; hi <= vl-rl; hi += rl) {
+            // Compute rl-1 separately
+            for (unsigned int hi=(rl<<1)-1; hi < vl-rl; hi += rl) {
                 // WRITEME
                 //throw runtime_error ("Writeme");
             }
@@ -1721,14 +2080,16 @@ public:
             /*
              * right edge
              */
-            for (unsigned int hi=rl-1; hi < vl-1; hi += rl) {
+            // Compute hex at vl-rl separately
+            for (unsigned int hi=(rl<<1)-2; hi < vl-rl; hi += rl) {
                 // WRITEME
             }
 
             /*
              * top edge
              */
-            for (unsigned int hi=vl-rl; hi < vl-1; ++hi) {
+            // Compute vl-rl+1 and vl-1 separately
+            for (unsigned int hi=vl-rl+2; hi < vl-1; ++hi) {
                 // WRITEME
             }
 
@@ -1751,8 +2112,9 @@ public:
             unsigned int ivi = inv + vi;
 
             //#pragma omp parallel for
-#pragma omp simd // Gives vectorization in this loop! ADDITIONAL SPEEDUP POTENTIAL - stuck between L1 and L2 cache.
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
+#pragma omp simd // Gives vectorization in this loop! This is the FASTEST loop
+            for (unsigned int hi=rl; hi < vl-rl; ++hi) {
+
                 // 1. The D Del^2 a_i term
                 // Compute the sum around the neighbours
                 double thesum = -6 * fa_sp[ivi][hi];
@@ -1770,57 +2132,52 @@ public:
 
             // Note: experimentally dividing up term2 computation...
 #pragma omp simd
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
+            for (unsigned int hi=rl,   gi=rl<<1, giy=(1+rl<<1); hi < vl-rl; ++hi, gi+=2, giy+=2) {
 
                 // 2. The a div(g) term. Two sums for this.
                 // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
-                term2_sp[vi][hi] = 0.0;
-                // First and second sums together:
-                term2_sp[vi][hi] += /*cos (0)*/ g_sp[ivi][(hi+SP_OFFS_NE)<<1] + g_sp[ivi][gi];
+                term2_sp[vi][hi] = /*cos (0)*/ g_sp[ivi][gi+sp_offs_ne_2] - /*cos (180)*/ g_sp[ivi][gi+sp_offs_nw_2];
             }
 
-
-//#pragma omp parallel for
-#pragma omp simd // YELLOW
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
-
-                double a = (g_sp[ivi][gi+sp_offs_nne_2]    + g_sp[ivi][gi]);
-                double b = (g_sp[ivi][giy+sp_offs_nne_2]   + g_sp[ivi][giy]);
-                term2_sp[vi][hi] += /*cos (60)*/ 0.5 * a + R3_OVER_2 * b;
-            }
-
-#pragma omp simd // YELLOW
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
-                term2_sp[vi][hi] += -(/*cos (120)*/ 0.5 *  (g_sp[ivi][gi+sp_offs_nnw_2]  + g_sp[ivi][gi]))
-                    + /*sin (120)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nnw_2]  + g_sp[ivi][giy]);
-            }
+            // Collecting terms into two loops:
+            // THIS is the SECOND slowest loop! 0.204 s.
 #pragma omp simd
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
-                term2_sp[vi][hi] -= /*cos (180)*/ (g_sp[ivi][gi+sp_offs_nw_2] + g_d[i][gi]);
+            for (unsigned int hi=rl,   gi=rl<<1, giy=(1+rl<<1); hi < vl-rl; ++hi, gi+=2, giy+=2) {
+                double tmp = /*cos (60)*/  /*0.5 * */g_sp[ivi][gi+sp_offs_nne_2];
+                //term2_sp[vi][hi] +=  0.5 * g_sp[ivi][gi];
+                //term2_sp[vi][hi] -= 0.5 * g_sp[ivi][gi];  // Cancel out!
+                tmp -= /*cos (120)*/ /*0.5 * */g_sp[ivi][gi+sp_offs_nnw_2];
+                tmp -= /*cos (240)*/ /*0.5 * */g_sp[ivi][gi+sp_offs_nsw_2];
+                //term2_sp[vi][hi] -= 0.5 * g_sp[ivi][gi]; // Cancel out!
+                //term2_sp[vi][hi] += 0.5 * g_sp[ivi][gi];
+                tmp += /*cos (300)*/ /*0.5 * */ g_sp[ivi][gi+sp_offs_nse_2];
 
+                term2_sp[vi][hi] += tmp * 0.5;
             }
 
-#pragma omp simd // YELLOW
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
-                term2_sp[vi][hi] -= /*cos (240)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nsw_2]  + g_sp[ivi][gi])
-                    - (/*sin (240)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nsw_2]  + g_sp[ivi][giy]));
-
-            }
-
-#pragma omp simd // YELLOW
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
-                term2_sp[vi][hi] += /*cos (300)*/ 0.5     * (g_sp[ivi][gi+sp_offs_nse_2]  + g_sp[ivi][gi])
-                    - (/*sin (300)*/ R3_OVER_2 * (g_sp[ivi][giy+sp_offs_nse_2]  + g_sp[ivi][giy]));
-
-            }
+            // THIS is the FIRST SLOWEST loop! 0.236 seconds.
 #pragma omp simd
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
+            for (unsigned int hi=rl,   gi=rl<<1, giy=(1+rl<<1); hi < vl-rl; ++hi, gi+=2, giy+=2) {
+                double tmp =  /*R3_OVER_2 * */ g_sp[ivi][giy+sp_offs_nne_2];  //+ R3_OVER_2 * g_sp[ivi][giy]
+                tmp += /*sin (120)*/ /*R3_OVER_2 * */ g_sp[ivi][giy+sp_offs_nnw_2];  //+ R3_OVER_2 * g_sp[ivi][giy]
+                tmp += /*sin (240)*/ /*R3_OVER_2 * */ g_sp[ivi][giy+sp_offs_nsw_2];  //+ R3_OVER_2 * g_sp[ivi][giy]
+                tmp -= /*sin (300)*/ /*R3_OVER_2 * */ g_sp[ivi][giy+sp_offs_nse_2];  //+ R3_OVER_2 * g_sp[ivi][giy]
+                term2_sp[vi][hi] += tmp * R3_OVER_2;
+
+                term2_sp[vi][hi] += ROOT3 * g_sp[ivi][giy]; // in place of two adds of R3_OVER_2 * g_sp[ivi][giy]
+
+            }
+
+// Has to go last:
+#pragma omp simd
+            for (unsigned int hi=rl,   gi=rl<<1, giy=(1+rl<<1); hi < vl-rl; ++hi, gi+=2, giy+=2) {
                 term2_sp[vi][hi] *= oneover3d;
                 term2_sp[vi][hi] *= fa_sp[ivi][hi];
             }
 
+            // THIS is the THIRD slowest. 0.196 s. (But note, 3rd and 4th slowest sometimes swap around)
 #pragma omp simd
-            for (unsigned int hi=rl+1, gi=((rl+1)<<1), giy=(1+(rl+1)<<1); hi < vl-rl-1; ++hi,gi+=2,giy+=2) {
+            for (unsigned int hi=rl,   gi=rl<<1, giy=(1+rl<<1); hi < vl-rl; ++hi, gi+=2, giy+=2) {
                 // 3. Third term is this->g . grad a_i. Should not
                 // contribute to J, as g(x) decays towards boundary.
                 term3_sp[vi][hi] = this->g_sp[ivi][gi] * this->grad_a_sp[ivi][gi]
@@ -1960,7 +2317,7 @@ public:
         }
         for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
             //#pragma omp parallel for
-            for (unsigned int hi=1; hi < this->hg->sp_veclen[vi]-1; ++hi) {
+            for (unsigned int hi=0; hi < this->hg->sp_veclen[vi]; ++hi) {
                 // sp vectors
                 double x_ = (this->hg->sp_x[vi][hi] * cosphi) + (this->hg->sp_y[vi][hi] * sinphi);
                 this->rhoA_sp[vi][hi] = gain * exp(-((x_-xoffA)*(x_-xoffA)) / sigma);

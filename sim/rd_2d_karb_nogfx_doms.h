@@ -426,6 +426,8 @@ public:
         // Ensure log directory exists
         morph::Tools::createDir (this->logpath);
     }
+
+    string svgpath = "./trial.svg";
     //@}
 
     /*!
@@ -528,7 +530,7 @@ public:
             this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         }
         // Read the curves which make a boundary
-        ReadCurves r("./trial.svg");
+        ReadCurves r(svgpath);
         // Set the boundary in the HexGrid
         this->hg->setBoundary (r.getCorticalPath());
         // Vector size comes from number of Hexes in the HexGrid

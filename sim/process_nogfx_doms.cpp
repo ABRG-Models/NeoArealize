@@ -8,6 +8,10 @@
 #include <ittnotify.h>
 #endif
 
+// Provides the max steps parameter, which can be shared across
+// process_nogfx_*.cpp programs for easy comparisons.
+#include "progparams.h"
+
 using namespace std;
 
 int main (int argc, char **argv)
@@ -28,8 +32,9 @@ int main (int argc, char **argv)
 
     // Instantiate the model object
     RD_2D_Karb RD;
+    RD.svgpath = BOUNDARY_SVG;
     RD.domainMode = true;
-    RD.hextohex_d = 0.005;
+    RD.hextohex_d = PROCESS_HEXTOHEX_D;
     try {
         RD.init();
     } catch (const exception& e) {
@@ -37,26 +42,15 @@ int main (int argc, char **argv)
         return rtn;
     }
 
-    // Start the loop
-    unsigned int maxSteps = 2000; // 2000 for speed comparisons
-    bool finished = false;
 #ifdef __ICC__
     __itt_resume();
 #endif
-    while (finished == false) {
-        // Step the model
-        try {
-            RD.step();
-        } catch (const exception& e) {
-            cerr << "Caught exception calling RD.step(): " << e.what() << endl;
-            finished = true;
-        }
-
-        if (RD.stepCount > maxSteps) {
-            rtn = 0;
-            finished = true;
-        }
+    for (unsigned int st = 0; st < PROCESS_MAXSTEPS; ++st) {
+        RD.step();
     }
+#ifdef __ICC__
+    __itt_pause();
+#endif
 
     RD.saveC();
 

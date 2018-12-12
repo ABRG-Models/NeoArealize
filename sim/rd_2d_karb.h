@@ -1298,6 +1298,7 @@ public:
         this->eye[2] = -0.9;
         disp.resetDisplay (this->fix, this->eye, this->rot);
 
+#define INDIVIDUAL_SCALING 1
 #ifdef INDIVIDUAL_SCALING
         // Copies data to plot out of the model
         vector<double> maxa (5, -1e7);
@@ -1324,7 +1325,9 @@ public:
                 norm_a[i][h] = fmin (fmax (((f[i][h]) - mina[i]) * scalea[i], 0.0), 1.0);
             }
         }
-#else
+
+#else // NB; with no individual scaling, get flickering in plots.
+
         // Copies data to plot out of the model
         double maxa = -1e7;
         double mina = +1e7;

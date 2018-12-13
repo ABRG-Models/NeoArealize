@@ -37,3 +37,9 @@ target_link_libraries(ermentrout ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 # A first combined model
 add_executable(embedded embedded.cpp)
 target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+
+# James model 1. RD Karbowski with variable numbers of guidance
+# molecules and TC populations and runtime setting of parameters to
+# examine behaviour.
+add_executable(james1 james1.cpp)
+target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})

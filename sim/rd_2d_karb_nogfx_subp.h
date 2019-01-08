@@ -14,6 +14,11 @@
  * parallelogram, one for the rest of the hexes. In the case of
  * multiple parallelograms, there'll be a vector of vectors, one for
  * each parallelogram.
+ *
+ * Note (Jan 2019). I have given up trying to get this version of the
+ * code to work. While it would be interesting to figure out if it
+ * really does go faster, I think that even IF faster, it wouldn't be
+ * sensible to work with it. It's just too complicated to work with.
  */
 
 #include <morph/tools.h>

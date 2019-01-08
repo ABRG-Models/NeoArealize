@@ -41,13 +41,14 @@ int main (int argc, char **argv)
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
         return rtn;
     }
-
+    RD.saveC();
 #ifdef __ICC__
     __itt_resume();
 #endif
     // Do requisite number of steps
     for (unsigned int st = 0; st < PROCESS_MAXSTEPS; ++st) {
         RD.step();
+        RD.saveC();
     }
 #ifdef __ICC__
     __itt_pause();

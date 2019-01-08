@@ -195,7 +195,6 @@ public:
      * These are the c_i(x,t) variables from the Karb2004 paper. x is
      * a vector in two-space.
      */
-    //alignas(8) vector       <vector<double> > c_d;
     alignas(8) array<double*, NL> c_d; // array of 5 pointers to double arrays
 
     /*!
@@ -203,7 +202,6 @@ public:
      * covers the i fields. the inner vector<vector<double> > are the
      * vectors, one for each sub-parallelogram.
      */
-    //alignas(8) vector<vector<vector<double> > > c_sp;
     alignas(8) vector<double*> c_sp; // vector of (5 * num_sub-parallelograms) pointers to double arrays
 
     /*!
@@ -212,7 +210,6 @@ public:
      * TC axon types, enumerated by i, the second vector are the a_i
      * values, indexed by the vi in the Hexes in HexGrid.
      */
-    //alignas(8) vector       <vector<double> > a_d;
     alignas(8) array<double*, NL> a_d;
 
     /*!
@@ -231,7 +228,6 @@ public:
      * is vi==0, i==0; a_sp[1] is vi==1, i==0; a_sp[2] is vi==0, i==1,
      * and so on.
      */
-    //alignas(8) vector<vector<vector<double> > > a_sp;
     alignas(8) vector<double*> a_sp;
 
     /*!
@@ -241,6 +237,7 @@ public:
      * and sub-parallelogram vector vi.
      */
     alignas(8) array<double*, NL> grad_a_d;
+
     /*!
      * Here, the first vector STILL enumerates over TC axon type (i);
      * the second vector over the sub-parallelogram vector
@@ -253,7 +250,6 @@ public:
      * a_i(x,t) in Eq 4. There are 5 elements here, and each element
      * is a vector field, with interleaved x and y values (x first).
      */
-    //alignas(8) vector       <array<vector<double>, 2> > g_d;
     alignas(8) array<double*, NL> g_d;
 
     /*!
@@ -267,7 +263,6 @@ public:
     /*!
      * n(x,t) variable from the Karb2004 paper.
      */
-    //alignas(8)        vector<double> n_d;
     alignas(8) double* n_d;
 
     /*!
@@ -280,6 +275,7 @@ public:
      * type i". This is a vector field.
      */
     alignas(8) array<double*, NL> J_d;
+
     /*!
      * Outer vector enumerates over TC type (i), second enumerates
      * over sub-parallelogram vector (vi).
@@ -289,14 +285,12 @@ public:
     /*!
      * Holds the divergence of the J_i(x)s
      */
-    //alignas(8) vector       <vector<double> > divJ_d;
     alignas(8) array<double*, NL> divJ_d;
 
     /*!
      * Outer vector enumerates over TC type (i), second enumerates
      * over sub-parallelogram vector (vi).
      */
-    //alignas(8) vector<vector<vector<double> > > divJ_sp;
     alignas(8) vector<double*> divJ_sp;
 
     /*!
@@ -1053,9 +1047,9 @@ public:
     //@{
 
     /*!
-     * Save a variable set iterated over i TC types.
+     * Save a scalar variable set iterated over i TC types.
      */
-    void save_i_vectors (const string basepath, HdfData& dat, array<double*, NL>& data_d, vector<double*>& data_sp) {
+    void save_i_doubarrays (const string basepath, HdfData& dat, array<double*, NL>& data_d, vector<double*>& data_sp) {
         for (unsigned int i = 0; i<this->N; ++i) {
             unsigned int inv = this->nv * i;
             stringstream path;
@@ -1115,6 +1109,64 @@ public:
     }
 
     /*!
+     * Save a scalar variable
+     */
+    void save_doubarray (const string path, HdfData& dat, double*& data_d, vector<double*>& data_sp) {
+
+        // Copy _d and _sp components into a vector:
+        vector<double> data;
+        data.resize (this->nhex, 0.0);
+        unsigned int jj = 0; // Iterator into c, the new vector
+
+        // data_d
+        unsigned int mainiterations_d = avx2dbls * (this->nhex_d/avx2dbls);
+#ifdef DEBUG
+        unsigned int leftover_d = this->nhex_d % avx2dbls;
+        DBG ("nhex_d=" << this->nhex_d);
+        DBG ("               mainterations_d: " << mainiterations_d << " leftover_d: " << leftover_d);
+#endif
+        // Mainloop
+//#pragma omp parallel for
+        for (unsigned int ii=0; ii<mainiterations_d; ii+=avx2dbls) {
+#pragma omp simd
+            for (unsigned int iii=ii; iii < avx2dbls+ii; ++iii) {
+                data[jj++] = data_d[iii];
+            }
+        }
+        // Leftover loop
+        for (unsigned int iii=mainiterations_d; iii < this->nhex_d; ++iii) {
+            data[jj++] = data_d[iii];
+        }
+
+        for (unsigned int vi=0; vi < this->hg->sp_numvecs; ++vi) {
+            unsigned int mainiterations = avx2dbls * (this->hg->sp_veclen[vi]/avx2dbls);
+#ifdef DEBUG
+            unsigned int leftover = this->hg->sp_veclen[vi] % avx2dbls;
+            DBG ("sp_veclen["<<vi<<"]=" << this->hg->sp_veclen[vi]);
+            DBG ("               mainterations: " << mainiterations << " leftover: " << leftover);
+#endif
+            // Preloop
+            for (unsigned int iii=0; iii<avx2dbls; ++iii) {
+                data[jj++] = data_sp[vi][iii];
+            }
+            // Main loop (a double-for-loop to leverage simd and multithreading)
+//#pragma omp parallel for
+            for (unsigned int ii=avx2dbls; ii<mainiterations; ii+=avx2dbls) {
+#pragma omp simd
+                for (unsigned int iii=ii; iii < avx2dbls+ii; ++iii) {
+                    data[jj++] = data_sp[vi][iii];
+                }
+            }
+            // Leftover loop
+            for (unsigned int iii=mainiterations; iii < this->hg->sp_veclen[vi]; ++iii) {
+                data[jj++] = data_sp[vi][iii];
+            }
+            DBG("At end, jj is " << jj);
+        }
+        dat.add_double_vector (path.c_str(), data);
+    }
+
+    /*!
      * Save some variables.
      */
     void saveC (void) {
@@ -1125,9 +1177,12 @@ public:
         fname << this->stepCount << ".h5";
         HdfData dat(fname.str());
 
-        this->save_i_vectors ("/c", dat, this->c_d, this->c_sp);
-        this->save_i_vectors ("/a", dat, this->a_d, this->a_sp);
-        this->save_i_vectors ("/tmp_alphacbeta", dat, this->alpha_c_beta_na_d, this->alpha_c_beta_na_sp);
+        this->save_i_doubarrays ("/c", dat, this->c_d, this->c_sp);
+        this->save_i_doubarrays ("/a", dat, this->a_d, this->a_sp);
+        this->save_i_doubarrays ("/tmp_alphacbeta", dat, this->alpha_c_beta_na_d, this->alpha_c_beta_na_sp);
+
+        this->save_doubarray ("/n", dat, this->n_d, this->n_sp);
+
         this->saveHexPositions (dat);
     }
 
@@ -1233,7 +1288,7 @@ public:
 
         this->stepCount++;
 
-        if (this->stepCount % 1 == 0) {
+        if (this->stepCount % 100 == 0) {
             DBG ("System computed " << this->stepCount << " times so far...");
         }
 
@@ -1244,7 +1299,7 @@ public:
         for (unsigned int hi=0; hi<this->nhex_d; ++hi) {
             n_d[hi] = 0;
             for (unsigned int i=0; i<N; ++i) {
-#if 1
+#if 0
                 if (hi<30) {
                     DBG ("c_d[i=" << i << "][hi="<< hi << "]" << c_d[i][hi]);
                     DBG ("n_d[hi="<< hi << "]" << n_d[hi]);
@@ -1276,7 +1331,7 @@ public:
             csum += csum1;
         }
 
-        if (this->stepCount % 1 == 0) {
+        if (this->stepCount % 100 == 0) {
             DBG ("sum of all n is " << nsum);
             DBG ("sum of all c for i=0 is " << csum);
         }
@@ -1940,6 +1995,7 @@ public:
 // THIS is the FOURTH SLOWEST loop. 0.174 seconds.
 //#pragma omp parallel for
 #pragma omp simd
+            // FIXME FIXME THis is WRONG, RIGHT? THis will compute for the left and right edges, which we have ALREADY computed.
             for (unsigned int hi=rl, gi=rl<<1; hi < vl-rl; ++hi, ++gi) {
                 // All neighbours guaranteed so:
                 gradf_sp[ivi][gi]   = (  f_sp[ivi][hi+SP_OFFS_NE]  - f_sp[ivi][hi+SP_OFFS_NW] ) * oneover2d;
@@ -2060,48 +2116,11 @@ public:
             const unsigned int rl = this->hg->sp_rowlens[vi];
             const unsigned int vl = this->hg->sp_veclen[vi];
 
-            /*
-             * Bottom edge (excluding first and last hexes, handled separately)
-             */
-            // Compute hi=0, hi=rl-2 separately
-            for (unsigned int hi=1, gi=2; hi < rl-2; ++hi, gi+=2) {
-                // Compute stuff
-            }
-
-            /*
-             * left edge
-             */
-            // Compute rl-1 separately
-            for (unsigned int hi=(rl<<1)-1; hi < vl-rl; hi += rl) {
-                // WRITEME
-                //throw runtime_error ("Writeme");
-            }
-
-            /*
-             * right edge
-             */
-            // Compute hex at vl-rl separately
-            for (unsigned int hi=(rl<<1)-2; hi < vl-rl; hi += rl) {
-                // WRITEME
-            }
-
-            /*
-             * top edge
-             */
-            // Compute vl-rl+1 and vl-1 separately
-            for (unsigned int hi=vl-rl+2; hi < vl-1; ++hi) {
-                // WRITEME
-            }
-
-            /*
-             * Main body of parallelogram. Neighbours guaranteed. Should be fast.
-             */
-
             unsigned int sp_offs_nne = SP_OFFS_NNE(rl);
             unsigned int sp_offs_nse = SP_OFFS_NSE(rl);
             unsigned int sp_offs_nnw = SP_OFFS_NNW(rl);
             unsigned int sp_offs_nsw = SP_OFFS_NSW(rl);
-            // These ones are the offsets in a gradeint, and are hence*2
+            // These ones are the offsets in a gradient, and are hence*2
             unsigned int sp_offs_nne_2 = SP_OFFS_NNE(rl)<<1;
             unsigned int sp_offs_nse_2 = SP_OFFS_NSE(rl)<<1;
             unsigned int sp_offs_nnw_2 = SP_OFFS_NNW(rl)<<1;
@@ -2111,8 +2130,65 @@ public:
 
             unsigned int ivi = inv + vi;
 
+            /*
+             * Compute edges
+             */
+
+            // Compute for *Hex* at position 0 - the first hex on the first (short) row.
+            this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, 0);
+
+            // Compute for Hex at position rl-2 (last hex in bottom row)
+            this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, (rl-2));
+
+            // Rest of bottom edge
+            for (unsigned int hi=1; hi < rl-2; ++hi) {
+                this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, hi);
+            }
+
+            /*
+             * Compute left edge. This excludes the left-most hex in the SP
+             * and the top-right hex in the SP.
+             */
+
+            // Compute for Hex at position rl-1
+            this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, rl-1);
+
+            // Now compute the rest of the left edge.
+            for (unsigned int hi=(rl<<1)-1; hi < vl-rl; hi += rl) {
+                this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, hi);
+            }
+
+            /*
+             * right edge
+             */
+            // Compute for Hex at position vl-rl
+            this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, vl-rl);
+
+            for (unsigned int hi=(rl<<1)-2; hi < vl-rl; hi += rl) {
+                this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, hi);
+            }
+
+            /*
+             * Compute gradients for top edge
+             */
+
+            // Compute vl-rl+1 and vl-1 separately
+            this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, vl-rl+1);
+            this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, vl-1);
+
+            for (unsigned int hi=vl-rl+2; hi < vl-1; ++hi) {
+                this->compute_divJ_sp (fa_d, fa_sp, i, vi, inv, hi);
+            }
+
+            /*
+             * Main body of parallelogram. Neighbours guaranteed. Should be fast.
+             */
+
             //#pragma omp parallel for
 #pragma omp simd // Gives vectorization in this loop! This is the FASTEST loop
+
+            // FIXME FIXME. THis is wrong, right? I need two loops, so
+            // that I leave off the edge hexes of the SP.
             for (unsigned int hi=rl; hi < vl-rl; ++hi) {
 
                 // 1. The D Del^2 a_i term
@@ -2189,6 +2265,85 @@ public:
         /*
          * Done computing for fa_sp
          */
+    }
+
+    /*!
+     * Unoptimised function for computing divJ for hexes around the
+     * edge of a sub-parallelogram.
+     */
+    void compute_divJ_sp (double* fa_d, vector<double*>& fa_sp, unsigned int i,
+                          unsigned int vi, unsigned int inv, unsigned int hi) {
+
+        unsigned int ivi = inv + vi;
+
+        // 1. The D Del^2 a_i term
+        // Compute the sum around the neighbours
+        double term1 = -6 * fa_sp[ivi][hi];
+
+        term1 += (SP_HAS_NE(vi,hi))  ? ((SP_V_NE(vi,hi) == -1)  ? fa_d[SP_NE(vi,hi)]  : fa_sp[inv+SP_V_NE(vi,hi)][SP_NE(vi,hi)])   : fa_sp[ivi][hi];
+        term1 += (SP_HAS_NNE(vi,hi)) ? ((SP_V_NNE(vi,hi) == -1) ? fa_d[SP_NNE(vi,hi)] : fa_sp[inv+SP_V_NNE(vi,hi)][SP_NNE(vi,hi)]) : fa_sp[ivi][hi];
+        term1 += (SP_HAS_NNW(vi,hi)) ? ((SP_V_NNW(vi,hi) == -1) ? fa_d[SP_NNW(vi,hi)] : fa_sp[inv+SP_V_NNW(vi,hi)][SP_NNW(vi,hi)]) : fa_sp[ivi][hi];
+        term1 += (SP_HAS_NW(vi,hi))  ? ((SP_V_NW(vi,hi) == -1)  ? fa_d[SP_NW(vi,hi)]  : fa_sp[inv+SP_V_NW(vi,hi)][SP_NW(vi,hi)])   : fa_sp[ivi][hi];
+        term1 += (SP_HAS_NSW(vi,hi)) ? ((SP_V_NSW(vi,hi) == -1) ? fa_d[SP_NSW(vi,hi)] : fa_sp[inv+SP_V_NSW(vi,hi)][SP_NSW(vi,hi)]) : fa_sp[ivi][hi];
+        term1 += (SP_HAS_NSE(vi,hi)) ? ((SP_V_NSE(vi,hi) == -1) ? fa_d[SP_NSE(vi,hi)] : fa_sp[inv+SP_V_NSE(vi,hi)][SP_NSE(vi,hi)]) : fa_sp[ivi][hi];
+
+        // Multiply bu 2D/3d^2
+        term1 *= this->twoDover3dd;
+
+        // 2. The a div(g) term. Two sums for this.
+        // NB: g_d and g_sp are used here mostly without their this-> identifiers, to keep lines shorter.
+        double term2 = 0.0;
+        // First sum
+        if (SP_HAS_NE(vi,hi)) {
+            term2 += /*cos (0)*/ ((SP_V_NE(vi,hi) == -1)  ? g_d[i][SP_NE(vi,hi)<<1]  : g_sp[inv+SP_V_NE(vi,hi)][SP_NE(vi,hi)<<1]) + g_sp[ivi][hi<<1];
+        } else {
+            // Boundary condition _should_ be satisfied by
+            // sigmoidal roll-off of g towards the boundary, so
+            // add only g[i][0][hi]
+            term2 += /*cos (0)*/ (this->g_sp[ivi][hi<<1]);
+        }
+        if (SP_HAS_NNE(vi,hi)) {
+            term2 += /*cos (60)*/ 0.5 * ( ((SP_V_NNE(vi,hi) == -1) ? g_d[i][SP_NNE(vi,hi)<<1]    : g_sp[inv+SP_V_NNE(vi,hi)][SP_NNE(vi,hi)<<1])     + g_sp[ivi][hi<<1])
+                + /*sin (60)*/ R3_OVER_2 *    ( ((SP_V_NNE(vi,hi) == -1) ? g_d[i][1+(SP_NNE(vi,hi)<<1)]: g_sp[inv+SP_V_NNE(vi,hi)][1+(SP_NNE(vi,hi)<<1)]) + g_sp[ivi][1+hi<<1]);
+        } else {
+            term2 += /*cos (60)*/ 0.5 * (this->g_sp[ivi][hi<<1])
+                + /*sin (60)*/ R3_OVER_2 * (this->g_sp[ivi][1+hi<<1]);
+        }
+        if (SP_HAS_NNW(vi,hi)) {
+            term2 += -(/*cos (120)*/ 0.5 *  ( ((SP_V_NNW(vi,hi) == -1)  ? g_d[i][SP_NNW(vi,hi)<<1]  : g_sp[inv+SP_V_NNW(vi,hi)][SP_NNW(vi,hi)<<1])  + g_sp[ivi][hi<<1]))
+                + /*sin (120)*/ R3_OVER_2 * ( ((SP_V_NNW(vi,hi) == -1)  ? g_d[i][1+(SP_NNW(vi,hi)<<1)]  : g_sp[inv+SP_V_NNW(vi,hi)][1+(SP_NNW(vi,hi)<<1)])  + g_sp[ivi][1+hi<<1]);
+        } else {
+            term2 += -(/*cos (120)*/ 0.5 * (this->g_sp[ivi][hi<<1]))
+                + /*sin (120)*/ R3_OVER_2 * (this->g_sp[ivi][1+hi<<1]);
+        }
+        if (SP_HAS_NW(vi,hi)) {
+            term2 -= /*cos (180)*/ ( ((SP_V_NW(vi,hi) == -1)  ? g_d[i][SP_NW(vi,hi)<<1]  : g_sp[inv+SP_V_NW(vi,hi)][SP_NW(vi,hi)<<1]) + g_sp[ivi][hi<<1]);
+        } else {
+            term2 -= /*cos (180)*/ (this->g_sp[ivi][hi<<1]);
+        }
+        if (SP_HAS_NSW(vi,hi)) {
+            term2 -= /*cos (240)*/ 0.5     * ( ((SP_V_NSW(vi,hi) == -1)  ? g_d[i][SP_NSW(vi,hi)<<1]  : g_sp[inv+SP_V_NSW(vi,hi)][SP_NSW(vi,hi)<<1])  + g_sp[ivi][hi<<1])
+                - (/*sin (240)*/ R3_OVER_2 * ( ((SP_V_NSW(vi,hi) == -1)  ? g_d[i][1+(SP_NSW(vi,hi)<<1)]  : g_sp[inv+SP_V_NSW(vi,hi)][1+(SP_NSW(vi,hi)<<1)])  + g_sp[ivi][1+hi<<1]));
+        } else {
+            term2 -= /*cos (240)*/ 0.5 * (this->g_sp[ivi][hi<<1])
+                - (/*sin (240)*/ R3_OVER_2 * (this->g_sp[ivi][1+hi<<1]));
+        }
+        if (SP_HAS_NSE(vi,hi)) {
+            term2 += /*cos (300)*/ 0.5     * ( ((SP_V_NSE(vi,hi) == -1)  ? g_d[i][SP_NSE(vi,hi)<<1]  : g_sp[inv+SP_V_NSE(vi,hi)][SP_NSE(vi,hi)<<1])  + g_sp[ivi][hi<<1])
+                - (/*sin (300)*/ R3_OVER_2 * ( ((SP_V_NSE(vi,hi) == -1)  ? g_d[i][1+(SP_NSE(vi,hi)<<1)]  : g_sp[inv+SP_V_NSE(vi,hi)][1+(SP_NSE(vi,hi)<<1)])  + g_sp[ivi][1+hi<<1]));
+        } else {
+            term2 += /*cos (300)*/ 0.5 * (this->g_sp[ivi][hi<<1])       // 1st sum
+                - (/*sin (300)*/ R3_OVER_2 * (this->g_sp[ivi][1+hi<<1])); // 2nd sum
+        }
+
+        term2 *= oneover3d;
+        term2 *= fa_sp[ivi][hi];
+
+        // 3. Third term is this->g . grad a_i. Should not
+        // contribute to J, as g(x) decays towards boundary.
+        double term3 = this->g_sp[ivi][hi<<1] * this->grad_a_sp[ivi][hi<<1] + this->g_sp[ivi][1+hi<<1] * this->grad_a_sp[ivi][1+hi<<1];
+
+        this->divJ_sp[ivi][hi] = term1 + term2 + term3;
     }
 
     /*!

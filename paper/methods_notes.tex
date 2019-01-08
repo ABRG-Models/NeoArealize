@@ -442,6 +442,37 @@ antibody against the axon-specific marker $\tau$(60--70\% reduction in
 axonal length), although a mild inhibition of dentritic growth also
 was observed ($\approx$20\% reduction).
 
+\section{Two dimensional system with N TCs and M gradients}
+
+We're modifying the system above so that we have N TC populations and
+M curated gradients.
+%
+\begin{equation} \label{eq:Karb2D_dc}
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t) + \beta_i n(\mb{x},t)
+[a_i(\mb{x},t)]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_da}
+\frac{\partial a_i(\mb{x},t)}{\partial t} = \nabla\vcdot\mb{J}_i(\mb{x},t) + \alpha_i c_i(\mb{x},t) - \beta_i n(\mb{x},t)
+[a_i(\mb{x}, t)]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_conserve}
+n(\mb{x},t) + \sum_{i=1}^{N} c_i(\mb{x}, t) = 1
+\end{equation}
+%
+with the flux current
+%
+\begin{equation} \label{eq:Karb2D_J}
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+
+The boundary condition that I'd like to apply to these equations is:
+%
+\begin{equation}
+\mb{J}_i(\mb{x},t) \bigg\rvert_{boundary} = 0
+\end{equation}
 
 %
 % BIBLIOGRAPHY

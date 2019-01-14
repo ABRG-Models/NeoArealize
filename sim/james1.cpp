@@ -63,7 +63,17 @@ int main (int argc, char **argv)
 
     // Instantiate the model object
     RD_James RD;
-    //RD.rhoMethod = GuidanceMoleculeMethod::TwoDWaves;
+    RD.N = 2; // Number of TC populations
+    RD.M = 1; // Number of guidance molecules that are sculpted
+
+    // Choose and parameterise the guidance molecules
+    RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+    // Set up guidance molecule method parameters
+    RD.guidance_gain.push_back (1.0);
+    RD.guidance_phi.push_back (0.0);
+    RD.guidance_width.push_back (1.0);
+    RD.guidance_offset.push_back (0.5);
+
     try {
         RD.init (displays);
     } catch (const exception& e) {
@@ -105,9 +115,17 @@ int main (int argc, char **argv)
 
     vector<list<Hex> > ctrs = RD.get_contours (0.6);
 
+    // Create a HexGrid
+    HexGrid* hg1 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
+    hg1->setBoundary (ctrs[0]);
+    HexGrid* hg2 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
+    hg2->setBoundary (ctrs[1]);
+
     // Do a final plot of the ctrs as found.
     RD.plot_contour (ctrs, displays[5]);
 
+    cout << "Sizes: countour 0: " << hg1->num() << ", contour 1: " << hg2->num() << endl;
+    cout << "Ratio: " << ((double)hg1->num()/(double)hg2->num()) << endl;
     int a;
     cout << "Press any key[return] to exit.\n";
     cin >> a;

@@ -2,10 +2,7 @@
 #define _RD_PLOT_H_
 
 #include "morph/display.h"
-//#include "morph/tools.h"
-//#include "morph/ReadCurves.h"
 #include "morph/HexGrid.h"
-//#include "morph/HdfData.h"
 #include <iostream>
 #include <vector>
 #include <list>
@@ -53,9 +50,9 @@ public:
      * On Gdisplay disp, plot the N scalar fields stored in f on the
      * HexGrid hg.
      */
-    void scalarfields (HexGrid* hg,
-                       vector<vector<double> >& f,
-                       Gdisplay& disp) {
+    void scalarfields (Gdisplay& disp,
+                       HexGrid* hg,
+                       vector<vector<double> >& f) {
 
         this->eye[2] = -0.4;
         disp.resetDisplay (this->fix, this->eye, this->rot);
@@ -414,25 +411,29 @@ public:
         }
     }
 
+#if 0 // Just use scalarfields()
     /*!
      * To become a generic plot function. Only difference is that
      * there are 3 of these rather than 5.
      *
      * Plot concentrations of chemo-attractor molecules A, B and C.
      */
-    void plot_chemo (vector<morph::Gdisplay>& disps) {
+    void plot_chemo (morph::Gdisplay& disp, HexGrid* hg, vector<vector<double> >& rho) {
 
         this->eye[2] = -0.4;
-        disps[1].resetDisplay (this->fix, this->eye, this->rot);
+        disp.resetDisplay (this->fix, this->eye, this->rot);
+
+        unsigned int M = rho.size();
+        unsigned int nhex = hg->num();
 
         double max = -1e7;
         double min = +1e7;
         // Determines min and max
-        for (auto h : this->hg->hexen) {
+        for (auto h : hg->hexen) {
             if (h.onBoundary() == false) {
-                for (unsigned int m = 0; m<this->M; ++m) {
-                    if (this->rho[m][h.vi]>max) { max = this->rho[m][h.vi]; }
-                    if (this->rho[m][h.vi]<min) { min = this->rho[m][h.vi]; }
+                for (unsigned int m = 0; m<M; ++m) {
+                    if (this->rho[m][h.vi]>max) { max = rho[m][h.vi]; }
+                    if (this->rho[m][h.vi]<min) { min = rho[m][h.vi]; }
                 }
             }
         }
@@ -440,12 +441,12 @@ public:
 
         // Determine a colour from min, max and current value
         vector<double> norm_rhoA(this->nhex, 0.0);
-        vector<vector<double> > norm_rho(this->M, norm_rhoA);
-        for (unsigned int m = 0; m<this->M; ++m) {
+        vector<vector<double> > norm_rho(M, norm_rhoA);
+        for (unsigned int m = 0; m<M; ++m) {
             norm_rho[m].resize(this->nhex, 0.0);
         }
         for (unsigned int h=0; h<this->nhex; h++) {
-            for (unsigned int m = 0; m<this->M; ++m) {
+            for (unsigned int m = 0; m<M; ++m) {
                 norm_rho[m][h] = fmin (fmax (((this->rho[m][h]) - min) * scale, 0.0), 1.0);
             }
         }
@@ -454,20 +455,21 @@ public:
         float hgwidth = this->hg->getXmax()-this->hg->getXmin();
 
         vector<array<float,3> > offset;
-        offset.resize(this->M);
+        offset.resize(M);
         offset[0] = { -hgwidth-(hgwidth/20), 0.0f, 0.0f };
         //offset[1] = { 0.0f, 0.0f, 0.0f };
         //offset[2] = { hgwidth+(hgwidth/20), 0.0f, 0.0f };
 
         // Step through vectors or iterate through list? The latter should be just fine here.
         for (auto h : this->hg->hexen) {
-            for (unsigned int m = 0; m<this->M; ++m) {
+            for (unsigned int m = 0; m<M; ++m) {
                 array<float,3> cl_rho = morph::Tools::HSVtoRGB (0.0, norm_rho[m][h.vi], 1.0);
-                disps[1].drawHex (h.position(), offset[m], (h.d/2.0f), cl_rho);
+                disp.drawHex (h.position(), offset[m], (h.d/2.0f), cl_rho);
             }
         }
-        disps[1].redrawDisplay();
+        disp.redrawDisplay();
     }
+#endif
 
     /*!
      * Save PNG images

@@ -1,15 +1,15 @@
 #define N_TC 2
 #include "rd_james.h"
 
-#include "morph/display.h"
 #include <iostream>
 #include <vector>
 #include <string>
 
 // Choose whether to plot or not.
-//#define PLOT_STUFF 1
+#define PLOT_STUFF 1
 
 #if defined PLOT_STUFF
+#include "morph/display.h"
 #include "rd_plot.h"
 #endif
 
@@ -89,10 +89,11 @@ int main (int argc, char **argv)
     try {
         RD.init();
 #if defined PLOT_STUFF
-        plt.plot_chemo (displays, RD.chemo);
+        plt.scalarfields (displays[1], RD.hg, RD.rho);
         // Save pngs of the factors and guidance expressions.
-        displays[0].saveImage (this->logpath + "/factors.png");
-        displays[1].saveImage (this->logpath + "/guidance.png");
+        string logpath = "logs";
+        displays[0].saveImage (logpath + "/factors.png");
+        displays[1].saveImage (logpath + "/guidance.png");
 #endif
     } catch (const exception& e) {
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
@@ -120,8 +121,8 @@ int main (int argc, char **argv)
                 // Do a final plot of the ctrs as found.
                 vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, contour_threshold);
                 plt.plot_contour (displays[4], RD.hg, ctrs);
-                plt.scalarfields (RD.hg, RD.a, displays[2]);
-                plt.scalarfields (RD.hg, RD.c, displays[3]);
+                plt.scalarfields (displays[2], RD.hg, RD.a);
+                plt.scalarfields (displays[3], RD.hg, RD.c);
                 // If required:
                 //RD.save();
             }

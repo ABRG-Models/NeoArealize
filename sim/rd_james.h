@@ -688,7 +688,7 @@ public:
     }
 
     /*!
-     * Do a step through the model.
+     * Do a single step through the model.
      */
     void step (void) {
 

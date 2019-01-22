@@ -6,7 +6,7 @@
 #include <string>
 
 // Choose whether to plot or not.
-#define PLOT_STUFF 1
+//#define PLOT_STUFF 1
 
 #if defined PLOT_STUFF
 #include "morph/display.h"
@@ -74,7 +74,7 @@ int main (int argc, char **argv)
 #endif
 
     // Instantiate the model object
-    RD_James RD;
+    RD_James<float> RD;
     RD.N = 2; // Number of TC populations
     RD.M = 1; // Number of guidance molecules that are sculpted
 
@@ -99,11 +99,8 @@ int main (int argc, char **argv)
         cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
     }
 
-    // A threshold chosen for defining contours in the RD system. SHould be parameter of RD? Probably.
-    double contour_threshold = 0.5;
-
     // Start the loop
-    unsigned int maxSteps = 2000;
+    unsigned int maxSteps = 20000;
     bool finished = false;
     while (finished == false) {
         // Step the model
@@ -119,7 +116,7 @@ int main (int argc, char **argv)
             displays[0].resetDisplay (fix, eye, rot);
             if (RD.stepCount % 10 == 0) {
                 // Do a final plot of the ctrs as found.
-                vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, contour_threshold);
+                vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, RD.contour_threshold);
                 plt.plot_contour (displays[4], RD.hg, ctrs);
                 plt.scalarfields (displays[2], RD.hg, RD.a);
                 plt.scalarfields (displays[3], RD.hg, RD.c);
@@ -128,7 +125,10 @@ int main (int argc, char **argv)
             }
             // Save some frames ('c' variable only for now)
             if (RD.stepCount % 100 == 0) {
+                // Once template has been successfully specialised:
+#ifdef TEMPLATE_SPECIALISATION_FIGURED
                 RD.saveC();
+#endif
             }
 
         } catch (const exception& e) {

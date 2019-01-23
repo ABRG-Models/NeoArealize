@@ -501,10 +501,10 @@ public:
      * to fit in with the HDF API.
      */
     void saveHexPositions (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hgvx);
-        dat.add_float_vector ("/y", this->hgvy);
+        dat.add_contained_vals ("/x", this->hgvx);
+        dat.add_contained_vals ("/y", this->hgvy);
         // And hex to hex distance:
-        dat.add_double ("/d", this->d);
+        dat.add_val ("/d", this->d);
     }
 
     /*!
@@ -520,19 +520,19 @@ public:
             stringstream vss;
             vss << "c_" << i;
             string vname = vss.str();
-            data.add_double_vector (vname.c_str(), this->c[i]);
+            data.add_contained_vals (vname.c_str(), this->c[i]);
             vname[0] = 'n';
-            data.add_double_vector (vname.c_str(), this->n[i]);
+            data.add_contained_vals (vname.c_str(), this->n[i]);
         }
 
         // Parameters
-        data.add_double ("/Dn", this->Dn);
-        data.add_double ("/Dc", this->Dc);
-        data.add_double ("/beta", this->beta);
-        data.add_double ("/a", this->a);
-        data.add_double ("/b", this->b);
-        data.add_double ("/mu", this->mu);
-        data.add_double ("/chi", this->chi);
+        data.add_val ("/Dn", this->Dn);
+        data.add_val ("/Dc", this->Dc);
+        data.add_val ("/beta", this->beta);
+        data.add_val ("/a", this->a);
+        data.add_val ("/b", this->b);
+        data.add_val ("/mu", this->mu);
+        data.add_val ("/chi", this->chi);
 
         // HexGrid information
         this->saveHexPositions (data);

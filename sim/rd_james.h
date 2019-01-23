@@ -81,10 +81,10 @@ enum class GuidanceMoleculeMethod {
  * removal of the Fgf8, Pax6, Emx2 system, and instead an option to
  * define several guidance molecules and
  *
- * Using 'F' for the float type, this will either be single precision
+ * Using 'Flt' for the float type, this will either be single precision
  * (float) or double precision (double).
  */
-template <class F>
+template <class Flt>
 class RD_James
 {
 public:
@@ -94,9 +94,9 @@ public:
      */
     //@{
     //! Square root of 3 over 2
-    const F R3_OVER_2 = 0.866025403784439;
+    const Flt R3_OVER_2 = 0.866025403784439;
     //! Square root of 3
-    const F ROOT3 = 1.73205080756888;
+    const Flt ROOT3 = 1.73205080756888;
     //! Passed to HdfData constructor to say we want to read the data
     const bool READ_DATA = true;
     //@}
@@ -105,29 +105,29 @@ public:
      * Hex to hex d for the grid. Make smaller to increase the number
      * of Hexes being computed.
      */
-    alignas(F) F hextohex_d = 0.01;
+    alignas(Flt) Flt hextohex_d = 0.01;
 
     /*!
      * Holds the number of hexes in the populated HexGrid
      */
-    alignas(F) unsigned int nhex = 0;
+    alignas(Flt) unsigned int nhex = 0;
 
     /*!
      * how many thalamo-cortical axon types are there? Denoted by N in
      * the paper, and so we use N here too.
      */
-    alignas(F) unsigned int N = 5;
+    alignas(Flt) unsigned int N = 5;
 
     /*!
      * M is the number of guidance molecules to use.
      */
-    alignas(F) unsigned int M = 3;
+    alignas(Flt) unsigned int M = 3;
 
     /*!
      * These are the c_i(x,t) variables from the Karb2004 paper. x is
      * a vector in two-space.
      */
-    alignas(F) vector<vector<F> > c;
+    alignas(Flt) vector<vector<Flt> > c;
 
     /*!
      * These are the a_i(x,t) variables from the Karb2004 paper. x is
@@ -135,104 +135,104 @@ public:
      * TC axon types, enumerated by i, the second vector are the a_i
      * values, indexed by the vi in the Hexes in HexGrid.
      */
-    alignas(F) vector<vector<F> > a;
+    alignas(Flt) vector<vector<Flt> > a;
 
     /*!
      * For each TC axon type, this holds the two components of the
      * gradient field of the scalar value a(x,t) (where this x is a
      * vector in two-space)
      */
-    alignas(F) vector<array<vector<F>, 2> > grad_a;
+    alignas(Flt) vector<array<vector<Flt>, 2> > grad_a;
 
     /*!
      * Contains the chemo-attractant modifiers which are applied to
      * a_i(x,t) in Eq 4.
      */
-    alignas(F) vector<array<vector<F>, 2> > g;
+    alignas(Flt) vector<array<vector<Flt>, 2> > g;
 
     /*!
      * n(x,t) variable from the Karb2004 paper.
      */
-    alignas(F) vector<F> n;
+    alignas(Flt) vector<Flt> n;
 
     /*!
      * J_i(x,t) variables - the "flux current of axonal branches of
      * type i". This is a vector field.
      */
-    alignas(F) vector<array<vector<F>, 2> > J;
+    alignas(Flt) vector<array<vector<Flt>, 2> > J;
 
     /*!
      * Holds the divergence of the J_i(x)s
      */
-    alignas(F) vector<vector<F> > divJ;
+    alignas(Flt) vector<vector<Flt> > divJ;
 
     /*!
      * Our choice of dt.
      */
-    alignas(F) F dt = 0.0001;
+    alignas(Flt) Flt dt = 0.0001;
 
     /*!
      * Compute half and sixth dt in constructor.
      */
     //@{
-    alignas(F) F halfdt = 0.0;
-    alignas(F) F sixthdt = 0.0;
+    alignas(Flt) Flt halfdt = 0.0;
+    alignas(Flt) Flt sixthdt = 0.0;
     //@}
 
     /*!
      * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
      * paper.
      */
-    alignas(F) F k = 3.0;
+    alignas(Flt) Flt k = 3.0;
 
     /*!
      * The diffusion parameter.
      */
-    alignas(F) F D = 0.1;
+    alignas(Flt) Flt D = 0.1;
 
     /*!
      * alpha_i parameters
      */
-    alignas(F) vector<F> alpha;
+    alignas(Flt) vector<Flt> alpha;
 
     /*!
      * beta_i parameters
      */
-    alignas(F) vector<F> beta;
+    alignas(Flt) vector<Flt> beta;
 
     /*!
      * gamma_A/B/C_i (etc) parameters from Eq 4. There are M vectors
-     * of Fs in here.
+     * of Flts in here.
      */
     //@{
-    alignas(F) vector<vector<F> > gamma;
+    alignas(Flt) vector<vector<Flt> > gamma;
     //@}
 
     /*!
      * A vector of parameters for the direction of the guidance
      * molecules
      */
-    alignas(F) vector<F> guidance_phi;
+    alignas(Flt) vector<Flt> guidance_phi;
 
     /*!
      * Guidance molecule parameters for the width of the function
      */
-    alignas(F) vector<F> guidance_width;
+    alignas(Flt) vector<Flt> guidance_width;
 
     /*!
      * Width in orthogonal direction, for 2D fields.
      */
-    alignas(F) vector<F> guidance_width_ortho;
+    alignas(Flt) vector<Flt> guidance_width_ortho;
 
     /*!
      * Guidance molecule parameters for the offset of the function
      */
-    alignas(F) vector<F> guidance_offset;
+    alignas(Flt) vector<Flt> guidance_offset;
 
     /*!
      * Guidance molecule parameters to be the gains of the functions
      */
-    alignas(F) vector<F> guidance_gain;
+    alignas(Flt) vector<Flt> guidance_gain;
 
     /*!
      * Rho variables in Eq 4 - the concentrations of axon guidance
@@ -240,10 +240,10 @@ public:
      * independent and we will treat them as such, populating them at
      * initialisation.
      *
-     * There are M vector<Fs> in rho.
+     * There are M vector<Flts> in rho.
      */
     //@{
-    alignas(F) vector<vector<F> > rho;
+    alignas(Flt) vector<vector<Flt> > rho;
     //@}
 
     /*!
@@ -253,70 +253,70 @@ public:
      * There are M gradient fields stored in this variable.
      */
     //@{
-    alignas(F) vector<array<vector<F>, 2> > grad_rho;
+    alignas(Flt) vector<array<vector<Flt>, 2> > grad_rho;
     //@}
 
     /*!
      * Store Hex positions for saving.
      */
-    alignas(F) vector<F> hgvx;
-    alignas(F) vector<F> hgvy;
+    alignas(Flt) vector<Flt> hgvx;
+    alignas(Flt) vector<Flt> hgvy;
 
     /*!
      * Rowlen and numrows in the parallelogram domain.
      */
     //@{
-    alignas(F) unsigned int rl = 0;
-    alignas(F) unsigned int nr = 0;
+    alignas(Flt) unsigned int rl = 0;
+    alignas(Flt) unsigned int nr = 0;
     //@}
 
     /*!
      * Hex to hex distance. Populate this from hg.d after hg has been
      * initialised.
      */
-    alignas(F) F d = 1.0;
+    alignas(Flt) Flt d = 1.0;
 
     /*!
      * Various other parameters
      */
     //@{
-    alignas(F) F oneoverd = 1.0/this->d;
-    alignas(F) F v = 1;
-    alignas(F) F oneoverv = 1.0/this->v;
-    alignas(F) F twov = this->v+this->v;
-    alignas(F) F oneover2v = 1.0/this->twov;
-    alignas(F) F oneover2d = 1.0/(this->d+this->d);
-    alignas(F) F twoDover3dd = 0.0;
+    alignas(Flt) Flt oneoverd = 1.0/this->d;
+    alignas(Flt) Flt v = 1;
+    alignas(Flt) Flt oneoverv = 1.0/this->v;
+    alignas(Flt) Flt twov = this->v+this->v;
+    alignas(Flt) Flt oneover2v = 1.0/this->twov;
+    alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
+    alignas(Flt) Flt twoDover3dd = 0.0;
     //@}
 
     /*!
      * Memory to hold an intermediate result
      */
-    alignas(F) vector<vector<F> > betaterm;
+    alignas(Flt) vector<vector<Flt> > betaterm;
 
     /*!
      * Holds an intermediate value for the computation of Eqs 1 and 2.
      */
-    alignas(F) vector<vector<F> > alpha_c_beta_na;
+    alignas(Flt) vector<vector<Flt> > alpha_c_beta_na;
 
     /*!
      * Track the number of computational steps that we've carried
      * out. Only to show a message saying "100 steps done...", but
      * that's reason enough.
      */
-    alignas(F) unsigned int stepCount = 0;
+    alignas(Flt) unsigned int stepCount = 0;
 
     /*!
      * A frame number, incremented when an image is plotted to a PNG file.
      */
-    alignas(F) unsigned int frameN = 0;
+    alignas(Flt) unsigned int frameN = 0;
 
     /*!
      * The contour threshold. For contour plotting [see
      * plot_contour()], the field is normalised, then the contour is
      * plotted where the field crosses this threshold.
      */
-    alignas(F) F contour_threshold = 0.5;
+    alignas(Flt) Flt contour_threshold = 0.5;
 
     /*!
      * ALIGNAS REGION ENDS.
@@ -372,7 +372,7 @@ public:
      * A utility function to resize the vector-vectors that hold a
      * variable for the N different thalamo-cortical axon types.
      */
-    void resize_vector_vector (vector<vector<F> >& vv) {
+    void resize_vector_vector (vector<vector<Flt> >& vv) {
         vv.resize (this->N);
         for (unsigned int i=0; i<this->N; ++i) {
             vv[i].resize (this->nhex, 0.0);
@@ -382,14 +382,14 @@ public:
     /*!
      * Resize a variable that'll be nhex elements long
      */
-    void resize_vector_variable (vector<F>& v) {
+    void resize_vector_variable (vector<Flt>& v) {
         v.resize (this->nhex, 0.0);
     }
 
     /*!
      * M members, each nhex elements long
      */
-    void resize_guidance_variable (vector<vector<F> >& v) {
+    void resize_guidance_variable (vector<vector<Flt> >& v) {
         v.resize (this->M);
         for (unsigned int m = 0; m<this->M; ++m) {
             v[m].resize (this->nhex, 0.0);
@@ -399,7 +399,7 @@ public:
     /*!
      * Resize a parameter that'll be N elements long
      */
-    void resize_vector_param (vector<F>& p) {
+    void resize_vector_param (vector<Flt>& p) {
         p.resize (this->N, 0.0);
     }
 
@@ -407,7 +407,7 @@ public:
      * Resize a vector of M vectors of parameters that'll each be N
      * elements long
      */
-    void resize_vector_vector_param (vector<vector<F> >& vp) {
+    void resize_vector_vector_param (vector<vector<Flt> >& vp) {
         vp.resize (this->M);
         for (unsigned int m = 0; m<this->M; ++m) {
             vp[m].resize (this->N, 0.0);
@@ -417,24 +417,24 @@ public:
     /*!
      * Resize a gradient field
      */
-    void resize_gradient_field (array<vector<F>, 2>& g) {
+    void resize_gradient_field (array<vector<Flt>, 2>& g) {
         g[0].resize (this->nhex, 0.0);
         g[1].resize (this->nhex, 0.0);
     }
 
     /*!
      * Resize a vector (over TC types i) of an array of two
-     * vector<F>s which are the x and y components of a
+     * vector<Flt>s which are the x and y components of a
      * (mathematical) vector field.
      */
-    void resize_vector_array_vector (vector<array<vector<F>, 2> >& vav) {
+    void resize_vector_array_vector (vector<array<vector<Flt>, 2> >& vav) {
         vav.resize (this->N);
         for (unsigned int i = 0; i<this->N; ++i) {
             this->resize_gradient_field (vav[i]);
         }
     }
 
-    void resize_guidance_gradient_field (vector<array<vector<F>, 2> >& vav) {
+    void resize_guidance_gradient_field (vector<array<vector<Flt>, 2> >& vav) {
         vav.resize (this->M);
         for (unsigned int m = 0; m<this->M; ++m) {
             this->resize_gradient_field (vav[m]);
@@ -448,9 +448,9 @@ public:
      * I apply a sigmoid to the boundary hexes, so that the noise
      * drops away towards the edge of the domain.
      */
-    void noiseify_vector_vector (vector<vector<F> >& vv) {
-        F randNoiseOffset = 0.8;
-        F randNoiseGain = 0.1;
+    void noiseify_vector_vector (vector<vector<Flt> >& vv) {
+        Flt randNoiseOffset = 0.8;
+        Flt randNoiseGain = 0.1;
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
@@ -458,9 +458,9 @@ public:
                 // distance from boundary > 0.05, noise has normal
                 // value. Close to boundary, noise is less.
                 // FIXME: specialise, or template morph::Tools::randF<>()
-                vv[i][h.vi] = morph::Tools::randF<F>() * randNoiseGain + randNoiseOffset;
+                vv[i][h.vi] = morph::Tools::randF<Flt>() * randNoiseGain + randNoiseOffset;
                 if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
-                    F bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
+                    Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
                     vv[i][h.vi] = vv[i][h.vi] * bSig;
                 }
             }
@@ -610,7 +610,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // Sigmoid/logistic fn params: 100 sharpness, 0.02 dist offset from boundary
-                F bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
+                Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
                 for (unsigned int m = 0; m<this->M; ++m) {
                     this->g[i][0][h.vi] += (this->gamma[m][i] * this->grad_rho[m][0][h.vi]) * bSig;
                     this->g[i][1][h.vi] += (this->gamma[m][i] * this->grad_rho[m][1][h.vi]) * bSig;
@@ -626,11 +626,10 @@ public:
      */
     //@{
 
-#if 0 // Figure out how to specialise saveC (and saveHexPositions)
     /*!
      * Save the c variable.
      */
-    template <typename F> void saveC (void) {
+    void saveC (void) {
         stringstream fname;
         fname << this->logpath << "/c_";
         fname.width(5);
@@ -640,45 +639,22 @@ public:
         for (unsigned int i = 0; i<this->N; ++i) {
             stringstream path;
             path << "/c" << i;
-            data.add_float_vector (path.str().c_str(), this->c[i]);
+            data.add_contained_vals (path.str().c_str(), this->c[i]);
         }
         this->saveHexPositions (data);
     }
-    template <> void <double>saveC (void) {
-        stringstream fname;
-        fname << this->logpath << "/c_";
-        fname.width(5);
-        fname.fill('0');
-        fname << this->stepCount << ".h5";
-        HdfData data(fname.str());
-        for (unsigned int i = 0; i<this->N; ++i) {
-            stringstream path;
-            path << "/c" << i;
-            data.add_double_vector (path.str().c_str(), this->c[i]);
-        }
-        this->saveHexPositions (data);
-    }
-#endif
 
-#if 0
     /*!
-     * Save positions of the hexes - note using two vector<Fs>
+     * Save positions of the hexes - note using two vector<Flts>
      * that have been populated with the positions from the HexGrid,
      * to fit in with the HDF API.
      */
-    template <> void saveHexPositions<float> (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hgvx);
-        dat.add_float_vector ("/y", this->hgvy);
+    void saveHexPositions (HdfData& dat) {
+        dat.add_contained_vals ("/x", this->hgvx);
+        dat.add_contained_vals ("/y", this->hgvy);
         // And hex to hex distance:
-        dat.add_F ("/d", this->d);
+        dat.add_val ("/d", this->d);
     }
-    template <> void saveHexPositions<double> (HdfData& dat) {
-        dat.add_double_vector ("/x", this->hgvx);
-        dat.add_double_vector ("/y", this->hgvy);
-        // And hex to hex distance:
-        dat.add_F ("/d", this->d);
-    }
-#endif
     //@} // HDF5
 
     /*!
@@ -687,21 +663,21 @@ public:
     //@{
 
     /*!
-     * Normalise the vector of Fs f.
+     * Normalise the vector of Flts f.
      */
-    void normalise (vector<F>& f) {
+    void normalise (vector<Flt>& f) {
 
-        F maxf = -1e7;
-        F minf = +1e7;
+        Flt maxf = -1e7;
+        Flt minf = +1e7;
 
         // Determines min and max
         for (auto val : f) {
             if (val>maxf) { maxf = val; }
             if (val<minf) { minf = val; }
         }
-        F scalef = 1.0 /(maxf - minf);
+        Flt scalef = 1.0 /(maxf - minf);
 
-        vector<vector<F> > norm_a;
+        vector<vector<Flt> > norm_a;
         this->resize_vector_vector (norm_a);
         for (unsigned int fi = 0; fi < f.size(); ++fi) {
             f[fi] = fmin (fmax (((f[fi]) - minf) * scalef, 0.0), 1.0);
@@ -720,8 +696,8 @@ public:
         }
 
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
-        F nsum = 0.0;
-        F csum = 0.0;
+        Flt nsum = 0.0;
+        Flt csum = 0.0;
 #pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             n[hi] = 0;
@@ -753,17 +729,17 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 
             // Runge-Kutta integration for A
-            vector<F> q(this->nhex, 0.0);
+            vector<Flt> q(this->nhex, 0.0);
             this->compute_divJ (a[i], i); // populates divJ[i]
 
-            vector<F> k1(this->nhex, 0.0);
+            vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
                 q[h] = this->a[i][h] + k1[h] * halfdt;
             }
 
-            vector<F> k2(this->nhex, 0.0);
+            vector<Flt> k2(this->nhex, 0.0);
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
@@ -771,7 +747,7 @@ public:
                 q[h] = this->a[i][h] + k2[h] * halfdt;
             }
 
-            vector<F> k3(this->nhex, 0.0);
+            vector<Flt> k3(this->nhex, 0.0);
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
@@ -779,7 +755,7 @@ public:
                 q[h] = this->a[i][h] + k3[h] * dt;
             }
 
-            vector<F> k4(this->nhex, 0.0);
+            vector<Flt> k4(this->nhex, 0.0);
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
@@ -797,26 +773,26 @@ public:
             }
 
             // Runge-Kutta integration for C (or ci)
-            vector<F> q(nhex,0.);
-            vector<F> k1 = compute_dci_dt (c[i], i);
+            vector<Flt> q(nhex,0.);
+            vector<Flt> k1 = compute_dci_dt (c[i], i);
 #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k1[h] * halfdt;
             }
 
-            vector<F> k2 = compute_dci_dt (q, i);
+            vector<Flt> k2 = compute_dci_dt (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k2[h] * halfdt;
             }
 
-            vector<F> k3 = compute_dci_dt (q, i);
+            vector<Flt> k3 = compute_dci_dt (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 q[h] = c[i][h] + k3[h] * dt;
             }
 
-            vector<F> k4 = compute_dci_dt (q, i);
+            vector<Flt> k4 = compute_dci_dt (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * sixthdt;
@@ -829,7 +805,7 @@ public:
      * field f. If abs(f[h]) exceeds the size of dangerThresh, then
      * output debugging information.
      */
-    void debug_values (vector<F>& f, F dangerThresh) {
+    void debug_values (vector<Flt>& f, Flt dangerThresh) {
         for (auto h : this->hg->hexen) {
             if (abs(f[h.vi]) > dangerThresh) {
                 DBG ("Blow-up threshold exceeded at Hex.vi=" << h.vi << " ("<< h.ri <<","<< h.gi <<")" <<  ": " << f[h.vi]);
@@ -847,7 +823,7 @@ public:
      * For each Hex, work out the gradient in x and y directions
      * using whatever neighbours can contribute to an estimate.
      */
-    void spacegrad2D (vector<F>& f, array<vector<F>, 2>& gradf) {
+    void spacegrad2D (vector<Flt>& f, array<vector<Flt>, 2>& gradf) {
 
         // Note - East is positive x; North is positive y. Does this match how it's drawn in the display??
 #pragma omp parallel for schedule(static)
@@ -894,8 +870,8 @@ public:
      * Does: f = (alpha * f) + betaterm. c.f. Karb2004, Eq 1. f is
      * c[i] or q from the RK algorithm.
      */
-    vector<F> compute_dci_dt (vector<F>& f, unsigned int i) {
-        vector<F> dci_dt (this->nhex, 0.0);
+    vector<Flt> compute_dci_dt (vector<Flt>& f, unsigned int i) {
+        vector<Flt> dci_dt (this->nhex, 0.0);
 #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; h++) {
             dci_dt[h] = (this->betaterm[i][h] - this->alpha[i] * f[h]);
@@ -912,7 +888,7 @@ public:
      *
      * Stable with dt = 0.0001;
      */
-    void compute_divJ (vector<F>& fa, unsigned int i) {
+    void compute_divJ (vector<Flt>& fa, unsigned int i) {
 
         // Three terms to compute; see Eq. 14 in methods_notes.pdf
 
@@ -924,7 +900,7 @@ public:
 
             // 1. The D Del^2 a_i term
             // Compute the sum around the neighbours
-            F thesum = -6 * fa[hi];
+            Flt thesum = -6 * fa[hi];
 
             thesum += fa[(HAS_NE(hi)?NE(hi):hi)];
             thesum += fa[(HAS_NNE(hi)?NNE(hi):hi)];
@@ -934,10 +910,10 @@ public:
             thesum += fa[(HAS_NSE(hi)?NSE(hi):hi)];
 
             // Multiply bu 2D/3d^2
-            F term1 = this->twoDover3dd * thesum;
+            Flt term1 = this->twoDover3dd * thesum;
 
             // 2. The a div(g) term. Two sums for this.
-            F term2 = 0.0;
+            Flt term2 = 0.0;
             // First sum
             if (HAS_NE(hi)) {
                 term2 += /*cos (0)*/ (this->g[i][0][NE(hi)] + this->g[i][0][hi]);
@@ -986,7 +962,7 @@ public:
 
             // 3. Third term is this->g . grad a_i. Should not
             // contribute to J, as g(x) decays towards boundary.
-            F term3 = this->g[i][0][hi] * this->grad_a[i][0][hi]
+            Flt term3 = this->g[i][0][hi] * this->grad_a[i][0][hi]
                 + this->g[i][1][hi] * this->grad_a[i][1][hi];
 
             this->divJ[i][hi] = term1 + term2 + term3;
@@ -1001,16 +977,16 @@ public:
      */
     void gaussian1D_guidance (void) {
 #if 0
-        F xoffA = this->guidance_offset[0];
-        F xoffC = this->guidance_offset[2];
-        F xoffB = (xoffA + xoffC) / 2.0;
+        Flt xoffA = this->guidance_offset[0];
+        Flt xoffC = this->guidance_offset[2];
+        Flt xoffB = (xoffA + xoffC) / 2.0;
 #endif
         for (auto h : this->hg->hexen) {
             for (unsigned int m = 0; m<this->M; ++m) {
-                F cosphi = (F) cos (guidance_phi[m]);
-                F sinphi = (F) sin (guidance_phi[m]);
+                Flt cosphi = (Flt) cos (guidance_phi[m]);
+                Flt sinphi = (Flt) sin (guidance_phi[m]);
                 DBG ("phi: " << guidance_phi[m]);
-                F x_ = (h.x * cosphi) + (h.y * sinphi);
+                Flt x_ = (h.x * cosphi) + (h.y * sinphi);
                 this->rho[m][h.vi] = guidance_gain[m] * exp(-((x_-guidance_offset[m])*(x_-guidance_offset[m])) / guidance_width[m]);
             }
         }
@@ -1022,9 +998,9 @@ public:
     void sigmoid_guidance (void) {
         for (auto h : this->hg->hexen) {
             for (unsigned int m = 0; m<this->M; ++m) {
-                F cosphi = (F) cos (this->guidance_phi[m]); // FIXME:
-                F sinphi = (F) sin (this->guidance_phi[m]);
-                F x_ = (h.x * cosphi) + (h.y * sinphi);
+                Flt cosphi = (Flt) cos (this->guidance_phi[m]); // FIXME:
+                Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+                Flt x_ = (h.x * cosphi) + (h.y * sinphi);
                 this->rho[m][h.vi] = guidance_gain[m] / (1.0 + exp(-(x_-guidance_offset[m])/this->guidance_width[m]));
             }
         }
@@ -1038,7 +1014,7 @@ public:
     /*!
      * Get the c contours in this case.
      */
-    vector<list<Hex> > get_contours (F threshold) {
+    vector<list<Hex> > get_contours (Flt threshold) {
         return this->get_contours (this->c, threshold);
     }
 
@@ -1047,7 +1023,7 @@ public:
      * where threshold is crossed. Is some sort of list of hexes
      * right, or would list of locations (r,g,b or x,y) be better?
      */
-    vector<list<Hex> > get_contours (vector<vector<F> >& f, F threshold) {
+    vector<list<Hex> > get_contours (vector<vector<Flt> >& f, Flt threshold) {
 
         vector<list<Hex> > rtn;
         // Initialise
@@ -1057,8 +1033,8 @@ public:
         }
 
         // Determine min and max
-        vector<F> maxf (this->N, -1e7);
-        vector<F> minf (this->N, +1e7);
+        vector<Flt> maxf (this->N, -1e7);
+        vector<Flt> minf (this->N, +1e7);
         for (auto h : this->hg->hexen) {
             if (h.onBoundary() == false) {
                 for (unsigned int i = 0; i<this->N; ++i) {
@@ -1068,14 +1044,14 @@ public:
             }
         }
 
-        vector<F> scalef (5, 0);
+        vector<Flt> scalef (5, 0);
         #pragma omp parallel for
         for (unsigned int i = 0; i<this->N; ++i) {
             scalef[i] = 1.0 / (maxf[i]-minf[i]);
         }
 
         // Re-normalize
-        vector<vector<F> > norm_f;
+        vector<vector<Flt> > norm_f;
         this->resize_vector_vector (norm_f);
         for (unsigned int i = 0; i<this->N; ++i) {
             #pragma omp parallel for
@@ -1141,29 +1117,29 @@ public:
      * Create a symmetric, 1D Gaussian hill centred at coordinate (x) with
      * width sigma and height gain. Place result into @a result.
      */
-    void createGaussian1D (F x, F phi, F gain, F sigma, vector<F>& result) {
+    void createGaussian1D (Flt x, Flt phi, Flt gain, Flt sigma, vector<Flt>& result) {
 
         // Once-only parts of the calculation of the Gaussian.
-        F root_2_pi = 2.506628275;
-        F one_over_sigma_root_2_pi = 1 / sigma * root_2_pi;
-        F two_sigma_sq = 2 * sigma * sigma;
+        Flt root_2_pi = 2.506628275;
+        Flt one_over_sigma_root_2_pi = 1 / sigma * root_2_pi;
+        Flt two_sigma_sq = 2 * sigma * sigma;
 
         // Gaussian dist. result, and a running sum of the results:
-        F gauss = 0.0;
+        Flt gauss = 0.0;
 
-        F cosphi = (F) cos (phi);
-        F sinphi = (F) sin (phi);
+        Flt cosphi = (Flt) cos (phi);
+        Flt sinphi = (Flt) sin (phi);
 
         // x and y components of the vector from (x,y) to any given Hex.
-        F rx = 0.0f, ry = 0.0f;
+        Flt rx = 0.0f, ry = 0.0f;
 
         // Calculate each element of the kernel:
         for (auto h : this->hg->hexen) {
             rx = x - h.x;
             ry = 0 - h.y;
-            F x_ = (rx * cosphi) + (ry * sinphi);
+            Flt x_ = (rx * cosphi) + (ry * sinphi);
             gauss = gain * (one_over_sigma_root_2_pi
-                            * exp ( static_cast<F>(-(x_*x_))
+                            * exp ( static_cast<Flt>(-(x_*x_))
                                     / two_sigma_sq ));
             result[h.vi] = gauss;
             ++k;
@@ -1174,21 +1150,21 @@ public:
      * Create a symmetric, 2D Gaussian hill centred at coordinate (x,y) with
      * width sigma and height gain. Place result into @a result.
      */
-    void createGaussian (F x, F y, F gain, F sigma, vector<F>& result) {
+    void createGaussian (Flt x, Flt y, Flt gain, Flt sigma, vector<Flt>& result) {
 
         // Once-only parts of the calculation of the Gaussian.
-        F root_2_pi = 2.506628275;
-        F one_over_sigma_root_2_pi = 1 / sigma * root_2_pi;
-        F two_sigma_sq = 2 * sigma * sigma;
+        Flt root_2_pi = 2.506628275;
+        Flt one_over_sigma_root_2_pi = 1 / sigma * root_2_pi;
+        Flt two_sigma_sq = 2 * sigma * sigma;
 
         // Gaussian dist. result, and a running sum of the results:
-        F gauss = 0.0;
-        F sum = 0.0;
+        Flt gauss = 0.0;
+        Flt sum = 0.0;
 
         // x and y components of the vector from (x,y) to any given Hex.
-        F rx = 0.0f, ry = 0.0f;
+        Flt rx = 0.0f, ry = 0.0f;
         // distance from any Hex to (x,y)
-        F r = 0.0f;
+        Flt r = 0.0f;
 
         // Calculate each element of the kernel:
         for (auto h : this->hg->hexen) {
@@ -1196,7 +1172,7 @@ public:
             ry = y - h.y;
             r = sqrt (rx*rx + ry*ry);
             gauss = gain * (one_over_sigma_root_2_pi
-                            * exp ( static_cast<F>(-(r*r))
+                            * exp ( static_cast<Flt>(-(r*r))
                                     / two_sigma_sq ));
             result[h.vi] = gauss;
             sum += gauss;

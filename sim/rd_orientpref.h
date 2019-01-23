@@ -407,10 +407,10 @@ public:
      * to fit in with the HDF API.
      */
     void saveHexPositions (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hgvx);
-        dat.add_float_vector ("/y", this->hgvy);
+        dat.add_contained_vals ("/x", this->hgvx);
+        dat.add_contained_vals ("/y", this->hgvy);
         // And hex to hex distance:
-        dat.add_double ("/d", this->d);
+        dat.add_val ("/d", this->d);
     }
 
     /*!
@@ -420,10 +420,10 @@ public:
         string fname = this->logpath + "/pinwheel.h5";
         HdfData data (fname);
         // Save some variables
-        data.add_double_vector ("/z_re", this->z[0]);
-        data.add_double_vector ("/z_im", this->z[1]);
-        data.add_double_vector ("/r_re", this->r[0]);
-        data.add_double_vector ("/r_im", this->r[1]);
+        data.add_contained_vals ("/z_re", this->z[0]);
+        data.add_contained_vals ("/z_im", this->z[1]);
+        data.add_contained_vals ("/r_re", this->r[0]);
+        data.add_contained_vals ("/r_im", this->r[1]);
         this->saveHexPositions (data);
     }
     //@} // HDF5
@@ -453,14 +453,14 @@ public:
                                      -0.005, 0.01,
                                      false, 100.0, 0.02);
 #ifdef DEBUG__
-        data.add_double_vector ("/z_re", this->z[0]);
-        data.add_double_vector ("/z_im", this->z[1]);
-        data.add_double_vector ("/r_re", this->r[0]);
-        data.add_double_vector ("/r_im", this->r[1]);
-        data.add_double_vector ("/sz_re", this->sz[0]);
-        data.add_double_vector ("/sz_im", this->sz[1]);
-        data.add_double_vector ("/sr_re", this->sr[0]);
-        data.add_double_vector ("/sr_im", this->sr[1]);
+        data.add_contained_vals ("/z_re", this->z[0]);
+        data.add_contained_vals ("/z_im", this->z[1]);
+        data.add_contained_vals ("/r_re", this->r[0]);
+        data.add_contained_vals ("/r_im", this->r[1]);
+        data.add_contained_vals ("/sz_re", this->sz[0]);
+        data.add_contained_vals ("/sz_im", this->sz[1]);
+        data.add_contained_vals ("/sr_re", this->sr[0]);
+        data.add_contained_vals ("/sr_im", this->sr[1]);
 #endif
         // Compute afferent response
         #pragma omp parallel for
@@ -480,13 +480,13 @@ public:
             this->aff[hi] = exp (this->oneOverTwoSigmaSquared * this->exparg[hi]);
         }
 #ifdef DEBUG__
-        data.add_double_vector ("/exparg", this->exparg);
-        data.add_double_vector ("/aff", this->aff);
+        data.add_contained_vals ("/exparg", this->exparg);
+        data.add_contained_vals ("/aff", this->aff);
 
-        data.add_double_vector ("/diff_z_re", this->diff_z[0]);
-        data.add_double_vector ("/diff_z_im", this->diff_z[1]);
-        data.add_double_vector ("/diff_r_re", this->diff_r[0]);
-        data.add_double_vector ("/diff_r_im", this->diff_r[1]);
+        data.add_contained_vals ("/diff_z_re", this->diff_z[0]);
+        data.add_contained_vals ("/diff_z_im", this->diff_z[1]);
+        data.add_contained_vals ("/diff_r_re", this->diff_r[0]);
+        data.add_contained_vals ("/diff_r_im", this->diff_r[1]);
 #endif
         // Serial sum. Vector sum candidate?
         double affsum = 0;
@@ -508,10 +508,10 @@ public:
         }
 
 #ifdef DEBUG__
-        data.add_double_vector ("/argu_z_re", this->argu_z[0]);
-        data.add_double_vector ("/argu_z_im", this->argu_z[1]);
-        data.add_double_vector ("/argu_r_re", this->argu_r[0]);
-        data.add_double_vector ("/argu_r_im", this->argu_r[1]);
+        data.add_contained_vals ("/argu_z_re", this->argu_z[0]);
+        data.add_contained_vals ("/argu_z_im", this->argu_z[1]);
+        data.add_contained_vals ("/argu_r_re", this->argu_r[0]);
+        data.add_contained_vals ("/argu_r_im", this->argu_r[1]);
 
         double norm  = 2.0 / (3.0 * this->d * this->d);
         data.add_double ("/norm", norm);
@@ -526,10 +526,10 @@ public:
 
         // pi for post integrate
 #ifdef DEBUG__
-        data.add_double_vector ("/pi_z_re", this->z[0]);
-        data.add_double_vector ("/pi_z_im", this->z[1]);
-        data.add_double_vector ("/pi_r_re", this->r[0]);
-        data.add_double_vector ("/pi_r_im", this->r[1]);
+        data.add_contained_vals ("/pi_z_re", this->z[0]);
+        data.add_contained_vals ("/pi_z_im", this->z[1]);
+        data.add_contained_vals ("/pi_r_re", this->r[0]);
+        data.add_contained_vals ("/pi_r_im", this->r[1]);
 #endif
         this->stepCount++;
     }

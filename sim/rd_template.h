@@ -264,10 +264,10 @@ public:
      */
     //@{
     void saveHexPositions (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hgvx);
-        dat.add_float_vector ("/y", this->hgvy);
+        dat.add_contained_vals ("/x", this->hgvx);
+        dat.add_contained_vals ("/y", this->hgvy);
         // And hex to hex distance:
-        dat.add_double ("/d", this->d);
+        dat.add_val ("/d", this->d);
     }
 
     /*!
@@ -278,8 +278,8 @@ public:
         cout << "Saving to file " << fname << endl;
         HdfData data (fname);
         // Save some variables
-        //data.add_double ("/Aemx", this->Aemx);
-        //data.add_double_vector ("/emx", this->emx);
+        //data.add_val ("/Aemx", this->Aemx);
+        //data.add_contained_vals ("/emx", this->emx);
         this->saveHexPositions (data);
     }
     //@} // HDF5

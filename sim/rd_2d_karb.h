@@ -611,7 +611,7 @@ public:
         for (unsigned int i = 0; i<this->N; ++i) {
             stringstream path;
             path << "/c" << i;
-            data.add_double_vector (path.str().c_str(), this->c[i]);
+            data.add_contained_vals (path.str().c_str(), this->c[i]);
         }
         this->saveHexPositions (data);
     }
@@ -622,10 +622,10 @@ public:
      * to fit in with the HDF API.
      */
     void saveHexPositions (HdfData& dat) {
-        dat.add_float_vector ("/x", this->hgvx);
-        dat.add_float_vector ("/y", this->hgvy);
+        dat.add_contained_vals ("/x", this->hgvx);
+        dat.add_contained_vals ("/y", this->hgvy);
         // And hex to hex distance:
-        dat.add_double ("/d", this->d);
+        dat.add_val ("/d", this->d);
     }
 
     /*!
@@ -639,75 +639,75 @@ public:
 
         // Save initial factor calculations - required in
         // createFactorInitialConc() and runExpressionDynamics()
-        data.add_double ("/Aemx", this->Aemx);
-        data.add_double ("/Apax", this->Apax);
-        data.add_double ("/Afgf", this->Afgf);
+        data.add_val ("/Aemx", this->Aemx);
+        data.add_val ("/Apax", this->Apax);
+        data.add_val ("/Afgf", this->Afgf);
 
-        data.add_double ("/Chiemx", this->Chiemx);
-        data.add_double ("/Chipax", this->Chipax);
-        data.add_double ("/Chifgf", this->Chifgf);
+        data.add_val ("/Chiemx", this->Chiemx);
+        data.add_val ("/Chipax", this->Chipax);
+        data.add_val ("/Chifgf", this->Chifgf);
 
-        data.add_double ("/tau_emx", this->tau_emx);
-        data.add_double ("/tau_pax", this->tau_pax);
-        data.add_double ("/tau_fgf", this->tau_fgf);
+        data.add_val ("/tau_emx", this->tau_emx);
+        data.add_val ("/tau_pax", this->tau_pax);
+        data.add_val ("/tau_fgf", this->tau_fgf);
 
-        data.add_float ("/diremx", this->diremx);
-        data.add_float ("/dirpax", this->dirpax);
-        data.add_float ("/dirfgf", this->dirfgf);
+        data.add_val ("/diremx", this->diremx);
+        data.add_val ("/dirpax", this->dirpax);
+        data.add_val ("/dirfgf", this->dirfgf);
 
-        data.add_double ("/v1", this->v1);
-        data.add_double ("/v2", this->v2);
+        data.add_val ("/v1", this->v1);
+        data.add_val ("/v2", this->v2);
 
-        data.add_double ("/w1", this->w1);
-        data.add_double ("/w2", this->w2);
+        data.add_val ("/w1", this->w1);
+        data.add_val ("/w2", this->w2);
 
         // Signalling molecule expression levels
-        data.add_double_vector ("/emx", this->emx);
-        data.add_double_vector ("/pax", this->pax);
-        data.add_double_vector ("/fgf", this->fgf);
+        data.add_contained_vals ("/emx", this->emx);
+        data.add_contained_vals ("/pax", this->pax);
+        data.add_contained_vals ("/fgf", this->fgf);
 
-        data.add_double_vector ("/eta_emx", this->eta_emx);
-        data.add_double_vector ("/eta_pax", this->eta_pax);
-        data.add_double_vector ("/eta_fgf", this->eta_fgf);
+        data.add_contained_vals ("/eta_emx", this->eta_emx);
+        data.add_contained_vals ("/eta_pax", this->eta_pax);
+        data.add_contained_vals ("/eta_fgf", this->eta_fgf);
 
         // parameters and vars for populateChemoAttractants
-        data.add_double ("/sigmaA", this->sigmaA);
-        data.add_double ("/sigmaB", this->sigmaB);
-        data.add_double ("/sigmaC", this->sigmaC);
+        data.add_val ("/sigmaA", this->sigmaA);
+        data.add_val ("/sigmaB", this->sigmaB);
+        data.add_val ("/sigmaC", this->sigmaC);
 
-        data.add_double ("/kA", this->kA);
-        data.add_double ("/kB", this->kB);
-        data.add_double ("/kC", this->kC);
+        data.add_val ("/kA", this->kA);
+        data.add_val ("/kB", this->kB);
+        data.add_val ("/kC", this->kC);
 
-        data.add_double ("/theta1", this->theta1);
-        data.add_double ("/theta2", this->theta2);
-        data.add_double ("/theta3", this->theta3);
-        data.add_double ("/theta4", this->theta4);
+        data.add_val ("/theta1", this->theta1);
+        data.add_val ("/theta2", this->theta2);
+        data.add_val ("/theta3", this->theta3);
+        data.add_val ("/theta4", this->theta4);
 
         // The axon guidance molecule expression levels
-        data.add_double_vector ("/rhoA", this->rhoA);
-        data.add_double_vector ("/rhoB", this->rhoB);
-        data.add_double_vector ("/rhoC", this->rhoC);
+        data.add_contained_vals ("/rhoA", this->rhoA);
+        data.add_contained_vals ("/rhoB", this->rhoB);
+        data.add_contained_vals ("/rhoC", this->rhoC);
 
         // And gradient thereof
-        data.add_double_vector ("/grad_rhoA_x", this->grad_rhoA[0]);
-        data.add_double_vector ("/grad_rhoA_y", this->grad_rhoA[1]);
-        data.add_double_vector ("/grad_rhoB_x", this->grad_rhoB[0]);
-        data.add_double_vector ("/grad_rhoB_y", this->grad_rhoB[1]);
-        data.add_double_vector ("/grad_rhoC_x", this->grad_rhoC[0]);
-        data.add_double_vector ("/grad_rhoC_y", this->grad_rhoC[1]);
+        data.add_contained_vals ("/grad_rhoA_x", this->grad_rhoA[0]);
+        data.add_contained_vals ("/grad_rhoA_y", this->grad_rhoA[1]);
+        data.add_contained_vals ("/grad_rhoB_x", this->grad_rhoB[0]);
+        data.add_contained_vals ("/grad_rhoB_y", this->grad_rhoB[1]);
+        data.add_contained_vals ("/grad_rhoC_x", this->grad_rhoC[0]);
+        data.add_contained_vals ("/grad_rhoC_y", this->grad_rhoC[1]);
 
         // g - the guidance molecular modifier on a.
-        data.add_double_vector ("/g_0_x", this->g[0][0]);
-        data.add_double_vector ("/g_0_y", this->g[0][1]);
-        data.add_double_vector ("/g_1_x", this->g[1][0]);
-        data.add_double_vector ("/g_1_y", this->g[1][1]);
-        data.add_double_vector ("/g_2_x", this->g[2][0]);
-        data.add_double_vector ("/g_2_y", this->g[2][1]);
-        data.add_double_vector ("/g_3_x", this->g[3][0]);
-        data.add_double_vector ("/g_3_y", this->g[3][1]);
-        data.add_double_vector ("/g_4_x", this->g[4][0]);
-        data.add_double_vector ("/g_4_y", this->g[4][1]);
+        data.add_contained_vals ("/g_0_x", this->g[0][0]);
+        data.add_contained_vals ("/g_0_y", this->g[0][1]);
+        data.add_contained_vals ("/g_1_x", this->g[1][0]);
+        data.add_contained_vals ("/g_1_y", this->g[1][1]);
+        data.add_contained_vals ("/g_2_x", this->g[2][0]);
+        data.add_contained_vals ("/g_2_y", this->g[2][1]);
+        data.add_contained_vals ("/g_3_x", this->g[3][0]);
+        data.add_contained_vals ("/g_3_y", this->g[3][1]);
+        data.add_contained_vals ("/g_4_x", this->g[4][0]);
+        data.add_contained_vals ("/g_4_y", this->g[4][1]);
 
         this->saveHexPositions (data);
     }
@@ -719,13 +719,13 @@ public:
     void loadFactorExpression (void) {
         // The only thing I'll load for now is the rhoA/B/C values.
         HdfData data ("./logs/e0/2Derm.h5", READ_DATA);
-        data.read_double_vector ("/c_0", this->rhoA);
+        data.read_contained_vals ("/c_0", this->rhoA);
         if (rhoA.size() != this->nhex) {
             throw runtime_error ("Guidance molecules came from HexGrid with different size from this one...");
         }
         DBG ("rhoA now has size " << this->rhoA.size() << " with first two values: " << rhoA[0] << "," << rhoA[1]);
-        data.read_double_vector ("/c_1", this->rhoB);
-        data.read_double_vector ("/c_2", this->rhoC);
+        data.read_contained_vals ("/c_1", this->rhoB);
+        data.read_contained_vals ("/c_2", this->rhoC);
 
         this->normalise (this->rhoA);
         this->normalise (this->rhoB);
@@ -734,12 +734,12 @@ public:
 
     void loadToInitialConc (void) {
         HdfData data ("./logs/e0/2Derm.h5", READ_DATA);
-        data.read_double_vector ("/c_0", this->eta_pax);
+        data.read_contained_vals ("/c_0", this->eta_pax);
         if (eta_pax.size() != this->nhex) {
             throw runtime_error ("Guidance molecules came from HexGrid with different size from this one...");
         }
-        data.read_double_vector ("/c_1", this->eta_emx);
-        data.read_double_vector ("/c_2", this->eta_fgf);
+        data.read_contained_vals ("/c_1", this->eta_emx);
+        data.read_contained_vals ("/c_2", this->eta_fgf);
 
         this->normalise (this->eta_pax);
         this->normalise (this->eta_emx);

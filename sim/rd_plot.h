@@ -13,10 +13,11 @@ using morph::HexGrid;
 using morph::Gdisplay;
 
 /*!
- * Helper functions to plot hex grids. The template type Flt is the
- * floating point type used in the reaction diffusion class with which
- * this code will interface. Note that float and double may also be
- * used directly, where they relate to teh morph/display.h code.
+ * A helper class for the plotting of hex grids. The template type Flt
+ * is the floating point type predominantly used in the computation
+ * class with which this code will interface. Note that float and
+ * double may also be used directly, where they relate to the
+ * morph/display.h code.
  */
 template <class Flt>
 class RD_plot
@@ -51,8 +52,10 @@ public:
     //@}
 
     /*!
-     * On Gdisplay disp, plot the N scalar fields stored in f on the
-     * HexGrid hg.
+     * On Gdisplay disp, plot all of the scalar fields stored in f on
+     * the HexGrid hg. These are plotted in a row; it's up to the
+     * programmer to make the window large enough when instantiating
+     * the Gdisplay.
      */
     void scalarfields (Gdisplay& disp,
                        HexGrid* hg,
@@ -60,7 +63,6 @@ public:
 
         this->eye[2] = -0.4;
         disp.resetDisplay (this->fix, this->eye, this->rot);
-        //disp.redrawDisplay();
 
         unsigned int N = f.size();
         unsigned int nhex = hg->num();
@@ -68,8 +70,8 @@ public:
 #define INDIVIDUAL_SCALING 1
 #ifdef INDIVIDUAL_SCALING
         // Copies data to plot out of the model
-        vector<Flt> maxa (5, -1e7);
-        vector<Flt> mina (5, +1e7);
+        vector<Flt> maxa (N, -1e7);
+        vector<Flt> mina (N, +1e7);
         // Determines min and max
         for (auto h : hg->hexen) {
             if (h.onBoundary() == false) {
@@ -134,18 +136,27 @@ public:
 
         // Create an offset which we'll increment by the width of the
         // map, starting from the left-most map (f[0])
-        float hgwidth = hg->getXmax()-hg->getXmin();
-        array<float,3> offset = { (N/2)*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
 
-        // Draw
+        //float hgwidth = hg->getXmax() - hg->getXmin();
+        //cout << "hgwidth: " << hgwidth << endl;
+        //array<float,3> offset_old = { (N/2)*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
+
+        // Get the size of the display, so we can lay out/position the subgraphs.
+        float dwidth = (unsigned int)disp.gwa.width/(170*N); // Empirically determined.
+        float dwidth_over_N = dwidth/N;
+        cout << "dwidth: "<< dwidth << " and dw/N:" << dwidth_over_N << endl;
+        array<float,3> offset = {{ 0.0,0.0,0.0 }};
+
         for (unsigned int i = 0; i<N; ++i) {
+            offset[0] = (i+1)*dwidth_over_N - (dwidth_over_N/2.0f) - 1;
+            cout << "offset of picture " << i << " is "  << offset[0] << endl;
             // Note: OpenGL isn't thread-safe, so no omp parallel for here.
             for (auto h : hg->hexen) {
                 array<float,3> cl_a = morph::Tools::HSVtoRGB ((float)i/(float)N,
                                                               norm_a[i][h.vi], 1.0);
                 disp.drawHex (h.position(), offset, (h.d/2.0f), cl_a);
             }
-            offset[0] += hgwidth + (hgwidth/20);
+            //offset_old[0] += hgwidth + (hgwidth/20);
         }
         disp.redrawDisplay();
     }

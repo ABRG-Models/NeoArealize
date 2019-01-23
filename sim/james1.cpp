@@ -6,7 +6,7 @@
 #include <string>
 
 // Choose whether to plot or not.
-//#define PLOT_STUFF 1
+#define PLOT_STUFF 1
 
 #if defined PLOT_STUFF
 #include "morph/display.h"
@@ -14,6 +14,9 @@
 #endif
 
 using namespace std;
+
+// This will be passed as the template argument for RD_plot and RD.
+#define FLOATTYPE double
 
 int main (int argc, char **argv)
 {
@@ -36,7 +39,7 @@ int main (int argc, char **argv)
     vector<double> rot(3, 0.0);
 
     // A plot object.
-    RD_plot plt(fix, eye, rot);
+    RD_plot<FLOATTYPE> plt(fix, eye, rot);
 
     double rhoInit = 1.5;
     string worldName(argv[1]);
@@ -74,7 +77,7 @@ int main (int argc, char **argv)
 #endif
 
     // Instantiate the model object
-    RD_James<float> RD;
+    RD_James<FLOATTYPE> RD;
     RD.N = 2; // Number of TC populations
     RD.M = 1; // Number of guidance molecules that are sculpted
 
@@ -100,7 +103,7 @@ int main (int argc, char **argv)
     }
 
     // Start the loop
-    unsigned int maxSteps = 20000;
+    unsigned int maxSteps = 2000;
     bool finished = false;
     while (finished == false) {
         // Step the model
@@ -126,9 +129,7 @@ int main (int argc, char **argv)
             // Save some frames ('c' variable only for now)
             if (RD.stepCount % 100 == 0) {
                 // Once template has been successfully specialised:
-#ifdef TEMPLATE_SPECIALISATION_FIGURED
                 RD.saveC();
-#endif
             }
 
         } catch (const exception& e) {

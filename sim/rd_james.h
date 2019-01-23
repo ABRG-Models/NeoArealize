@@ -620,9 +620,7 @@ public:
     }
 
     /*!
-     * HDF5 file saving/loading methods. Have to have a float one and
-     * a double one when templating, OR could template the HdfData
-     * class.
+     * HDF5 file saving/loading methods.
      */
     //@{
 

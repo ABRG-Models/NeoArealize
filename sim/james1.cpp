@@ -8,7 +8,12 @@
 /*!
  * Define number of guidance molecules.
  */
-#define M_GUID 1
+#define M_GUID 2
+
+/*!
+ * This will be passed as the template argument for RD_plot and RD.
+ */
+#define FLOATTYPE float
 
 #include "rd_james.h"
 
@@ -25,9 +30,6 @@
 #endif
 
 using namespace std;
-
-// This will be passed as the template argument for RD_plot and RD.
-#define FLOATTYPE double
 
 int main (int argc, char **argv)
 {
@@ -97,54 +99,43 @@ int main (int argc, char **argv)
     RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
     // Set up guidance molecule method parameters
     RD.guidance_gain.push_back (1.0);
-    RD.guidance_phi.push_back (0.0);
+    RD.guidance_phi.push_back (0.0); // phi in radians
+    RD.guidance_width.push_back (1.0);
+    RD.guidance_offset.push_back (0.5);
+    RD.guidance_gain.push_back (1.0);
+    RD.guidance_phi.push_back (M_PI); // phi in radians
     RD.guidance_width.push_back (1.0);
     RD.guidance_offset.push_back (0.5);
 
-    try {
-        RD.init();
+    RD.init();
 #ifdef PLOT_STUFF
-        plt.scalarfields (displays[1], RD.hg, RD.rho);
-        // Save pngs of the factors and guidance expressions.
-        string logpath = "logs";
-        displays[0].saveImage (logpath + "/guidance.png");
+    plt.scalarfields (displays[1], RD.hg, RD.rho);
+    // Save pngs of the factors and guidance expressions.
+    string logpath = "logs";
+    displays[0].saveImage (logpath + "/guidance.png");
 #endif
-    } catch (const exception& e) {
-        cerr << "Exception initialising RD_2D_Karb object: " << e.what() << endl;
-    }
 
     // Start the loop
     unsigned int maxSteps = 2000;
     bool finished = false;
     while (finished == false) {
         // Step the model
-        try {
-            RD.step();
-        } catch (const exception& e) {
-            cerr << "Caught exception calling RD.step(): " << e.what() << endl;
-            finished = true;
-        }
+        RD.step();
 
 #ifdef PLOT_STUFF
-        try {
-            if (RD.stepCount % 10 == 0) {
-                // Do a final plot of the ctrs as found.
-                vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, RD.contour_threshold);
-                plt.plot_contour (displays[3], RD.hg, ctrs);
-                plt.scalarfields (displays[1], RD.hg, RD.a);
-                plt.scalarfields (displays[2], RD.hg, RD.c);
-                // If required:
-                //RD.save();
-            }
-            // Save some frames ('c' variable only for now)
-            if (RD.stepCount % 100 == 0) {
-                // Once template has been successfully specialised:
-                RD.saveC();
-            }
-
-        } catch (const exception& e) {
-            cerr << "Caught exception calling RD.plot(): " << e.what() << endl;
-            finished = true;
+        if (RD.stepCount % 10 == 0) {
+            // Do a final plot of the ctrs as found.
+            vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, RD.contour_threshold);
+            plt.plot_contour (displays[3], RD.hg, ctrs);
+            plt.scalarfields (displays[1], RD.hg, RD.a);
+            plt.scalarfields (displays[2], RD.hg, RD.c);
+            // If required:
+            //RD.save();
+        }
+        // Save some frames ('c' variable only for now)
+        if (RD.stepCount % 100 == 0) {
+            // Once template has been successfully specialised:
+            RD.saveC();
         }
 #endif
         if (RD.stepCount > maxSteps) {

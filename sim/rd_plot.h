@@ -61,7 +61,6 @@ public:
                        HexGrid* hg,
                        vector<vector<Flt> >& f) {
 
-        DBG ("this->eye[2] is " << this->eye[2]);
         disp.resetDisplay (this->fix, this->eye, this->rot);
 
         unsigned int N = f.size();
@@ -106,9 +105,8 @@ public:
         // Copies data to plot out of the model
         Flt maxa = -1e7;
         Flt mina = +1e7;
-        // Determines min and max
 
-#pragma omp_ parallel for
+        // Determines min and max
         for (unsigned int hi=0; hi<nhex; ++hi) {
             Hex* h = hg->vhexen[hi];
             if (h->onBoundary() == false) {
@@ -127,7 +125,6 @@ public:
             norm_a[i].resize (nhex, 0.0);
         }
         for (unsigned int i = 0; i<N; ++i) {
-#pragma omp_ parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 norm_a[i][h] = fmin (fmax (((f[i][h]) - mina) * scalea, 0.0), 1.0);
             }
@@ -144,9 +141,7 @@ public:
         array<float,3> offset = { 0.0f , 0.0f, 0.0f };
         float half_minus_half_N = 0.5f - ((float)N/2.0f);
         for (unsigned int i = 0; i<N; ++i) {
-            //offset[0] = (0.5f - ((float)N/2.0f) + (float)i) * w;
             offset[0] = (half_minus_half_N + (float)i) * w;
-            cout << "offset of picture " << i << " is "  << offset[0] << endl;
             // Note: OpenGL isn't thread-safe, so no omp parallel for here.
             for (auto h : hg->hexen) {
                 array<float,3> cl_a = morph::Tools::HSVtoRGB ((float)i/(float)N,
@@ -189,7 +184,6 @@ public:
         }
 
         vector<Flt> scalef (5, 0);
-#pragma omp_ parallel for
         for (unsigned int i = 0; i<N; ++i) {
             scalef[i] = 1.0 / (maxf[i]-minf[i]);
         }
@@ -202,14 +196,12 @@ public:
         }
 
         for (unsigned int i = 0; i<N; ++i) {
-#pragma omp_ parallel for
             for (unsigned int h=0; h<nhex; h++) {
                 norm_f[i][h] = fmin (fmax (((f[i][h]) - minf[i]) * scalef[i], 0.0), 1.0);
             }
         }
 
         // Collate
-#pragma omp_ parallel for
         for (unsigned int i = 0; i<N; ++i) {
 
             for (auto h : hg->hexen) {
@@ -264,7 +256,6 @@ public:
      * Plot the contour described by contourHexes, with these hexes coloured in.
      */
     void plot_contour (Gdisplay& disp, HexGrid* hg, vector<list<Hex> >& contourHexes) {
-        //this->eye[2] = -0.4;
         disp.resetDisplay (this->fix, this->eye, this->rot);
         this->add_contour_plot (disp, hg, contourHexes);
         disp.redrawDisplay();
@@ -275,7 +266,6 @@ public:
      * disp.
      */
     void plot_contour (morph::Gdisplay& disp, HexGrid* hg, vector<vector<Flt> >& f, Flt threshold) {
-        //this->eye[2] = -0.4;
         disp.resetDisplay (this->fix, this->eye, this->rot);
         this->add_contour_plot (disp, hg, f, threshold);
         disp.redrawDisplay();

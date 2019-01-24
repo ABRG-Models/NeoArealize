@@ -210,7 +210,7 @@ public:
 
     /*!
      * A vector of parameters for the direction of the guidance
-     * molecules
+     * molecules. This is an angle in Radians.
      */
     alignas(Flt) vector<Flt> guidance_phi;
 
@@ -999,7 +999,7 @@ public:
                 Flt cosphi = (Flt) cos (this->guidance_phi[m]); // FIXME:
                 Flt sinphi = (Flt) sin (this->guidance_phi[m]);
                 Flt x_ = (h.x * cosphi) + (h.y * sinphi);
-                DBG ("x_[h.vi] = " << x_);
+                DBG2 ("x_[h.vi] = " << x_);
                 this->rho[m][h.vi] = guidance_gain[m] / (1.0 + exp(-(x_-guidance_offset[m])/this->guidance_width[m]));
             }
         }

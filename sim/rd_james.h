@@ -188,7 +188,7 @@ public:
     /*!
      * The diffusion parameter.
      */
-    alignas(Flt) Flt D = 0.1;
+    alignas(Flt) Flt D = 0.5;
 
     /*!
      * alpha_i parameters
@@ -200,6 +200,7 @@ public:
      */
     alignas(Flt) vector<Flt> beta;
 
+private: // We have a setter for gamma.
     /*!
      * gamma_A/B/C_i (etc) parameters from Eq 4. There are M vectors
      * of Flts in here.
@@ -208,6 +209,7 @@ public:
     alignas(Flt) vector<vector<Flt> > gamma;
     //@}
 
+public:
     /*!
      * A vector of parameters for the direction of the guidance
      * molecules. This is an angle in Radians.
@@ -468,12 +470,9 @@ public:
     }
 
     /*!
-     * Initialise HexGrid, variables and parameters. Carry out
-     * one-time computations of the model.
+     * Perform memory allocations, vector resizes and so on.
      */
-    void init (void) {
-
-        DBG ("called");
+    void allocate (void) {
         // Create a HexGrid
         this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
@@ -491,7 +490,6 @@ public:
             this->hgvx.push_back (h.x);
             this->hgvy.push_back (h.y);
         }
-
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
         this->resize_vector_vector (this->a);
@@ -507,50 +505,22 @@ public:
         this->resize_vector_vector_param (this->gamma);
 
         this->resize_guidance_gradient_field (this->grad_rho);
-        //this->resize_gradient_field (this->grad_rhoB);
-        //this->resize_gradient_field (this->grad_rhoC);
 
         // Resize grad_a and other vector-array-vectors
         this->resize_vector_array_vector (this->grad_a);
         this->resize_vector_array_vector (this->g);
         this->resize_vector_array_vector (this->J);
+    }
+
+    /*!
+     * Initialise variables and parameters. Carry out one-time
+     * computations required of the model.
+     */
+    void init (void) {
 
         // Initialise a with noise
         this->noiseify_vector_vector (this->a);
 
-        // The gamma values - notice the symmetry here.
-        // red
-#if 0
-        this->gamma[0][0] = -2.0;
-        this->gamma[1][0] =  0.5;
-        this->gamma[2][0] =  0.5;
-        // yellow
-        this->gamma[0][1] = -2.0;
-        this->gamma[1][1] = -2.0;
-        this->gamma[2][1] =  0.5;
-        // green
-        this->gamma[0][2] =  0.5;
-        this->gamma[1][2] = -2.0;
-        this->gamma[2][2] =  0.5;
-        // blue
-        this->gamma[0][3] =  0.5;
-        this->gamma[1][3] = -2.0;
-        this->gamma[2][3] = -2.0;
-        // magenta
-        this->gamma[0][4] =  0.5;
-        this->gamma[1][4] =  0.5;
-        this->gamma[2][4] = -2.0;
-#endif
-
-#if 1 // Set up parameters somewhere else?
-        this->gamma[0][0] = -2.0;
-        //this->gamma[1][0] =  0.5;
-        //this->gamma[2][0] =  0.5;
-
-        this->gamma[0][1] =  0.5;
-        //this->gamma[1][1] =  0.5;
-        //this->gamma[2][1] = -2.0;
-#endif
         for (unsigned int i=0; i<this->N; ++i) {
             this->alpha[i] = 3;
             this->beta[i] = 3;
@@ -618,6 +588,24 @@ public:
             }
         }
     }
+
+    /*!
+     * Parameter setter methods
+     */
+    //@{
+    void setGamma (unsigned int m_idx, unsigned int n_idx, Flt value) {
+        if (gamma.size() > m_idx) {
+            if (gamma[m_idx].size() > n_idx) {
+                // Ok, we can set the value
+                this->gamma[m_idx][n_idx] = value;
+            } else {
+                cerr << "WARNING: DID NOT SET GAMMA (too few TC axon types for n_idx=" << n_idx << ")" << endl;
+            }
+        } else {
+            cerr << "WARNING: DID NOT SET GAMMA (too few guidance molecules for m_idx=" << m_idx << ")" << endl;
+        }
+    }
+    //@}
 
     /*!
      * HDF5 file saving/loading methods.

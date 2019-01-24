@@ -1,30 +1,48 @@
+/*
+ * This program is intended to facilite the study of a reaction
+ * diffusion system which is guided by M guidance molecules, whose
+ * expression gradients drive N thalamocortical axon types to make
+ * connections in an elliptical region.
+ */
+
+#include <iostream>
+#include <vector>
+#include <list>
+#include <string>
 
 /*!
  * Define number of thalamocortical fields here. This number is used
  * to set the width of the windows
  */
-#define N_TC 4
+#define N_TC 2
 
 /*!
  * Define number of guidance molecules.
  */
-#define M_GUID 2
+#define M_GUID 1
 
 /*!
  * This will be passed as the template argument for RD_plot and RD.
  */
 #define FLOATTYPE float
 
+/*!
+ * How long to run for
+ */
+#define MAXSTEPS 5000
+
+/*!
+ * Include the reaction diffusion class
+ */
 #include "rd_james.h"
 
-#include <iostream>
-#include <vector>
-#include <string>
-
-// Choose whether to plot or not.
+// Choose whether to plot or not. Comment out to only compute.
 #define PLOT_STUFF 1
 
 #ifdef PLOT_STUFF
+/*!
+ * Include display and plotting code
+ */
 #include "morph/display.h"
 #include "rd_plot.h"
 #endif
@@ -81,34 +99,43 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
-# if 0
-    // Final Contours
-    winTitle = worldName + ": final contours";
-    displays.push_back (morph::Gdisplay (500, 500, 100, 900, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-# endif
 #endif
 
     // Instantiate the model object
     RD_James<FLOATTYPE> RD;
+
+    // NB: Set .N, .M BEFORE RD.allocate().
     RD.N = N_TC; // Number of TC populations
     RD.M = M_GUID; // Number of guidance molecules that are sculpted
 
-    // Choose and parameterise the guidance molecules
+    // After setting N and M, we can set up all the vectors in RD:
+    RD.allocate();
+
+    // After allocate(), we can set up parameters:
+
+    // What guidance molecule method will we use?
     RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+
     // Set up guidance molecule method parameters
-    RD.guidance_gain.push_back (1.0);
+    RD.guidance_gain.push_back (100.0);
     RD.guidance_phi.push_back (0.0); // phi in radians
-    RD.guidance_width.push_back (1.0);
-    RD.guidance_offset.push_back (0.5);
-    RD.guidance_gain.push_back (1.0);
-    RD.guidance_phi.push_back (M_PI); // phi in radians
-    RD.guidance_width.push_back (1.0);
+    RD.guidance_width.push_back (0.5);
     RD.guidance_offset.push_back (0.5);
 
+    // Set up the interaction parameters between the different TC
+    // populations and the guidance molecules.
+
+    // I should do this with a setter which checks the args before setting the val.
+    RD.setGamma (0, 0, 2.0);
+    RD.setGamma (0, 1, -2.0);
+    //RD.gamma[0][0] = (FLOATTYPE)2.0;
+    //RD.gamma[0][1] = (FLOATTYPE)1.5;
+
+    // Now have the guidance molecule densities and their gradients computed:
     RD.init();
+
 #ifdef PLOT_STUFF
+    plt.scalarfields (displays[1], RD.hg, RD.rho);
     plt.scalarfields (displays[1], RD.hg, RD.rho);
     // Save pngs of the factors and guidance expressions.
     string logpath = "logs";
@@ -116,7 +143,6 @@ int main (int argc, char **argv)
 #endif
 
     // Start the loop
-    unsigned int maxSteps = 2000;
     bool finished = false;
     while (finished == false) {
         // Step the model
@@ -138,7 +164,7 @@ int main (int argc, char **argv)
             RD.saveC();
         }
 #endif
-        if (RD.stepCount > maxSteps) {
+        if (RD.stepCount > MAXSTEPS) {
             finished = true;
         }
     }

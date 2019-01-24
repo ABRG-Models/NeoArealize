@@ -593,17 +593,20 @@ public:
      * Parameter setter methods
      */
     //@{
-    void setGamma (unsigned int m_idx, unsigned int n_idx, Flt value) {
+    int setGamma (unsigned int m_idx, unsigned int n_idx, Flt value) {
         if (gamma.size() > m_idx) {
             if (gamma[m_idx].size() > n_idx) {
                 // Ok, we can set the value
                 this->gamma[m_idx][n_idx] = value;
             } else {
                 cerr << "WARNING: DID NOT SET GAMMA (too few TC axon types for n_idx=" << n_idx << ")" << endl;
+                return 1;
             }
         } else {
             cerr << "WARNING: DID NOT SET GAMMA (too few guidance molecules for m_idx=" << m_idx << ")" << endl;
+            return 2;
         }
+        return 0;
     }
     //@}
 

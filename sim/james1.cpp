@@ -99,6 +99,16 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+    winTitle = worldName + ": Guidance gradient (x)";
+    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
+    winTitle = worldName + ": Guidance gradient (y)";
+    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
 #endif
 
     // Instantiate the model object
@@ -119,24 +129,30 @@ int main (int argc, char **argv)
     // Set up guidance molecule method parameters
     RD.guidance_gain.push_back (100.0);
     RD.guidance_phi.push_back (0.0); // phi in radians
-    RD.guidance_width.push_back (0.5);
-    RD.guidance_offset.push_back (0.5);
+    RD.guidance_width.push_back (0.1);
+    RD.guidance_offset.push_back (0.0);
 
     // Set up the interaction parameters between the different TC
     // populations and the guidance molecules.
 
-    // I should do this with a setter which checks the args before setting the val.
-    RD.setGamma (0, 0, 2.0);
-    RD.setGamma (0, 1, -2.0);
-    //RD.gamma[0][0] = (FLOATTYPE)2.0;
-    //RD.gamma[0][1] = (FLOATTYPE)1.5;
+    // Set up gamma values using a setter which checks we don't set a
+    // value that's off the end of the gamma container.
+    int paramRtn = 0;
+    paramRtn += RD.setGamma (0, 0, -1.0);
+    paramRtn += RD.setGamma (0, 1, 1.0);
+
+    if (paramRtn) { return paramRtn; }
 
     // Now have the guidance molecule densities and their gradients computed:
     RD.init();
 
 #ifdef PLOT_STUFF
-    plt.scalarfields (displays[1], RD.hg, RD.rho);
-    plt.scalarfields (displays[1], RD.hg, RD.rho);
+    plt.scalarfields (displays[0], RD.hg, RD.rho);
+    //     alignas(Flt) vector<array<vector<Flt>, 2> > g;
+    vector<FLOATTYPE> gx = RD.g[0][0];
+    vector<FLOATTYPE> gy = RD.g[0][1];
+    plt.scalarfields (displays[4], RD.hg, gx);
+    plt.scalarfields (displays[5], RD.hg, gy);
     // Save pngs of the factors and guidance expressions.
     string logpath = "logs";
     displays[0].saveImage (logpath + "/guidance.png");

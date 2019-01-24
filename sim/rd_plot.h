@@ -59,6 +59,13 @@ public:
      */
     void scalarfields (Gdisplay& disp,
                        HexGrid* hg,
+                       vector<Flt>& f) {
+        vector<vector<Flt> > vf;
+        vf.push_back (f);
+        this->scalarfields (disp, hg, vf);
+    }
+    void scalarfields (Gdisplay& disp,
+                       HexGrid* hg,
                        vector<vector<Flt> >& f) {
 
         disp.resetDisplay (this->fix, this->eye, this->rot);

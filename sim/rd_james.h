@@ -1,4 +1,3 @@
-//#include "morph/display.h"
 #include "morph/tools.h"
 #include "morph/ReadCurves.h"
 #include "morph/HexGrid.h"

@@ -1,7 +1,6 @@
-#include "morph/display.h"
 #include "morph/tools.h"
-#include "morph/ReadCurves.h"
 #include "morph/HexGrid.h"
+#include "morph/ReadCurves.h"
 #include "morph/HdfData.h"
 #include <iostream>
 #include <sstream>
@@ -9,9 +8,6 @@
 #include <array>
 #include <iomanip>
 #include <cmath>
-#ifdef __GLN__ // Currently I've only tested OpenMP on Linux
-#include <omp.h>
-#endif
 #include <hdf5.h>
 #include <unistd.h>
 
@@ -32,8 +28,47 @@ using morph::ReadCurves;
 using morph::HdfData;
 
 /*!
+ * Macros for testing neighbours. The step along for neighbours on the
+ * rows above/below is given by:
+ *
+ * Dest  | step
+ * ----------------------
+ * NNE   | +rowlen
+ * NNW   | +rowlen - 1
+ * NSW   | -rowlen
+ * NSE   | -rowlen + 1
+ */
+//@{
+#define NE(hi) (this->hg->d_ne[hi])
+#define HAS_NE(hi) (this->hg->d_ne[hi] == -1 ? false : true)
+
+#define NW(hi) (this->hg->d_nw[hi])
+#define HAS_NW(hi) (this->hg->d_nw[hi] == -1 ? false : true)
+
+#define NNE(hi) (this->hg->d_nne[hi])
+#define HAS_NNE(hi) (this->hg->d_nne[hi] == -1 ? false : true)
+
+#define NNW(hi) (this->hg->d_nnw[hi])
+#define HAS_NNW(hi) (this->hg->d_nnw[hi] == -1 ? false : true)
+
+#define NSE(hi) (this->hg->d_nse[hi])
+#define HAS_NSE(hi) (this->hg->d_nse[hi] == -1 ? false : true)
+
+#define NSW(hi) (this->hg->d_nsw[hi])
+#define HAS_NSW(hi) (this->hg->d_nsw[hi] == -1 ? false : true)
+//@}
+
+#define IF_HAS_NE(hi, yesval, noval)  (HAS_NE(hi)  ? yesval : noval)
+#define IF_HAS_NNE(hi, yesval, noval) (HAS_NNE(hi) ? yesval : noval)
+#define IF_HAS_NNW(hi, yesval, noval) (HAS_NNW(hi) ? yesval : noval)
+#define IF_HAS_NW(hi, yesval, noval)  (HAS_NW(hi)  ? yesval : noval)
+#define IF_HAS_NSW(hi, yesval, noval) (HAS_NSW(hi) ? yesval : noval)
+#define IF_HAS_NSE(hi, yesval, noval) (HAS_NSE(hi) ? yesval : noval)
+
+/*!
  * Reaction diffusion system; Ermentrout 2009.
  */
+template <class Flt>
 class RD_2D_Erm
 {
 public:
@@ -43,10 +78,108 @@ public:
      */
     //@{
     //! Square root of 3 over 2
-    const double R3_OVER_2 = 0.866025403784439;
+    const Flt R3_OVER_2 = 0.866025403784439;
     //! Square root of 3
-    const double ROOT3 = 1.73205080756888;
+    const Flt ROOT3 = 1.73205080756888;
     //@}
+
+    /*!
+     * Set N>1 for maintaing multiple expression gradients
+     */
+    alignas(Flt) unsigned int N = 1;
+
+    /*!
+     * The c_i(x,t) variables from the Ermentrout paper (chemoattractant concentration)
+     */
+    alignas(Flt) vector<vector<Flt> > c;
+
+    /*!
+     * The n_i(x,t) variables from the Ermentrout paper (density of tc axons)
+     */
+    alignas(Flt) vector<vector<Flt> > n;
+
+    /*!
+     * Holds the Laplacian
+     */
+    alignas(Flt) vector<vector<Flt> > lapl;
+
+    /*!
+     * Holds the Poisson terms (final non-linear term in Ermentrout equation 1)
+     */
+    alignas(Flt) vector<vector<Flt> > poiss;
+
+    /*!
+     * Our choice of dt.
+     */
+    alignas(Flt) Flt dt = 0.0001;
+
+    /*!
+     * Compute half and sixth dt in constructor.
+     */
+    //@{
+    alignas(Flt) Flt halfdt = 0.0;
+    alignas(Flt) Flt sixthdt = 0.0;
+    //@}
+
+    /*!
+     * Store Hex positions for saving.
+     */
+    //@{
+    alignas(Flt) vector<float> hgvx;
+    alignas(Flt) vector<float> hgvy;
+    //@}
+
+    /*!
+     * Hex to hex distance. Populate this from hg.d after hg has been
+     * initialised.
+     */
+    alignas(Flt) Flt d = 1.0;
+
+    /*!
+     * Parameters of the Ermentrout model - default values.
+     */
+    //@{
+    //! Diffusion constant for n
+    alignas(Flt) Flt Dn = 0.3;
+    //! Diffusion constant for c
+    alignas(Flt) Flt Dc = Dn * 0.3;
+    //! saturation term in function for production of c
+    alignas(Flt) Flt beta = 5.0;
+    //! production of new axon branches
+    alignas(Flt) Flt a = 1.0;
+    //! pruning constant
+    alignas(Flt) Flt b = 1.0;
+    //! decay of chemoattractant constant
+    alignas(Flt) Flt mu = 1.0;
+    //! degree of attraction of chemoattractant
+    alignas(Flt) Flt chi = Dn;
+    //@}
+
+    /*
+     * Below this point, no more alignas() keywords.
+     */
+
+    /*!
+     * Frame number, used when saving PNG movie frames.
+     */
+    unsigned int frameN = 0;
+
+    /*!
+     * Holds the number of hexes in the populated HexGrid
+     */
+    unsigned int nhex = 0;
+
+    /*!
+     * Track the number of computational steps that we've carried
+     * out. Only to show a message saying "100 steps done...", but
+     * that's reason enough.
+     */
+    unsigned int stepCount = 0;
+
+    /*!
+     * The HexGrid "background" for the Reaction Diffusion system.
+     */
+    HexGrid* hg;
 
     /*!
      * The logpath for this model. Used when saving data out.
@@ -61,100 +194,6 @@ public:
         // Ensure log directory exists
         morph::Tools::createDir (this->logpath);
     }
-
-    /*!
-     * Frame number, used when saving PNG movie frames.
-     */
-    unsigned int frameN = 0;
-
-    /*!
-     * Holds the number of hexes in the populated HexGrid
-     */
-    unsigned int nhex = 0;
-
-    /*!
-     * Set N>1 for maintaing multiple expression gradients
-     */
-    unsigned int N = 1;
-
-    /*!
-     * The c_i(x,t) variables from the Ermentrout paper (chemoattractant concentration)
-     */
-    vector<vector<double> > c;
-
-    /*!
-     * The n_i(x,t) variables from the Ermentrout paper (density of tc axons)
-     */
-    vector<vector<double> > n;
-
-    /*!
-     * Holds the Laplacian
-     */
-    vector<vector<double> > lapl;
-
-    /*!
-     * Holds the Poisson terms (final non-linear term in Ermentrout equation 1)
-     */
-    vector<vector<double> > poiss;
-
-    /*!
-     * Our choice of dt.
-     */
-    double dt = 0.0001;
-
-    /*!
-     * Compute half and sixth dt in constructor.
-     */
-    //@{
-    double halfdt = 0.0;
-    double sixthdt = 0.0;
-    //@}
-
-    /*!
-     * The HexGrid "background" for the Reaction Diffusion system.
-     */
-    HexGrid* hg;
-
-    /*!
-     * Store Hex positions for saving.
-     */
-    //@{
-    vector<float> hgvx;
-    vector<float> hgvy;
-    //@}
-
-    /*!
-     * Hex to hex distance. Populate this from hg.d after hg has been
-     * initialised.
-     */
-    double d = 1.0;
-
-    /*!
-     * Parameters of the Ermentrout model - default values.
-     */
-    //@{
-    //! Diffusion constant for n
-    double Dn = 0.3;
-    //! Diffusion constant for c
-    double Dc = Dn * 0.3;
-    //! saturation term in function for production of c
-    double beta = 5.0;
-    //! production of new axon branches
-    double a = 1.0;
-    //! pruning constant
-    double b = 1.0;
-    //! decay of chemoattractant constant
-    double mu = 1.0;
-    //! degree of attraction of chemoattractant
-    double chi = Dn;
-    //@}
-
-    /*!
-     * Track the number of computational steps that we've carried
-     * out. Only to show a message saying "100 steps done...", but
-     * that's reason enough.
-     */
-    unsigned int stepCount = 0;
 
     /*!
      * Simple constructor; no arguments.
@@ -175,7 +214,7 @@ public:
      * A utility function to resize the vector-vectors that hold a
      * variable for the N different thalamo-cortical axon types.
      */
-    void resize_vector_vector (vector<vector<double> >& vv) {
+    void resize_vector_vector (vector<vector<Flt> >& vv) {
         vv.resize (this->N);
         for (unsigned int i =0; i<this->N; ++i) {
             vv[i].resize (this->nhex, 0.0);
@@ -185,24 +224,24 @@ public:
     /*!
      * Resize a variable that'll be nhex elements long
      */
-    void resize_vector_variable (vector<double>& v) {
+    void resize_vector_variable (vector<Flt>& v) {
         v.resize (this->nhex, 0.0);
     }
 
     /*!
      * Resize a parameter that'll be N elements long
      */
-    void resize_vector_param (vector<double>& p) {
+    void resize_vector_param (vector<Flt>& p) {
         p.resize (this->N, 0.0);
     }
 
     /*!
      * Initialise this vector of vectors with noise.
      */
-    void noiseify_vector_vector (vector<vector<double> >& vv, double off, double sig) {
+    void noiseify_vector_vector (vector<vector<Flt> >& vv, Flt off, Flt sig) {
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
-                vv[i][h.vi] = morph::Tools::randDouble() *sig + off;
+                vv[i][h.vi] = morph::Tools::randF<Flt>() *sig + off;
             }
         }
     }
@@ -211,7 +250,7 @@ public:
      * Initialise HexGrid, variables. Carry out any one-time
      * computations of the model.
      */
-    void init (vector<morph::Gdisplay>& displays, bool useSavedGenetics = false) {
+    void init (void) {
 
         DBG ("called");
         // Create a HexGrid
@@ -272,7 +311,7 @@ public:
             this->compute_lapl (c[i], i);       // populate lapl[i] with laplacian of c
 
             // integrate c
-            double n2;
+            Flt n2;
             for (unsigned int h=0; h<this->nhex; ++h) {
                 n2 = n[i][h]*n[i][h];
                 c[i][h] += (beta*n2/(1.+n2) - mu*c[i][h] +Dc*lapl[i][h])*dt;
@@ -284,9 +323,9 @@ public:
      * Computes the Laplacian
      * Stable with dt = 0.0001;
      */
-    void compute_lapl (vector<double>& fa, unsigned int i) {
+    void compute_lapl (vector<Flt>& fa, unsigned int i) {
 
-        double norm  = (2) / (3 * this->d * this->d);
+        Flt norm  = (2) / (3 * this->d * this->d);
 
 #pragma omp parallel for schedule(dynamic,50)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
@@ -295,7 +334,7 @@ public:
             // 1. The D Del^2 term
 
             // Compute the sum around the neighbours
-            double thesum = -6 * fa[h->vi];
+            Flt thesum = -6 * fa[h->vi];
             if (h->has_ne) {
                 thesum += fa[h->ne->vi];
             } else {
@@ -336,7 +375,7 @@ public:
      *
      * Stable with dt = 0.0001;
      */
-    void compute_poiss (vector<double>& fa1, vector<double>& fa2, unsigned int i) {
+    void compute_poiss (vector<Flt>& fa1, vector<Flt>& fa2, unsigned int i) {
 
         // Compute non-linear term
 
@@ -345,8 +384,8 @@ public:
 
             Hex* h = this->hg->vhexen[hi];
 
-            vector<double> dum1(6,fa1[h->vi]);
-            vector<double> dum2(6,fa2[h->vi]);
+            vector<Flt> dum1(6,fa1[h->vi]);
+            vector<Flt> dum2(6,fa2[h->vi]);
 
             if (h->has_ne) {
                 dum1[0] = fa1[h->ne->vi];
@@ -373,21 +412,9 @@ public:
                 dum2[5] = fa2[h->nse->vi];
             }
 
-#ifdef SECOND_REPORT_SOLUTION
-            // John Brooke's 'second interim report' solution
-            double val =
-            (dum1[0]+dum1[1])*(dum2[0]-fa2[h->vi])+
-            (dum1[1]+dum1[2])*(dum2[1]-fa2[h->vi])+
-            (dum1[2]+dum1[3])*(dum2[2]-fa2[h->vi])+
-            (dum1[3]+dum1[4])*(dum2[3]-fa2[h->vi])+
-            (dum1[4]+dum1[5])*(dum2[4]-fa2[h->vi])+
-            (dum1[5]+dum1[0])*(dum2[5]-fa2[h->vi]);
-            this->poiss[i][h->vi] = val / (ROOT3 * this->d * this->d);
-#endif
-
             // John Brooke's final thesis solution (based on 'finite volume method'
             // of Lee et al. https://doi.org/10.1080/00207160.2013.864392
-            double val =
+            Flt val =
             (dum1[0]+fa1[h->vi])*(dum2[0]-fa2[h->vi])+
             (dum1[1]+fa1[h->vi])*(dum2[1]-fa2[h->vi])+
             (dum1[2]+fa1[h->vi])*(dum2[2]-fa2[h->vi])+
@@ -398,97 +425,6 @@ public:
         }
     }
     //@} // computations
-
-    /*!
-     * Plotting functions
-     */
-    //@{
-
-    /*!
-     * Plot the system on @a disps
-     */
-    void plot (vector<morph::Gdisplay>& disps) {
-
-        this->plot_f (this->n, disps[0], true);
-        this->plot_f (this->c, disps[1], true);
-
-#ifdef SAVE_PNGS
-        std::stringstream frameFile1;
-        frameFile1<<"logs/tmp/demo";
-        frameFile1<<setw(5)<<setfill('0')<<frameN;
-        frameFile1<<".png";
-        disps[0].saveImage(frameFile1.str());
-        frameN++;
-#endif
-    }
-
-    /*!
-     * Plot a or c
-     */
-    void plot_f (vector<vector<double> >& f, morph::Gdisplay& disp, bool combinedNorm) {
-        vector<double> fix(3, 0.0);
-        vector<double> eye(3, 0.0);
-        vector<double> rot(3, 0.0);
-
-        vector<double> maxa (this->N, -1e7);
-        vector<double> mina (this->N, +1e7);
-        // Copies data to plot out of the model
-        if (combinedNorm) {
-            double maxb = -1e7;
-            double minb = +1e7;
-            for (auto h : this->hg->hexen) {
-                if (h.onBoundary() == false) {
-                    for (unsigned int i = 0; i<this->N; ++i) {
-                        if (f[i][h.vi]>maxb) { maxb = f[i][h.vi]; }
-                        if (f[i][h.vi]<minb) { minb = f[i][h.vi]; }
-                    }
-                }
-            }
-            for (unsigned int i = 0; i<this->N; ++i) {
-                mina[i] = minb;
-                maxa[i] = maxb;
-            }
-        } else {
-            for (auto h : this->hg->hexen) {
-                if (h.onBoundary() == false) {
-                    for (unsigned int i = 0; i<this->N; ++i) {
-                        if (f[i][h.vi]>maxa[i]) { maxa[i] = f[i][h.vi]; }
-                        if (f[i][h.vi]<mina[i]) { mina[i] = f[i][h.vi]; }
-                    }
-                }
-            }
-        }
-        vector<double> scalea (this->N, 0);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            scalea[i] = 1.0 / (maxa[i]-mina[i]);
-        }
-
-        // Determine a colour from min, max and current value
-        vector<vector<double> > norm_a;
-        this->resize_vector_vector (norm_a);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            for (unsigned int h=0; h<this->nhex; h++) {
-                norm_a[i][h] = fmin (fmax (((f[i][h]) - mina[i]) * scalea[i], 0.0), 1.0);
-            }
-        }
-
-        // Create an offset which we'll increment by the width of the
-        // map, starting from the left-most map (f[0])
-        float hgwidth = this->hg->getXmax()-this->hg->getXmin();
-        array<float,3> offset = {{0.0f,0.0f,0.0f}};//{ 2*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
-
-        // Draw
-        disp.resetDisplay (fix, eye, rot);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            for (auto h : this->hg->hexen) {
-                array<float,3> cl_a = morph::Tools::getJetColorF (norm_a[i][h.vi]);
-                disp.drawHex (h.position(), offset, (h.d/2.0f), cl_a);
-            }
-            offset[0] += hgwidth + (hgwidth/20);
-        }
-        disp.redrawDisplay();
-    }
-    //@} // plotting
 
     /*!
      * HDF5 file saving/loading methods

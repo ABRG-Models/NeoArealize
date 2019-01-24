@@ -155,8 +155,13 @@ public:
             offset[0] = (half_minus_half_N + (float)i) * w;
             // Note: OpenGL isn't thread-safe, so no omp parallel for here.
             for (auto h : hg->hexen) {
+// Here, perhaps I'll have a class member that says what kind of colour maps to use.
+#ifdef monochrome
                 array<float,3> cl_a = morph::Tools::HSVtoRGB ((float)i/(float)N,
                                                               norm_a[i][h.vi], 1.0);
+#else
+                array<float,3> cl_a = morph::Tools::getJetColorF (norm_a[i][h.vi]);
+#endif
                 disp.drawHex (h.position(), offset, (h.d/2.0f), cl_a);
             }
         }
@@ -283,7 +288,8 @@ public:
     }
 
     /*!
-     * Add a contour plot to the Gdisplay @disp for HexGrid hg. The contourHexes are provided in contourHexes.
+     * Add a contour plot to the Gdisplay @disp for HexGrid hg. The
+     * contourHexes are provided in contourHexes.
      */
     void add_contour_plot (morph::Gdisplay& disp, HexGrid* hg, vector<list<Hex> >& contourHexes) {
 

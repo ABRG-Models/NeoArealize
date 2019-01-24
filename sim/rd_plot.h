@@ -52,10 +52,7 @@ public:
     //@}
 
     /*!
-     * On Gdisplay disp, plot all of the scalar fields stored in f on
-     * the HexGrid hg. These are plotted in a row; it's up to the
-     * programmer to make the window large enough when instantiating
-     * the Gdisplay.
+     * Plot a single scalar field co-opting the overloaded code below.
      */
     void scalarfields (Gdisplay& disp,
                        HexGrid* hg,
@@ -64,6 +61,13 @@ public:
         vf.push_back (f);
         this->scalarfields (disp, hg, vf);
     }
+
+    /*!
+     * On Gdisplay disp, plot all of the scalar fields stored in f on
+     * the HexGrid hg. These are plotted in a row; it's up to the
+     * programmer to make the window large enough when instantiating
+     * the Gdisplay.
+     */
     void scalarfields (Gdisplay& disp,
                        HexGrid* hg,
                        vector<vector<Flt> >& f) {

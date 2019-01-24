@@ -148,11 +148,8 @@ int main (int argc, char **argv)
 
 #ifdef PLOT_STUFF
     plt.scalarfields (displays[0], RD.hg, RD.rho);
-    //     alignas(Flt) vector<array<vector<Flt>, 2> > g;
-    vector<FLOATTYPE> gx = RD.g[0][0];
-    vector<FLOATTYPE> gy = RD.g[0][1];
-    plt.scalarfields (displays[4], RD.hg, gx);
-    plt.scalarfields (displays[5], RD.hg, gy);
+    plt.scalarfields (displays[4], RD.hg, RD.g[0][0]);
+    plt.scalarfields (displays[5], RD.hg, RD.g[0][1]);
     // Save pngs of the factors and guidance expressions.
     string logpath = "logs";
     displays[0].saveImage (logpath + "/guidance.png");

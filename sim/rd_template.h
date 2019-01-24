@@ -1,4 +1,7 @@
 /*!
+ *
+ * CURRENTLY OUT OF DATE! Please see james1.cpp and rd_james.h!!!
+ *
  * A template for starting a new morphologica-based reaction diffusion
  * system. Look at this for the core requirements, then consult the
  * most recent real RD system for the current best practice.

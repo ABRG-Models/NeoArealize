@@ -1,4 +1,15 @@
-#define N_TC 2
+
+/*!
+ * Define number of thalamocortical fields here. This number is used
+ * to set the width of the windows
+ */
+#define N_TC 4
+
+/*!
+ * Define number of guidance molecules.
+ */
+#define M_GUID 1
+
 #include "rd_james.h"
 
 #include <iostream>
@@ -35,47 +46,52 @@ int main (int argc, char **argv)
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);
     vector<double> eye(3, 0.0);
-    eye[2] = -0.4;
+    eye[2] = 0.12; // This also acts as a zoom. +ve and larger to zoom out, negative and larger to zoom in.
     vector<double> rot(3, 0.0);
+
 
     // A plot object.
     RD_plot<FLOATTYPE> plt(fix, eye, rot);
 
-    double rhoInit = 1.5;
+    double rhoInit = 1; // This is effectively a zoom control. Increase to zoom out.
+    double thetaInit = 0.0;
+    double phiInit = 0.0;
     string worldName(argv[1]);
 
-    string winTitle = worldName + ": rhoA_rhoB_rhoC";
-    displays.push_back (morph::Gdisplay (1020, 300, 100, 300, winTitle.c_str(), rhoInit, 0.0, 0.0));
+    string winTitle = worldName + ": Guidance molecules";
+    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 300, winTitle.c_str(), rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": a[0] to a[N]";
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(), rhoInit, 0.0, 0.0, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": c[0] to c[N]";
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(), rhoInit, 0.0, 0.0, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     // SW - Contours
-    winTitle = worldName + ": contours";
-    displays.push_back (morph::Gdisplay (500, 500, 100, 900, winTitle.c_str(), rhoInit, 0.0, 0.0, displays[0].win));
+    winTitle = worldName + ": contours (from c)";
+    displays.push_back (morph::Gdisplay (360, 300, 100, 1500, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+# if 0
     // Final Contours
     winTitle = worldName + ": final contours";
-    displays.push_back (morph::Gdisplay (500, 500, 100, 900, winTitle.c_str(), rhoInit, 0.0, 0.0, displays[0].win));
+    displays.push_back (morph::Gdisplay (500, 500, 100, 900, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
+# endif
 #endif
 
     // Instantiate the model object
     RD_James<FLOATTYPE> RD;
-    RD.N = 3; // Number of TC populations
-    RD.M = 1; // Number of guidance molecules that are sculpted
+    RD.N = N_TC; // Number of TC populations
+    RD.M = M_GUID; // Number of guidance molecules that are sculpted
 
     // Choose and parameterise the guidance molecules
     RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
@@ -145,7 +161,7 @@ int main (int argc, char **argv)
     HexGrid* hg2 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
     hg2->setBoundary (ctrs[1]);
     // Do a final plot of the ctrs as found.
-    plt.plot_contour (displays[4], RD.hg, ctrs);
+    //plt.plot_contour (displays[4], RD.hg, ctrs);
     // Output information about the contours
     cout << "Sizes: countour 0: " << hg1->num() << ", contour 1: " << hg2->num() << endl;
     cout << "Ratio: " << ((double)hg1->num()/(double)hg2->num()) << endl;

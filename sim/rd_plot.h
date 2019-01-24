@@ -30,9 +30,9 @@ public:
     RD_plot (void) {}
 
     RD_plot (double f, double e, double r) {
-        this->fix = {f, 0.0};
-        this->eye = {e, 0.0};
-        this->rot = {r, 0.0};
+        this->fix = {3, f};
+        this->eye = {3, e};
+        this->rot = {3, r};
     }
 
     RD_plot (vector<double>& f, vector<double>& e, vector<double>& r) {
@@ -61,7 +61,7 @@ public:
                        HexGrid* hg,
                        vector<vector<Flt> >& f) {
 
-        this->eye[2] = -0.4;
+        DBG ("this->eye[2] is " << this->eye[2]);
         disp.resetDisplay (this->fix, this->eye, this->rot);
 
         unsigned int N = f.size();
@@ -137,18 +137,15 @@ public:
         // Create an offset which we'll increment by the width of the
         // map, starting from the left-most map (f[0])
 
-        //float hgwidth = hg->getXmax() - hg->getXmin();
-        //cout << "hgwidth: " << hgwidth << endl;
-        //array<float,3> offset_old = { (N/2)*(-hgwidth-(hgwidth/20)), 0.0f, 0.0f };
+        float hgwidth = hg->getXmax() - hg->getXmin();
 
-        // Get the size of the display, so we can lay out/position the subgraphs.
-        float dwidth = (unsigned int)disp.gwa.width/(170*N); // Empirically determined.
-        float dwidth_over_N = dwidth/N;
-        cout << "dwidth: "<< dwidth << " and dw/N:" << dwidth_over_N << endl;
-        array<float,3> offset = {{ 0.0,0.0,0.0 }};
-
+        // Need to correctly apply N/2 depending on whether N is even or odd.
+        float w = hgwidth+(hgwidth/20.0f);
+        array<float,3> offset = { 0.0f , 0.0f, 0.0f };
+        float half_minus_half_N = 0.5f - ((float)N/2.0f);
         for (unsigned int i = 0; i<N; ++i) {
-            offset[0] = (i+1)*dwidth_over_N - (dwidth_over_N/2.0f) - 1;
+            //offset[0] = (0.5f - ((float)N/2.0f) + (float)i) * w;
+            offset[0] = (half_minus_half_N + (float)i) * w;
             cout << "offset of picture " << i << " is "  << offset[0] << endl;
             // Note: OpenGL isn't thread-safe, so no omp parallel for here.
             for (auto h : hg->hexen) {
@@ -156,7 +153,6 @@ public:
                                                               norm_a[i][h.vi], 1.0);
                 disp.drawHex (h.position(), offset, (h.d/2.0f), cl_a);
             }
-            //offset_old[0] += hgwidth + (hgwidth/20);
         }
         disp.redrawDisplay();
     }
@@ -279,7 +275,7 @@ public:
      * disp.
      */
     void plot_contour (morph::Gdisplay& disp, HexGrid* hg, vector<vector<Flt> >& f, Flt threshold) {
-        this->eye[2] = -0.4;
+        //this->eye[2] = -0.4;
         disp.resetDisplay (this->fix, this->eye, this->rot);
         this->add_contour_plot (disp, hg, f, threshold);
         disp.redrawDisplay();

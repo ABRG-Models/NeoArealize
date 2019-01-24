@@ -327,46 +327,45 @@ public:
 
         Flt norm  = (2) / (3 * this->d * this->d);
 
-#pragma omp parallel for schedule(dynamic,50)
+#pragma omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
-            Hex* h = this->hg->vhexen[hi];
             // 1. The D Del^2 term
 
             // Compute the sum around the neighbours
-            Flt thesum = -6 * fa[h->vi];
-            if (h->has_ne) {
-                thesum += fa[h->ne->vi];
+            Flt thesum = -6 * fa[hi];
+            if (HAS_NE(hi)) {
+                thesum += fa[NE(hi)];
             } else {
-                thesum += fa[h->vi]; // A ghost neighbour-east with same value as Hex_0
+                thesum += fa[hi]; // A ghost neighbour-east with same value as Hex_0
             }
-            if (h->has_nne) {
-                thesum += fa[h->nne->vi];
+            if (HAS_NNE(hi)) {
+                thesum += fa[NNE(hi)];
             } else {
-                thesum += fa[h->vi];
+                thesum += fa[hi];
             }
-            if (h->has_nnw) {
-                thesum += fa[h->nnw->vi];
+            if (HAS_NNW(hi)) {
+                thesum += fa[NNW(hi)];
             } else {
-                thesum += fa[h->vi];
+                thesum += fa[hi];
             }
-            if (h->has_nw) {
-                thesum += fa[h->nw->vi];
+            if (HAS_NW(hi)) {
+                thesum += fa[NW(hi)];
             } else {
-                thesum += fa[h->vi];
+                thesum += fa[hi];
             }
-            if (h->has_nsw) {
-                thesum += fa[h->nsw->vi];
+            if (HAS_NSW(hi)) {
+                thesum += fa[NSW(hi)];
             } else {
-                thesum += fa[h->vi];
+                thesum += fa[hi];
             }
-            if (h->has_nse) {
-                thesum += fa[h->nse->vi];
+            if (HAS_NSE(hi)) {
+                thesum += fa[NSE(hi)];
             } else {
-                thesum += fa[h->vi];
+                thesum += fa[hi];
             }
 
-            this->lapl[i][h->vi] = norm * thesum;
+            this->lapl[i][hi] = norm * thesum;
         }
     }
 
@@ -379,49 +378,47 @@ public:
 
         // Compute non-linear term
 
-#pragma omp parallel for schedule(dynamic,50)
+#pragma omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
-            Hex* h = this->hg->vhexen[hi];
+            vector<Flt> dum1(6,fa1[hi]);
+            vector<Flt> dum2(6,fa2[hi]);
 
-            vector<Flt> dum1(6,fa1[h->vi]);
-            vector<Flt> dum2(6,fa2[h->vi]);
-
-            if (h->has_ne) {
-                dum1[0] = fa1[h->ne->vi];
-                dum2[0] = fa2[h->ne->vi];
+            if (HAS_NE(hi)) {
+                dum1[0] = fa1[NE(hi)];
+                dum2[0] = fa2[NE(hi)];
             }
-            if (h->has_nne) {
-                dum1[1] = fa1[h->nne->vi];
-                dum2[1] = fa2[h->nne->vi];
+            if (HAS_NNE(hi)) {
+                dum1[1] = fa1[NNE(hi)];
+                dum2[1] = fa2[NNE(hi)];
             }
-            if (h->has_nnw) {
-                dum1[2] = fa1[h->nnw->vi];
-                dum2[2] = fa2[h->nnw->vi];
+            if (HAS_NNW(hi)) {
+                dum1[2] = fa1[NNW(hi)];
+                dum2[2] = fa2[NNW(hi)];
             }
-            if (h->has_nw) {
-                dum1[3] = fa1[h->nw->vi];
-                dum2[3] = fa2[h->nw->vi];
+            if (HAS_NW(hi)) {
+                dum1[3] = fa1[NW(hi)];
+                dum2[3] = fa2[NW(hi)];
             }
-            if (h->has_nsw) {
-                dum1[4] = fa1[h->nsw->vi];
-                dum2[4] = fa2[h->nsw->vi];
+            if (HAS_NSW(hi)) {
+                dum1[4] = fa1[NSW(hi)];
+                dum2[4] = fa2[NSW(hi)];
             }
-            if (h->has_nse) {
-                dum1[5] = fa1[h->nse->vi];
-                dum2[5] = fa2[h->nse->vi];
+            if (HAS_NSE(hi)) {
+                dum1[5] = fa1[NSE(hi)];
+                dum2[5] = fa2[NSE(hi)];
             }
 
             // John Brooke's final thesis solution (based on 'finite volume method'
             // of Lee et al. https://doi.org/10.1080/00207160.2013.864392
             Flt val =
-            (dum1[0]+fa1[h->vi])*(dum2[0]-fa2[h->vi])+
-            (dum1[1]+fa1[h->vi])*(dum2[1]-fa2[h->vi])+
-            (dum1[2]+fa1[h->vi])*(dum2[2]-fa2[h->vi])+
-            (dum1[3]+fa1[h->vi])*(dum2[3]-fa2[h->vi])+
-            (dum1[4]+fa1[h->vi])*(dum2[4]-fa2[h->vi])+
-            (dum1[5]+fa1[h->vi])*(dum2[5]-fa2[h->vi]);
-            this->poiss[i][h->vi] = val / (3 * this->d * this->d);
+            (dum1[0]+fa1[hi])*(dum2[0]-fa2[hi])+
+            (dum1[1]+fa1[hi])*(dum2[1]-fa2[hi])+
+            (dum1[2]+fa1[hi])*(dum2[2]-fa2[hi])+
+            (dum1[3]+fa1[hi])*(dum2[3]-fa2[hi])+
+            (dum1[4]+fa1[hi])*(dum2[4]-fa2[hi])+
+            (dum1[5]+fa1[hi])*(dum2[5]-fa2[hi]);
+            this->poiss[i][hi] = val / (3 * this->d * this->d);
         }
     }
     //@} // computations

@@ -5,11 +5,18 @@
 /*!
  * This will be passed as the template argument for RD_plot and RD.
  */
-#define FLOATTYPE float
+#define FLOATTYPE double
 
+/*!
+ * The reaction diffusion computation class.
+ */
 #include "rd_2d_erm.h"
 
-// Choose whether to plot or not. Comment out to only compute.
+/*!
+ * Choose whether to plot or not. Comment out to only compute. The
+ * code could be changed so that the decision to plot or not was
+ * selected via a command line argument.
+ */
 #define PLOT_SIM 1
 
 #ifdef PLOT_SIM

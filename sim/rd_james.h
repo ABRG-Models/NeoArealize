@@ -126,7 +126,8 @@ public:
      * These are the c_i(x,t) variables from the Karb2004 paper. x is
      * a vector in two-space.
      */
-    alignas(Flt) vector<vector<Flt> > c;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > c;
 
     /*!
      * These are the a_i(x,t) variables from the Karb2004 paper. x is
@@ -134,36 +135,42 @@ public:
      * TC axon types, enumerated by i, the second vector are the a_i
      * values, indexed by the vi in the Hexes in HexGrid.
      */
-    alignas(Flt) vector<vector<Flt> > a;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > a;
 
     /*!
      * For each TC axon type, this holds the two components of the
      * gradient field of the scalar value a(x,t) (where this x is a
      * vector in two-space)
      */
-    alignas(Flt) vector<array<vector<Flt>, 2> > grad_a;
+    alignas(alignof(vector<array<vector<Flt>, 2> >))
+    vector<array<vector<Flt>, 2> > grad_a;
 
     /*!
      * Contains the chemo-attractant modifiers which are applied to
      * a_i(x,t) in Eq 4.
      */
-    alignas(Flt) vector<array<vector<Flt>, 2> > g;
+    alignas(alignof(vector<array<vector<Flt>, 2> >))
+    vector<array<vector<Flt>, 2> > g;
 
     /*!
      * n(x,t) variable from the Karb2004 paper.
      */
-    alignas(Flt) vector<Flt> n;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> n;
 
     /*!
      * J_i(x,t) variables - the "flux current of axonal branches of
      * type i". This is a vector field.
      */
-    alignas(Flt) vector<array<vector<Flt>, 2> > J;
+    alignas(alignof(vector<array<vector<Flt>, 2> >))
+    vector<array<vector<Flt>, 2> > J;
 
     /*!
      * Holds the divergence of the J_i(x)s
      */
-    alignas(Flt) vector<vector<Flt> > divJ;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > divJ;
 
     /*!
      * Our choice of dt.
@@ -190,14 +197,22 @@ public:
     alignas(Flt) Flt D = 0.5;
 
     /*!
+     * Over what length scale should some values fall off to zero
+     * towards the boundary? Used in a couple of different locations.
+     */
+    alignas(Flt) Flt boundaryFalloffDist = 0.02; // 0.02 default
+
+    /*!
      * alpha_i parameters
      */
-    alignas(Flt) vector<Flt> alpha;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> alpha;
 
     /*!
      * beta_i parameters
      */
-    alignas(Flt) vector<Flt> beta;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> beta;
 
 private: // We have a setter for gamma.
     /*!
@@ -205,7 +220,8 @@ private: // We have a setter for gamma.
      * of Flts in here.
      */
     //@{
-    alignas(Flt) vector<vector<Flt> > gamma;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > gamma;
     //@}
 
 public:
@@ -213,27 +229,32 @@ public:
      * A vector of parameters for the direction of the guidance
      * molecules. This is an angle in Radians.
      */
-    alignas(Flt) vector<Flt> guidance_phi;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> guidance_phi;
 
     /*!
      * Guidance molecule parameters for the width of the function
      */
-    alignas(Flt) vector<Flt> guidance_width;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> guidance_width;
 
     /*!
      * Width in orthogonal direction, for 2D fields.
      */
-    alignas(Flt) vector<Flt> guidance_width_ortho;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> guidance_width_ortho;
 
     /*!
      * Guidance molecule parameters for the offset of the function
      */
-    alignas(Flt) vector<Flt> guidance_offset;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> guidance_offset;
 
     /*!
      * Guidance molecule parameters to be the gains of the functions
      */
-    alignas(Flt) vector<Flt> guidance_gain;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> guidance_gain;
 
     /*!
      * Rho variables in Eq 4 - the concentrations of axon guidance
@@ -244,7 +265,8 @@ public:
      * There are M vector<Flts> in rho.
      */
     //@{
-    alignas(Flt) vector<vector<Flt> > rho;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > rho;
     //@}
 
     /*!
@@ -254,14 +276,17 @@ public:
      * There are M gradient fields stored in this variable.
      */
     //@{
-    alignas(Flt) vector<array<vector<Flt>, 2> > grad_rho;
+    alignas(alignof(vector<array<vector<Flt>, 2> >))
+    vector<array<vector<Flt>, 2> > grad_rho;
     //@}
 
     /*!
      * Store Hex positions for saving.
      */
-    alignas(Flt) vector<Flt> hgvx;
-    alignas(Flt) vector<Flt> hgvy;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> hgvx;
+    alignas(alignof(vector<Flt>))
+    vector<Flt> hgvy;
 
     /*!
      * Rowlen and numrows in the parallelogram domain.
@@ -293,12 +318,14 @@ public:
     /*!
      * Memory to hold an intermediate result
      */
-    alignas(Flt) vector<vector<Flt> > betaterm;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > betaterm;
 
     /*!
      * Holds an intermediate value for the computation of Eqs 1 and 2.
      */
-    alignas(Flt) vector<vector<Flt> > alpha_c_beta_na;
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > alpha_c_beta_na;
 
     /*!
      * Track the number of computational steps that we've carried
@@ -461,7 +488,7 @@ public:
                 // FIXME: specialise, or template morph::Tools::randF<>()
                 vv[i][h.vi] = morph::Tools::randF<Flt>() * randNoiseGain + randNoiseOffset;
                 if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
-                    Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
+                    Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
                     vv[i][h.vi] = vv[i][h.vi] * bSig;
                 }
             }
@@ -475,7 +502,7 @@ public:
         // Create a HexGrid
         this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
-        ReadCurves r("./ellipse.svg");
+        ReadCurves r(this->svgpath);
         // Set the boundary in the HexGrid
         this->hg->setBoundary (r.getCorticalPath());
         // Compute the distances from the boundary
@@ -579,7 +606,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // Sigmoid/logistic fn params: 100 sharpness, 0.02 dist offset from boundary
-                Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-0.02)) );
+                Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
                 for (unsigned int m = 0; m<this->M; ++m) {
                     this->g[i][0][h.vi] += (this->gamma[m][i] * this->grad_rho[m][0][h.vi]) * bSig;
                     this->g[i][1][h.vi] += (this->gamma[m][i] * this->grad_rho[m][1][h.vi]) * bSig;

@@ -24,12 +24,12 @@
 /*!
  * This will be passed as the template argument for RD_plot and RD.
  */
-#define FLOATTYPE float
+#define FLOATTYPE double
 
 /*!
  * How long to run for
  */
-#define MAXSTEPS 5000
+#define MAXSTEPS 500000
 
 /*!
  * Include the reaction diffusion class
@@ -68,7 +68,6 @@ int main (int argc, char **argv)
     vector<double> eye(3, 0.0);
     eye[2] = 0.12; // This also acts as a zoom. +ve and larger to zoom out, negative and larger to zoom in.
     vector<double> rot(3, 0.0);
-
 
     // A plot object.
     RD_plot<FLOATTYPE> plt(fix, eye, rot);
@@ -114,9 +113,17 @@ int main (int argc, char **argv)
     // Instantiate the model object
     RD_James<FLOATTYPE> RD;
 
+    RD.svgpath = "./ellipse.svg"; // trial.svg or ellipse.svg
+
     // NB: Set .N, .M BEFORE RD.allocate().
     RD.N = N_TC; // Number of TC populations
     RD.M = M_GUID; // Number of guidance molecules that are sculpted
+
+    // Control the size of the hexes, and therefore the number of hexes in the grid
+    RD.hextohex_d = 0.004; // 0.01 by default
+
+    // Boundary fall-off distance
+    RD.boundaryFalloffDist = 0.01;
 
     // After setting N and M, we can set up all the vectors in RD:
     RD.allocate();
@@ -138,7 +145,7 @@ int main (int argc, char **argv)
     // Set up gamma values using a setter which checks we don't set a
     // value that's off the end of the gamma container.
     int paramRtn = 0;
-    paramRtn += RD.setGamma (0, 0, -1.0);
+    paramRtn += RD.setGamma (0, 0, 0.5);
     paramRtn += RD.setGamma (0, 1, 1.0);
 
     if (paramRtn) { return paramRtn; }

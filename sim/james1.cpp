@@ -9,6 +9,7 @@
 #include <vector>
 #include <list>
 #include <string>
+#include <limits>
 
 /*!
  * Define number of thalamocortical fields here. This number is used
@@ -120,7 +121,7 @@ int main (int argc, char **argv)
     RD.M = M_GUID; // Number of guidance molecules that are sculpted
 
     // Control the size of the hexes, and therefore the number of hexes in the grid
-    RD.hextohex_d = 0.004; // 0.01 by default
+    RD.hextohex_d = 0.01; // 0.01 by default. 0.002 is feasible with 5-10 mins set up time.
 
     // Boundary fall-off distance
     RD.boundaryFalloffDist = 0.01;
@@ -167,6 +168,16 @@ int main (int argc, char **argv)
     while (finished == false) {
         // Step the model
         RD.step();
+
+#if 0
+        if (RD.stepCount % 10 == 0 && RD.stepCount > 100) {
+            int a;
+            cout << "Press any key[return] to continue.\n";
+            cin >> a;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+#endif
 
 #ifdef PLOT_STUFF
         if (RD.stepCount % 10 == 0) {

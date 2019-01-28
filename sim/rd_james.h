@@ -910,7 +910,8 @@ public:
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
-        #pragma omp parallel for schedule(dynamic,50)
+//#pragma omp parallel for schedule(dynamic,50)
+#pragma omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term

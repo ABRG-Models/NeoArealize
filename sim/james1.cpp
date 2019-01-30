@@ -30,7 +30,7 @@
 /*!
  * How long to run for
  */
-#define MAXSTEPS 500000
+#define MAXSTEPS 50
 
 /*!
  * Include the reaction diffusion class
@@ -135,7 +135,7 @@ int main (int argc, char **argv)
     RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
 
     // Set up guidance molecule method parameters
-    RD.guidance_gain.push_back (100.0);
+    RD.guidance_gain.push_back (50.0);
     RD.guidance_phi.push_back (0.0); // phi in radians
     RD.guidance_width.push_back (0.1);
     RD.guidance_offset.push_back (0.0);
@@ -190,8 +190,7 @@ int main (int argc, char **argv)
             //RD.save();
         }
         // Save some frames ('c' variable only for now)
-        if (RD.stepCount % 100 == 0) {
-            // Once template has been successfully specialised:
+        if (RD.stepCount % 1 == 0) {
             RD.saveC();
         }
 #endif

@@ -281,14 +281,6 @@ public:
     //@}
 
     /*!
-     * Store Hex positions for saving.
-     */
-    alignas(alignof(vector<Flt>))
-    vector<Flt> hgvx;
-    alignas(alignof(vector<Flt>))
-    vector<Flt> hgvy;
-
-    /*!
      * Rowlen and numrows in the parallelogram domain.
      */
     //@{
@@ -511,11 +503,7 @@ public:
         this->nhex = this->hg->num();
         // Spatial d comes from the HexGrid, too.
         this->d = this->hg->getd();
-        // Save hex positions in vectors for datafile saving
-        for (auto h : this->hg->hexen) {
-            this->hgvx.push_back (h.x);
-            this->hgvy.push_back (h.y);
-        }
+
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
         this->resize_vector_vector (this->a);
@@ -536,6 +524,9 @@ public:
         this->resize_vector_array_vector (this->grad_a);
         this->resize_vector_array_vector (this->g);
         this->resize_vector_array_vector (this->J);
+
+        // Save information about the HexGrid to file:
+        this->savePositions();
     }
 
     /*!
@@ -655,7 +646,22 @@ public:
             stringstream path;
             path << "/c" << i;
             data.add_contained_vals (path.str().c_str(), this->c[i]);
+            // Etc - add more internal variables
+            path.str("");
+            path.clear();
+            path << "/a" << i;
+            data.add_contained_vals (path.str().c_str(), this->a[i]);
         }
+        data.add_contained_vals ("/n", this->n);
+    }
+
+    /*!
+     * Save position information
+     */
+    void savePositions (void) {
+        stringstream fname;
+        fname << this->logpath << "/positions.h5";
+        HdfData data(fname.str());
         this->saveHexPositions (data);
     }
 
@@ -665,8 +671,88 @@ public:
      * to fit in with the HDF API.
      */
     void saveHexPositions (HdfData& dat) {
-        dat.add_contained_vals ("/x", this->hgvx);
-        dat.add_contained_vals ("/y", this->hgvy);
+        dat.add_contained_vals ("/x", this->hg->d_x);
+        dat.add_contained_vals ("/y", this->hg->d_y);
+
+        // Add the neighbour information too.
+        vector<float> x_ne = this->hg->d_x;
+        vector<float> y_ne = this->hg->d_y;
+        unsigned int count = 0;
+        for (int i : this->hg->d_ne) {
+            if (i >= 0) {
+                x_ne[count] = this->hg->d_x[i];
+                y_ne[count] = this->hg->d_y[i];
+            }
+            ++count;
+        }
+        dat.add_contained_vals ("/x_ne", x_ne);
+        dat.add_contained_vals ("/y_ne", y_ne);
+
+        vector<float> x_nne = this->hg->d_x;
+        vector<float> y_nne = this->hg->d_y;
+        count = 0;
+        for (int i : this->hg->d_nne) {
+            if (i >= 0) {
+                x_nne[count] = this->hg->d_x[i];
+                y_nne[count] = this->hg->d_y[i];
+            }
+            ++count;
+        }
+        dat.add_contained_vals ("/x_nne", x_nne);
+        dat.add_contained_vals ("/y_nne", y_nne);
+
+        vector<float> x_nnw = this->hg->d_x;
+        vector<float> y_nnw = this->hg->d_y;
+        count = 0;
+        for (int i : this->hg->d_nnw) {
+            if (i >= 0) {
+                x_nnw[count] = this->hg->d_x[i];
+                y_nnw[count] = this->hg->d_y[i];
+            }
+            ++count;
+        }
+        dat.add_contained_vals ("/x_nnw", x_nnw);
+        dat.add_contained_vals ("/y_nnw", y_nnw);
+
+        vector<float> x_nw = this->hg->d_x;
+        vector<float> y_nw = this->hg->d_y;
+        count = 0;
+        for (int i : this->hg->d_nw) {
+            if (i >= 0) {
+                x_nw[count] = this->hg->d_x[i];
+                y_nw[count] = this->hg->d_y[i];
+            }
+            ++count;
+        }
+        dat.add_contained_vals ("/x_nw", x_nw);
+        dat.add_contained_vals ("/y_nw", y_nw);
+
+        vector<float> x_nsw = this->hg->d_x;
+        vector<float> y_nsw = this->hg->d_y;
+        count = 0;
+        for (int i : this->hg->d_nsw) {
+            if (i >= 0) {
+                x_nsw[count] = this->hg->d_x[i];
+                y_nsw[count] = this->hg->d_y[i];
+            }
+            ++count;
+        }
+        dat.add_contained_vals ("/x_nsw", x_nsw);
+        dat.add_contained_vals ("/y_nsw", y_nsw);
+
+        vector<float> x_nse = this->hg->d_x;
+        vector<float> y_nse = this->hg->d_y;
+        count = 0;
+        for (int i : this->hg->d_nse) {
+            if (i >= 0) {
+                x_nse[count] = this->hg->d_x[i];
+                y_nse[count] = this->hg->d_y[i];
+            }
+            ++count;
+        }
+        dat.add_contained_vals ("/x_nse", x_nse);
+        dat.add_contained_vals ("/y_nse", y_nse);
+
         // And hex to hex distance:
         dat.add_val ("/d", this->d);
     }
@@ -859,6 +945,9 @@ public:
             }
 
             // Find y gradient
+#if 1 // Debug
+            gradf[1][hi] = 0.0;
+#else
             if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
                 gradf[1][hi] = ((f[NNE(hi)] - f[NSE(hi)]) + (f[NNW(hi)] - f[NSW(hi)])) * oneoverv;
@@ -878,6 +967,7 @@ public:
                 // Leave grady at 0
                 gradf[1][hi] = 0.0;
             }
+#endif
         }
     }
 

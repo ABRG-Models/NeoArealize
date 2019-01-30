@@ -4,41 +4,46 @@ import h5py
 import re
 
 def readFiles(timejump):
+
+    # Read x and y first
+    pf = h5py.File('../logs/positions.h5', 'r')
+    klist = list(pf.keys())
+    # Count up how many c files we have in each time point:
+    d = -1
+    for k in klist:
+        if k[0] == 'x':
+            x = np.array(pf[k]);
+        elif k[0] == 'y':
+            y = np.array(pf[k]);
+        elif k == 'd':
+            d = pf[k][0];
+
     # From ../logs get list of c_*.h5 files
     p = Path('../logs/')
     globstr = 'c_*.h5'
     files = list(p.glob(globstr))
 
-    d = -1
-
-    gotposnX = False
-    gotposnY = False
-    gotd = False
     numtimes = len(files)
-
     print ('Have {0} files/timepoints'.format(numtimes))
 
+    # Count up how many c files we have in each time point once only:
     f = h5py.File(files[0], 'r')
     klist = list(f.keys())
-    # Count up how many c files we have in each time point:
     numcs = 0
     numhexes = 0
     for k in klist:
         if k[0] == 'c':
             numcs = numcs + 1
             numhexes = len(f[k])
-        elif k[0] == 'x':
-            x = np.array(f[k]);
-        elif k[0] == 'y':
-            y = np.array(f[k]);
-        elif k == 'd':
-            d = f[k][0];
 
     # We're expecting the data from this file to be a matrix with c0,
     # c1 etc as cols and spatial index as rows, all relating to a
     # single time point.
     print ('Creating empty 3d matrix of dims [{0},{1},{2}]'.format (numcs, numhexes,numtimes))
-    dmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
+    cmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
+    # There are as many 'a's as 'c's:
+    amatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
+    nmatrix = np.empty([numhexes, numtimes], dtype=float)
 
     for filename in files:
 
@@ -50,26 +55,21 @@ def readFiles(timejump):
         f = h5py.File(filename, 'r')
         klist = list(f.keys())
 
-        # Count up how many c files we have:
-        numcs = 0
-        numhexes = 0
-        for k in klist:
-            if k[0] == 'c':
-                numcs = numcs + 1
-                numhexes = len(f[k])
-
         for k in klist:
             #print ('Key: {0}'.format(k))
             if k[0] == 'c':
-                # Get the data
                 cnum = int(k[1:])
-                dmatrix[cnum,:,timeidx] = np.array(f[k])
-                # print ('dmatrix shape: {0}'.format(np.shape(dmatrix)))
+                cmatrix[cnum,:,timeidx] = np.array(f[k])
+            elif k[0] == 'a':
+                anum = int(k[1:])
+                amatrix[anum,:,timeidx] = np.array(f[k])
+            elif k[0] == 'n':
+                nmatrix[:,timeidx] = np.array(f[k])
 
     # Create the time series to return
     t = np.linspace(timejump,(timejump*numtimes),numtimes)
 
-    return (x, y, t, dmatrix)
+    return (x, y, t, cmatrix, amatrix, nmatrix)
 
 #
 # targ is a container of a target x,y coordinate. x and y are the

@@ -16,10 +16,10 @@ trgt = int(sys.argv[3])
 
 
 # External knowledge - I know that I save the time every 100 time steps:
-timejump = 100
+timejump = 1
 
 # Read the data
-(x, y, t, dmatrix) = ld.readFiles (timejump)
+(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles (timejump)
 
 # Select an index nearest to a target
 ix = ld.selectIndex (x, y, (trgx,trgy))
@@ -28,11 +28,14 @@ ix = ld.selectIndex (x, y, (trgx,trgy))
 #print ('rx is {0} for which coords are ({1},{2})'.format(ix, x[ix], y[ix]))
 
 # Do a plot
-pt.trace (dmatrix, ix, t)
+pt.trace (cmatrix, ix, t, 'c')
+pt.trace (amatrix, ix, t, 'a')
+pt.trace2 (nmatrix, ix, t, 'n')
 
-tstep = 100
-cnum = 0
-pt.surface (dmatrix, x, y, trgt, ix, cnum)
+cnum = int(0)
+pt.surface (cmatrix[cnum,:,trgt], x, y, ix, 'c{0}'.format(cnum))
+pt.surface (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
+pt.surface (nmatrix[:,trgt], x, y, ix, 'n')
 
 import matplotlib.pyplot as plt
 plt.show()

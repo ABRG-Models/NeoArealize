@@ -470,7 +470,7 @@ public:
      */
     void noiseify_vector_vector (vector<vector<Flt> >& vv) {
         Flt randNoiseOffset = 0.8;
-        Flt randNoiseGain = 0.1;
+        Flt randNoiseGain = 0.3; // was 0.1
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
@@ -604,6 +604,7 @@ public:
                 }
             }
         }
+        DBG ("Done");
     }
 
     /*!

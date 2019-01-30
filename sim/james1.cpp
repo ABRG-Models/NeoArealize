@@ -30,7 +30,9 @@
 /*!
  * How long to run for
  */
-#define MAXSTEPS 50
+#define MAXSTEPS 10000
+
+#define DATA_TIMEJUMP 10
 
 /*!
  * Include the reaction diffusion class
@@ -52,12 +54,6 @@ using namespace std;
 
 int main (int argc, char **argv)
 {
-    if (argc < 2) {
-        cerr << "\nUsage: " << argv[0] << " w0\n\n";
-        cerr << "Be sure to run from the base NeoArealize source directory.\n";
-        return -1;
-    }
-
     // Set RNG seed
     int rseed = 1;
     srand(rseed);
@@ -76,7 +72,8 @@ int main (int argc, char **argv)
     double rhoInit = 1; // This is effectively a zoom control. Increase to zoom out.
     double thetaInit = 0.0;
     double phiInit = 0.0;
-    string worldName(argv[1]);
+
+    string worldName("j");
 
     string winTitle = worldName + ": Guidance molecules";
     displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 300, winTitle.c_str(), rhoInit, thetaInit, phiInit));
@@ -190,7 +187,7 @@ int main (int argc, char **argv)
             //RD.save();
         }
         // Save some frames ('c' variable only for now)
-        if (RD.stepCount % 1 == 0) {
+        if (RD.stepCount % DATA_TIMEJUMP == 0) {
             RD.saveC();
         }
 #endif
@@ -203,6 +200,7 @@ int main (int argc, char **argv)
     // Extract contours
     vector<list<Hex> > ctrs = RD.get_contours (0.6);
     // Create new HexGrids from the contours
+    cout << "Creating final hexgrids..." << endl;
     HexGrid* hg1 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
     hg1->setBoundary (ctrs[0]);
     HexGrid* hg2 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);

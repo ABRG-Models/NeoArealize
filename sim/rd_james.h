@@ -194,7 +194,7 @@ public:
     /*!
      * The diffusion parameter.
      */
-    alignas(Flt) Flt D = 0.5;
+    alignas(Flt) Flt D = 0.1;
 
     /*!
      * Over what length scale should some values fall off to zero
@@ -288,25 +288,27 @@ public:
     alignas(Flt) unsigned int nr = 0;
     //@}
 
+private:
     /*!
      * Hex to hex distance. Populate this from hg.d after hg has been
      * initialised.
      */
     alignas(Flt) Flt d = 1.0;
+    alignas(Flt) Flt v = 1;
 
     /*!
-     * Various other parameters
+     * Parameters that depend on d and v:
      */
     //@{
     alignas(Flt) Flt oneoverd = 1.0/this->d;
-    alignas(Flt) Flt v = 1;
     alignas(Flt) Flt oneoverv = 1.0/this->v;
     alignas(Flt) Flt twov = this->v+this->v;
     alignas(Flt) Flt oneover2v = 1.0/this->twov;
     alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
-    alignas(Flt) Flt twoDover3dd = 0.0;
+    alignas(Flt) Flt twoDover3dd = this->d+this->d / 3*this->d*this->d;
     //@}
 
+public:
     /*!
      * Memory to hold an intermediate result
      */
@@ -470,7 +472,7 @@ public:
      */
     void noiseify_vector_vector (vector<vector<Flt> >& vv) {
         Flt randNoiseOffset = 0.8;
-        Flt randNoiseGain = 0.3; // was 0.1
+        Flt randNoiseGain = 0.1;
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
@@ -502,7 +504,8 @@ public:
         // Vector size comes from number of Hexes in the HexGrid
         this->nhex = this->hg->num();
         // Spatial d comes from the HexGrid, too.
-        this->d = this->hg->getd();
+        this->set_d(this->hg->getd());
+        this->set_v(this->hg->getv());
 
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
@@ -604,8 +607,40 @@ public:
                 }
             }
         }
+
+        // Save the guidance molecules to a file. rho, grad_rho and g?
+        this->saveGuidance();
+
         DBG ("Done");
     }
+
+    /*!
+     * Require accessors for d and v as there are several other members
+     * that have to be updated at the same time.
+     */
+    //@{
+    void set_d (Flt d_) {
+        this->d = d_;
+        this->oneoverd = 1.0/this->d;
+        this->oneover2d = 1.0/(this->d+this->d);
+        this->twoDover3dd = this->d+this->d / 3*this->d*this->d;
+    }
+
+    void set_v (Flt v_) {
+        this->v = v_;
+        this->oneoverv = 1.0/this->v;
+        this->twov = this->v+this->v;
+        this->oneover2v = 1.0/this->twov;
+    }
+
+    Flt get_d (void) {
+        return this->d;
+    }
+
+    Flt get_v (void) {
+        return this->v;
+    }
+    //@}
 
     /*!
      * Parameter setter methods
@@ -652,8 +687,32 @@ public:
             path.clear();
             path << "/a" << i;
             data.add_contained_vals (path.str().c_str(), this->a[i]);
+
+            path.str("");
+            path.clear();
+            path << "/A" << i;
+            data.add_contained_vals (path.str().c_str(), this->alpha_c_beta_na[i]);
         }
         data.add_contained_vals ("/n", this->n);
+    }
+
+    /*!
+     * Save the guidance molecules to a file. rho, grad_rho and g?
+     */
+    void saveGuidance (void) {
+        stringstream fname;
+        fname << this->logpath << "/guidance.h5";
+        HdfData data(fname.str());
+        for (unsigned int m = 0; m<this->M; ++m) {
+            stringstream path;
+            path << "/rh" << m;
+            string pth(path.str());
+            data.add_contained_vals (pth.c_str(), this->rho[m]);
+            pth[1] = 'g'; pth[2] = 'x';
+            data.add_contained_vals (pth.c_str(), this->grad_rho[m][0]);
+            pth[2] = 'y';
+            data.add_contained_vals (pth.c_str(), this->grad_rho[m][1]);
+        }
     }
 
     /*!
@@ -821,7 +880,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 #pragma omp parallel for shared(i,k)
             for (unsigned int h=0; h<this->nhex; ++h) {
-                this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * pow (a[i][h], k);
+                this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
             }
         }
 
@@ -871,7 +930,7 @@ public:
 
 #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
-                this->betaterm[i][h] = beta[i] * n[h] * pow (a[i][h], k);
+                this->betaterm[i][h] = beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
             }
 
             // Runge-Kutta integration for C (or ci)
@@ -946,7 +1005,7 @@ public:
             }
 
             // Find y gradient
-#if 1 // Debug
+#if 0 // Debug
             gradf[1][hi] = 0.0;
 #else
             if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
@@ -1008,13 +1067,24 @@ public:
             // 1. The D Del^2 a_i term
             // Compute the sum around the neighbours
             Flt thesum = -6 * fa[hi];
+#if 0
+            if (hi == 3398) {
+                DBG ("Hex " << hi << " has:"
+                     << "\nNE:  fa[" << (HAS_NE(hi)  ? NE(hi)  : hi) << "] = " << fa[(HAS_NE(hi)  ? NE(hi)  : hi)]
+                     << "\nNNE: fa[" << (HAS_NNE(hi) ? NNE(hi) : hi) << "] = " << fa[(HAS_NNE(hi) ? NNE(hi) : hi)]
+                     << "\nNNW: fa[" << (HAS_NNW(hi) ? NNW(hi) : hi) << "] = " << fa[(HAS_NNW(hi) ? NNW(hi) : hi)]
+                     << "\nNW:  fa[" << (HAS_NW(hi) ? NW(hi) : hi)   << "] = " << fa[(HAS_NW(hi)  ? NW(hi)  : hi)]
+                     << "\nNSW: fa[" << (HAS_NSW(hi) ? NSW(hi) : hi) << "] = " << fa[(HAS_NSW(hi) ? NSW(hi) : hi)]
+                     << "\nNSE: fa[" << (HAS_NSE(hi) ? NSE(hi) : hi) << "] = " << fa[(HAS_NSE(hi) ? NSE(hi) : hi)]);
+            }
+#endif
 
-            thesum += fa[(HAS_NE(hi)?NE(hi):hi)];
-            thesum += fa[(HAS_NNE(hi)?NNE(hi):hi)];
-            thesum += fa[(HAS_NNW(hi)?NNW(hi):hi)];
-            thesum += fa[(HAS_NW(hi)?NW(hi):hi)];
-            thesum += fa[(HAS_NSW(hi)?NSW(hi):hi)];
-            thesum += fa[(HAS_NSE(hi)?NSE(hi):hi)];
+            thesum += fa[(HAS_NE(hi)  ? NE(hi)  : hi)];
+            thesum += fa[(HAS_NNE(hi) ? NNE(hi) : hi)];
+            thesum += fa[(HAS_NNW(hi) ? NNW(hi) : hi)];
+            thesum += fa[(HAS_NW(hi)  ? NW(hi)  : hi)];
+            thesum += fa[(HAS_NSW(hi) ? NSW(hi) : hi)];
+            thesum += fa[(HAS_NSE(hi) ? NSE(hi) : hi)];
 
             // Multiply bu 2D/3d^2
             Flt term1 = this->twoDover3dd * thesum;

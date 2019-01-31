@@ -30,7 +30,7 @@
 /*!
  * How long to run for
  */
-#define MAXSTEPS 10000
+#define MAXSTEPS 70000
 
 #define DATA_TIMEJUMP 10
 
@@ -106,6 +106,11 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+    winTitle = worldName + ": n";
+    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
 #endif
 
     // Instantiate the model object
@@ -127,12 +132,13 @@ int main (int argc, char **argv)
     RD.allocate();
 
     // After allocate(), we can set up parameters:
+    RD.D = 0.1;
 
     // What guidance molecule method will we use?
     RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
 
     // Set up guidance molecule method parameters
-    RD.guidance_gain.push_back (50.0);
+    RD.guidance_gain.push_back (0.5);
     RD.guidance_phi.push_back (0.0); // phi in radians
     RD.guidance_width.push_back (0.1);
     RD.guidance_offset.push_back (0.0);
@@ -144,7 +150,7 @@ int main (int argc, char **argv)
     // value that's off the end of the gamma container.
     int paramRtn = 0;
     paramRtn += RD.setGamma (0, 0, 0.5);
-    paramRtn += RD.setGamma (0, 1, 1.0);
+    paramRtn += RD.setGamma (0, 1, -1.0);
 
     if (paramRtn) { return paramRtn; }
 
@@ -183,6 +189,7 @@ int main (int argc, char **argv)
             plt.plot_contour (displays[3], RD.hg, ctrs);
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
+            plt.scalarfields (displays[6], RD.hg, RD.n);
             // If required:
             //RD.save();
         }

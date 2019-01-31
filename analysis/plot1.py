@@ -2,6 +2,7 @@
 import load as ld
 # Import plotting code
 import plot as pt
+import matplotlib.pyplot as plt
 # To access argv:
 import sys
 
@@ -16,7 +17,7 @@ trgt = int(sys.argv[3])
 
 
 # External knowledge - I know that I save the time every 100 time steps:
-timejump = 1
+timejump = 10
 
 # Read the data
 (x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles (timejump)
@@ -25,17 +26,18 @@ timejump = 1
 ix = ld.selectIndex (x, y, (trgx,trgy))
 
 #print ('x range is {0} to {1}, y range is {2} to {3}'.format(min(x),max(x),min(y),max(y)))
-#print ('rx is {0} for which coords are ({1},{2})'.format(ix, x[ix], y[ix]))
+print ('ix is {0} for which coords are ({1},{2})'.format(ix, x[ix], y[ix]))
 
 # Do a plot
 pt.trace (cmatrix, ix, t, 'c')
 pt.trace (amatrix, ix, t, 'a')
 pt.trace2 (nmatrix, ix, t, 'n')
+pt.trace3 (amatrix, cmatrix, nmatrix, ix, t, 'Comparative')
 
-cnum = int(0)
+cnum = int(1)
 pt.surface (cmatrix[cnum,:,trgt], x, y, ix, 'c{0}'.format(cnum))
 pt.surface (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
 pt.surface (nmatrix[:,trgt], x, y, ix, 'n')
 
-import matplotlib.pyplot as plt
+
 plt.show()

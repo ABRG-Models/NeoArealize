@@ -573,9 +573,6 @@ public:
             }
         }
 
-        // Make one axon branching decay parameter stronger here, or better in client code.
-        //this->beta[0] = 5;
-
         if (this->rhoMethod == GuidanceMoleculeMethod::Gauss1D) {
             // Construct Gaussian-waves rather than doing the full-Karbowski shebang.
             this->gaussian1D_guidance();
@@ -610,8 +607,6 @@ public:
 
         // Save the guidance molecules to a file. rho, grad_rho and g?
         this->saveGuidance();
-
-        DBG ("Done");
     }
 
     /*!
@@ -669,9 +664,9 @@ public:
     //@{
 
     /*!
-     * Save the c variable.
+     * Save the c, a and n variables.
      */
-    void saveC (void) {
+    void save (void) {
         stringstream fname;
         fname << this->logpath << "/c_";
         fname.width(5);
@@ -680,14 +675,15 @@ public:
         HdfData data(fname.str());
         for (unsigned int i = 0; i<this->N; ++i) {
             stringstream path;
+            // The c variables
             path << "/c" << i;
             data.add_contained_vals (path.str().c_str(), this->c[i]);
-            // Etc - add more internal variables
+            // The a variable
             path.str("");
             path.clear();
             path << "/a" << i;
             data.add_contained_vals (path.str().c_str(), this->a[i]);
-
+            // An intermediate variable, for debugging.
             path.str("");
             path.clear();
             path << "/A" << i;
@@ -870,8 +866,7 @@ public:
             nsum += n[hi];
         }
         if (this->stepCount % 100 == 0) {
-            DBG ("sum of all n is " << nsum);
-            DBG ("sum of all c for i=0 is " << csum);
+            DBG ("sum of n+c is " << nsum+csum);
         }
 
         // 2. Do integration of a (RK in the 1D model). Involves computing axon branching flux.

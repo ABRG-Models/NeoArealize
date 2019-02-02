@@ -30,24 +30,30 @@
 /*!
  * How long to run for
  */
-#define MAXSTEPS 70000
+#define MAXSTEPS 5000
 
-#define DATA_TIMEJUMP 10
+/*!
+ * How many steps to make before saving another data set. 1 to save
+ * every one.
+ */
+#define DATA_TIMEJUMP 20
+
+/*!
+ * Choose whether to plot or not. Comment out to only compute.
+ */
+#define PLOT_STUFF 1
 
 /*!
  * Include the reaction diffusion class
  */
 #include "rd_james.h"
 
-// Choose whether to plot or not. Comment out to only compute.
-#define PLOT_STUFF 1
-
 #ifdef PLOT_STUFF
 /*!
  * Include display and plotting code
  */
-#include "morph/display.h"
-#include "rd_plot.h"
+# include "morph/display.h"
+# include "rd_plot.h"
 #endif
 
 using namespace std;
@@ -116,7 +122,7 @@ int main (int argc, char **argv)
     // Instantiate the model object
     RD_James<FLOATTYPE> RD;
 
-    RD.svgpath = "./ellipse.svg"; // trial.svg or ellipse.svg
+    RD.svgpath = "./trial.svg"; // trial.svg or ellipse.svg
 
     // NB: Set .N, .M BEFORE RD.allocate().
     RD.N = N_TC; // Number of TC populations
@@ -149,7 +155,7 @@ int main (int argc, char **argv)
     // Set up gamma values using a setter which checks we don't set a
     // value that's off the end of the gamma container.
     int paramRtn = 0;
-    paramRtn += RD.setGamma (0, 0, 0.5);
+    paramRtn += RD.setGamma (0, 0,  1.0);
     paramRtn += RD.setGamma (0, 1, -1.0);
 
     if (paramRtn) { return paramRtn; }
@@ -172,16 +178,6 @@ int main (int argc, char **argv)
         // Step the model
         RD.step();
 
-#if 0
-        if (RD.stepCount % 10 == 0 && RD.stepCount > 100) {
-            int a;
-            cout << "Press any key[return] to continue.\n";
-            cin >> a;
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        }
-#endif
-
 #ifdef PLOT_STUFF
         if (RD.stepCount % 10 == 0) {
             // Do a final plot of the ctrs as found.
@@ -190,12 +186,10 @@ int main (int argc, char **argv)
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
             plt.scalarfields (displays[6], RD.hg, RD.n);
-            // If required:
-            //RD.save();
         }
         // Save some frames ('c' variable only for now)
         if (RD.stepCount % DATA_TIMEJUMP == 0) {
-            RD.saveC();
+            RD.save();
         }
 #endif
         if (RD.stepCount > MAXSTEPS) {

@@ -191,11 +191,13 @@ public:
      */
     alignas(Flt) Flt k = 3.0;
 
+private:
     /*!
      * The diffusion parameter.
      */
     alignas(Flt) Flt D = 0.1;
 
+public:
     /*!
      * Over what length scale should some values fall off to zero
      * towards the boundary? Used in a couple of different locations.
@@ -618,7 +620,7 @@ public:
         this->d = d_;
         this->oneoverd = 1.0/this->d;
         this->oneover2d = 1.0/(this->d+this->d);
-        this->twoDover3dd = this->d+this->d / 3*this->d*this->d;
+        this->updateTwoDover3dd();
     }
 
     void set_v (Flt v_) {
@@ -635,8 +637,20 @@ public:
     Flt get_v (void) {
         return this->v;
     }
+
+    //! Also for D:
+    void set_D (Flt D_) {
+        this->D = D_;
+        this->updateTwoDover3dd();
+    }
     //@}
 
+private:
+    void updateTwoDover3dd (void) {
+        this->twoDover3dd = (this->D+this->D) / (3*this->d*this->d);
+    }
+
+public:
     /*!
      * Parameter setter methods
      */

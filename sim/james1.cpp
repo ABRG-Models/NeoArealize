@@ -138,7 +138,7 @@ int main (int argc, char **argv)
     RD.allocate();
 
     // After allocate(), we can set up parameters:
-    RD.D = 0.1;
+    RD.set_D (0.1);
 
     // What guidance molecule method will we use?
     RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;

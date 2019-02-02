@@ -122,7 +122,7 @@ int main (int argc, char **argv)
     // Instantiate the model object
     RD_James<FLOATTYPE> RD;
 
-    RD.svgpath = "./trial.svg"; // trial.svg or ellipse.svg
+    RD.svgpath = "./ellipse.svg"; // trial.svg or ellipse.svg
 
     // NB: Set .N, .M BEFORE RD.allocate().
     RD.N = N_TC; // Number of TC populations

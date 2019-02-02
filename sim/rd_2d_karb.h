@@ -1024,7 +1024,7 @@ public:
             if (h->has_ne) {
                 thesum += fa[h->ne->vi];
             } else {
-                // Apply boundary condition
+                thesum += fa[h->vi]; // Apply boundary condition
             }
             if (h->has_nne) {
                 thesum += fa[h->nne->vi];

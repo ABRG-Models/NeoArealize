@@ -335,6 +335,8 @@ int main (int argc, char **argv)
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
             plt.scalarfields (displays[6], RD.hg, RD.n);
+            displays[4].redrawDisplay();
+            displays[5].redrawDisplay();
         }
 #endif
         // Save some frames ('c' variable only for now)

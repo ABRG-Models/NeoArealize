@@ -1,0 +1,15 @@
+/*
+ * An absolute minimum config. This will run the sim with a single TC
+ * population and no guidance molecules. Global parameters will be set
+ * to their defaults.
+ */
+{
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        // The first TC population
+        {
+            "alpha" : 3,
+            "beta" : 3
+        }
+    ]
+}

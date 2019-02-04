@@ -11,44 +11,23 @@
 #include <string>
 #include <limits>
 
-/*!
- * Define number of thalamocortical fields here. This number is used
- * to set the width of the windows
- */
-#define N_TC 2
-
-/*!
- * Define number of guidance molecules.
- */
-#define M_GUID 1
+#include <time.h>      // clock()
+#include <sys/types.h> // getpid()
+#include <unistd.h>
 
 /*!
  * This will be passed as the template argument for RD_plot and RD.
  */
-#define FLOATTYPE double
-
-/*!
- * How long to run for
- */
-#define MAXSTEPS 5000
-
-/*!
- * How many steps to make before saving another data set. 1 to save
- * every one.
- */
-#define DATA_TIMEJUMP 20
-
-/*!
- * Choose whether to plot or not. Comment out to only compute.
- */
-#define PLOT_STUFF 1
+#ifndef FLOATTYPE
+# define FLOATTYPE float
+#endif
 
 /*!
  * Include the reaction diffusion class
  */
 #include "rd_james.h"
 
-#ifdef PLOT_STUFF
+#ifdef COMPILE_PLOTTING
 /*!
  * Include display and plotting code
  */
@@ -56,15 +35,155 @@
 # include "rd_plot.h"
 #endif
 
+/*!
+ * I'm using JSON to read in simulation parameters
+ */
+#include <json/json.h>
+#include <fstream>
+
 using namespace std;
 
+/*!
+ * For mixing up bits of three args; used to generate a good random
+ * seed using time() getpid() and clock().
+ */
+unsigned int
+mix (unsigned int a, unsigned int b, unsigned int c)
+{
+    a=a-b;  a=a-c;  a=a^(c >> 13);
+    b=b-c;  b=b-a;  b=b^(a << 8);
+    c=c-a;  c=c-b;  c=c^(b >> 13);
+    a=a-b;  a=a-c;  a=a^(c >> 12);
+    b=b-c;  b=b-a;  b=b^(a << 16);
+    c=c-a;  c=c-b;  c=c^(b >> 5);
+    a=a-b;  a=a-c;  a=a^(c >> 3);
+    b=b-c;  b=b-a;  b=b^(a << 10);
+    c=c-a;  c=c-b;  c=c^(b >> 15);
+    return c;
+}
+
+/*!
+ * main(): Run a simulation, using parameters obtained from a JSON
+ * file.
+ *
+ * Open and read a simple JSON file which contains the parameters for
+ * the simulation, such as number of guidance molecules (M), guidance
+ * parameters (probably get M from these) and so on.
+ *
+ * Sample JSON:
+ * {
+ *   // Overall parameters
+ *   "steps":5000,                // Number of steps to simulate for
+ *   "logevery":20,               // Log data every logevery steps.
+ *   "svgpath":"./ellipse.svg",   // The boundary shape to use
+ *   "hextohex_d":0.01,           // Hex to hex distance, determines num hexes
+ *   "boundaryFalloffDist":0.01,
+ *   "D":0.1,                     // Global diffusion constant
+ *   // Array of parameters for N thalamocortical populations:
+ *   "tc": [
+ *     // The first TC population
+ *     {
+ *       "alpha":3,
+ *       "beta":3
+ *     },
+ *     // The next TC population
+ *     {
+ *       "alpha":3,
+ *       "beta":3
+ *     } // and so on.
+ *   ],
+ *   // Array of parameters for the guidance molecules
+ *   "guidance": [
+ *     {
+ *       "shape":"Sigmoid1D", // and so on
+ *       "gain":0.5,
+ *       "phi":0.8,
+ *       "width":0.1,
+ *       "offset":0.0,
+ *     }
+ *   ]
+ * }
+ *
+ * A file containing JSON similar to the above should be saved and its
+ * path provided as the only argument to the binary here.
+ */
 int main (int argc, char **argv)
 {
-    // Set RNG seed
-    int rseed = 1;
-    srand(rseed);
+    // Randomly set the RNG seed
+    unsigned int rseed = mix(clock(), time(NULL), getpid());
+    srand (rseed);
 
-#ifdef PLOT_STUFF
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " /path/to/params.json" << endl;
+        return 1;
+    }
+    string paramsfile (argv[1]);
+
+    // Set up JSON code for reading the parameters
+
+    // Test for existence of the file.
+    ifstream jsonfile_test;
+    int srtn = system ("pwd");
+    if (srtn) {
+        cerr << "system call returned " << srtn << endl;
+    }
+    jsonfile_test.open (paramsfile, ios::in);
+    if (jsonfile_test.is_open()) {
+        // Good, file exists.
+        jsonfile_test.close();
+    } else {
+        cerr << "luminances.json file not found." << endl;
+        return 1;
+    }
+
+    ifstream jsonfile (paramsfile, ifstream::binary);
+
+    Json::Value root;
+    string errs;
+    Json::CharReaderBuilder rbuilder;
+    rbuilder["collectComments"] = false;
+
+    bool parsingSuccessful = Json::parseFromStream (rbuilder, jsonfile, &root, &errs);
+    if (!parsingSuccessful) {
+        // report to the user the failure and their locations in the document.
+        cerr << "Failed to parse JSON: " << errs;
+        return 1;
+    }
+
+    // Get simulation-wide parameters
+    const unsigned int steps = root.get ("steps", 1000).asUInt();
+    if (steps == 0) {
+        cerr << "Not much point simulating 0 steps! Exiting." << endl;
+        return 1;
+    }
+    const unsigned int logevery = root.get ("logevery", 100).asUInt();
+    if (logevery == 0) {
+        cerr << "Can't log every 0 steps. Exiting." << endl;
+        return 1;
+    }
+    const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
+    const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
+    const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
+    const string logpath = root.get ("logpath", "logs").asString();
+    // FIXME: Create directory if necessary
+    const double D = root.get ("D", 0.1).asDouble();
+
+    cout << "steps to simulate: " << steps << endl;
+
+    // Thalamocortical populations array of parameters:
+    const Json::Value tcs = root["tc"];
+    unsigned int N_TC = static_cast<unsigned int>(tcs.size());
+    if (N_TC == 0) {
+        cerr << "Zero thalamocortical populations makes no sense for this simulation. Exiting."
+             << endl;
+        return 1;
+    }
+
+    // Guidance molecule array of parameters:
+    const Json::Value guid = root["guidance"];
+    unsigned int M_GUID = static_cast<unsigned int>(guid.size());
+
+#ifdef COMPILE_PLOTTING
     // Create some displays
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);
@@ -82,7 +201,7 @@ int main (int argc, char **argv)
     string worldName("j");
 
     string winTitle = worldName + ": Guidance molecules";
-    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 300, winTitle.c_str(), rhoInit, thetaInit, phiInit));
+    displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300, winTitle.c_str(), rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
@@ -103,17 +222,17 @@ int main (int argc, char **argv)
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": Guidance gradient (x)";
-    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": Guidance gradient (y)";
-    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": n";
-    displays.push_back (morph::Gdisplay (340 * M_GUID, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
@@ -122,54 +241,84 @@ int main (int argc, char **argv)
     // Instantiate the model object
     RD_James<FLOATTYPE> RD;
 
-    RD.svgpath = "./ellipse.svg"; // trial.svg or ellipse.svg
+    RD.svgpath = svgpath;
+    RD.logpath = logpath;
 
     // NB: Set .N, .M BEFORE RD.allocate().
     RD.N = N_TC; // Number of TC populations
     RD.M = M_GUID; // Number of guidance molecules that are sculpted
 
     // Control the size of the hexes, and therefore the number of hexes in the grid
-    RD.hextohex_d = 0.01; // 0.01 by default. 0.002 is feasible with 5-10 mins set up time.
+    RD.hextohex_d = hextohex_d;
 
     // Boundary fall-off distance
-    RD.boundaryFalloffDist = 0.01;
+    RD.boundaryFalloffDist = boundaryFalloffDist;
 
     // After setting N and M, we can set up all the vectors in RD:
     RD.allocate();
 
     // After allocate(), we can set up parameters:
-    RD.set_D (0.1);
+    RD.set_D (D);
 
-    // What guidance molecule method will we use?
-    RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+    // Index through thalamocortical fields, setting params:
+    for (int i = 0; i < tcs.size(); ++i) {
+        Json::Value v = tcs[i];
+        RD.alpha[i] = v.get("alpha", 0.0).asDouble();
+        RD.beta[i] = v.get("beta", 0.0).asDouble();
+    }
 
-    // Set up guidance molecule method parameters
-    RD.guidance_gain.push_back (0.5);
-    RD.guidance_phi.push_back (0.0); // phi in radians
-    RD.guidance_width.push_back (0.1);
-    RD.guidance_offset.push_back (0.0);
+    // Index through guidance molecule parameters:
+    for (int j = 0; j < guid.size(); ++j) {
+        Json::Value v = guid[j];
+        // What guidance molecule method will we use?
+        string rmeth = v.get ("shape", "Sigmoid1D").asString();
+        if (rmeth == "Sigmoid1D") {
+            RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+        } else if (rmeth == "Exponential1D") {
+            RD.rhoMethod = GuidanceMoleculeMethod::Exponential1D;
+        } else if (rmeth == "Gauss1D") {
+            RD.rhoMethod = GuidanceMoleculeMethod::Gauss1D;
+        } else if (rmeth == "Gauss2D") {
+            RD.rhoMethod = GuidanceMoleculeMethod::Gauss2D;
+        } else {
+            RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+        }
+        // Set up guidance molecule method parameters
+        RD.guidance_gain.push_back (v.get("gain", 1.0).asDouble());
+        RD.guidance_phi.push_back (v.get("phi", 1.0).asDouble());
+        RD.guidance_width.push_back (v.get("width", 1.0).asDouble());
+        RD.guidance_offset.push_back (v.get("offset", 1.0).asDouble());
+    }
 
     // Set up the interaction parameters between the different TC
-    // populations and the guidance molecules.
-
-    // Set up gamma values using a setter which checks we don't set a
-    // value that's off the end of the gamma container.
+    // populations and the guidance molecules (aka gamma).
     int paramRtn = 0;
-    paramRtn += RD.setGamma (0, 0,  1.0);
-    paramRtn += RD.setGamma (0, 1, -1.0);
+    for (int i = 0; i < tcs.size(); ++i) {
+        Json::Value tcv = tcs[i];
+        Json::Value gamma = tcv["gamma"];
+        for (int j = 0; j < guid.size(); ++j) {
+            // Set up gamma values using a setter which checks we
+            // don't set a value that's off the end of the gamma
+            // container.
+            cout << "Set gamma for guidance " << j << " over TC " << i << " = " << gamma[j] << endl;
+            paramRtn += RD.setGamma (j, i, gamma[j].asDouble());
+        }
+    }
 
-    if (paramRtn) { return paramRtn; }
+    if (paramRtn && M_GUID>0) {
+        cerr << "Something went wrong setting gamma values" << endl;
+        return paramRtn;
+    }
 
     // Now have the guidance molecule densities and their gradients computed:
     RD.init();
 
-#ifdef PLOT_STUFF
+#ifdef COMPILE_PLOTTING
     plt.scalarfields (displays[0], RD.hg, RD.rho);
-    plt.scalarfields (displays[4], RD.hg, RD.g[0][0]);
-    plt.scalarfields (displays[5], RD.hg, RD.g[0][1]);
-    // Save pngs of the factors and guidance expressions.
-    string logpath = "logs";
-    displays[0].saveImage (logpath + "/guidance.png");
+    vector<vector<FLOATTYPE> > gx = plt.separateVectorField (RD.g, 0);
+    vector<vector<FLOATTYPE> > gy = plt.separateVectorField (RD.g, 1);
+    plt.scalarfields (displays[4], RD.hg, gx);
+    plt.scalarfields (displays[5], RD.hg, gy);
 #endif
 
     // Start the loop
@@ -178,7 +327,7 @@ int main (int argc, char **argv)
         // Step the model
         RD.step();
 
-#ifdef PLOT_STUFF
+#ifdef COMPILE_PLOTTING
         if (RD.stepCount % 10 == 0) {
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, RD.contour_threshold);
@@ -187,17 +336,19 @@ int main (int argc, char **argv)
             plt.scalarfields (displays[2], RD.hg, RD.c);
             plt.scalarfields (displays[6], RD.hg, RD.n);
         }
+#endif
         // Save some frames ('c' variable only for now)
-        if (RD.stepCount % DATA_TIMEJUMP == 0) {
+        if (RD.stepCount % logevery == 0) {
             RD.save();
         }
-#endif
-        if (RD.stepCount > MAXSTEPS) {
+
+        if (RD.stepCount > steps) {
             finished = true;
         }
     }
 
-#ifdef PLOT_STUFF
+#ifdef COMPILE_PLOTTING
+# if 0
     // Extract contours
     vector<list<Hex> > ctrs = RD.get_contours (0.6);
     // Create new HexGrids from the contours
@@ -211,6 +362,7 @@ int main (int argc, char **argv)
     // Output information about the contours
     cout << "Sizes: countour 0: " << hg1->num() << ", contour 1: " << hg2->num() << endl;
     cout << "Ratio: " << ((double)hg1->num()/(double)hg2->num()) << endl;
+# endif
     // Allow for a keypress so that images can be studied
     int a;
     cout << "Press any key[return] to exit.\n";

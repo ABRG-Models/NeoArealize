@@ -5,9 +5,11 @@
 #include "morph/HexGrid.h"
 #include <iostream>
 #include <vector>
+#include <array>
 #include <list>
 
 using std::vector;
+using std::array;
 using std::list;
 using morph::HexGrid;
 using morph::Gdisplay;
@@ -60,6 +62,25 @@ public:
         vector<vector<Flt> > vf;
         vf.push_back (f);
         this->scalarfields (disp, hg, vf);
+    }
+
+    /*!
+     * Take the first element of the array and create a
+     * vector<vector<Flt> > to plot
+     */
+    vector<vector<Flt> > separateVectorField (vector<array<vector<Flt>, 2> >& f,
+                                              unsigned int arrayIdx) {
+        vector<vector<Flt> > vf;
+        for (array<vector<Flt>, 2> fia : f) {
+#if 0
+            cout << "vector length is " << fia[arrayIdx].size() << endl;
+            for (Flt ff : fia[arrayIdx]) {
+                cout << "value: " << ff << endl;
+            }
+#endif
+            vf.push_back (fia[arrayIdx]);
+        }
+        return vf;
     }
 
     /*!

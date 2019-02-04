@@ -42,4 +42,9 @@ target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
 # molecules and TC populations and runtime setting of parameters to
 # examine behaviour.
 add_executable(james1 james1.cpp)
-target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY})
+target_compile_definitions(james1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
+target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY} jsoncpp)
+
+add_executable(james1c james1.cpp)
+target_compile_definitions(james1c PUBLIC FLOATTYPE=float)
+target_link_libraries(james1c ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY} jsoncpp)

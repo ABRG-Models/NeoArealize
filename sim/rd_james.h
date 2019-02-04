@@ -104,7 +104,7 @@ public:
      * Hex to hex d for the grid. Make smaller to increase the number
      * of Hexes being computed.
      */
-    alignas(Flt) Flt hextohex_d = 0.01;
+    alignas(float) float hextohex_d = 0.01;
 
     /*!
      * Holds the number of hexes in the populated HexGrid
@@ -354,7 +354,8 @@ public:
     HexGrid* hg;
 
     /*!
-     * Sets the function of the guidance molecule method
+     * Sets the function of the guidance molecule method (FIXME: Make
+     * this a vector)
      */
     GuidanceMoleculeMethod rhoMethod = GuidanceMoleculeMethod::Gauss1D;
 
@@ -530,6 +531,12 @@ public:
         this->resize_vector_array_vector (this->g);
         this->resize_vector_array_vector (this->J);
 
+        // Initialise alpha and beta
+        for (unsigned int i=0; i<this->N; ++i) {
+            this->alpha[i] = 3;
+            this->beta[i] = 3;
+        }
+
         // Save information about the HexGrid to file:
         this->savePositions();
     }
@@ -542,11 +549,6 @@ public:
 
         // Initialise a with noise
         this->noiseify_vector_vector (this->a);
-
-        for (unsigned int i=0; i<this->N; ++i) {
-            this->alpha[i] = 3;
-            this->beta[i] = 3;
-        }
 
         // If client code didn't initialise the guidance molecules, then do so
         if (this->guidance_phi.empty()) {
@@ -611,9 +613,10 @@ public:
         this->saveGuidance();
     }
 
+private:
     /*!
-     * Require accessors for d and v as there are several other members
-     * that have to be updated at the same time.
+     * Require private setters for d and v as there are several other
+     * members that have to be updated at the same time.
      */
     //@{
     void set_d (Flt d_) {
@@ -629,7 +632,13 @@ public:
         this->twov = this->v+this->v;
         this->oneover2v = 1.0/this->twov;
     }
+    //@}
 
+public:
+    /*!
+     * Public getters for d and v
+     */
+    //@{
     Flt get_d (void) {
         return this->d;
     }
@@ -637,13 +646,16 @@ public:
     Flt get_v (void) {
         return this->v;
     }
+    //@}
 
-    //! Also for D:
+    /*!
+     * A public setter for D, as it requires another attribute to be
+     * updated at the same time.
+     */
     void set_D (Flt D_) {
         this->D = D_;
         this->updateTwoDover3dd();
     }
-    //@}
 
 private:
     void updateTwoDover3dd (void) {

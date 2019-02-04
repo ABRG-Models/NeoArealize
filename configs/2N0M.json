@@ -1,0 +1,18 @@
+{
+    // Global simulation parameters
+    "steps" : 30000,                // Number of steps to simulate for
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./ellipse.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.4,                     // Global diffusion constant
+
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        { "alpha" : 3, "beta" : 3 },
+        { "alpha" : 3, "beta" : 3 }
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+    ] // end guidance
+}

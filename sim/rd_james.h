@@ -874,10 +874,6 @@ public:
 
         this->stepCount++;
 
-        if (this->stepCount % 100 == 0) {
-            DBG ("System computed " << this->stepCount << " times so far...");
-        }
-
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         Flt nsum = 0.0;
         Flt csum = 0.0;
@@ -891,9 +887,13 @@ public:
             n[hi] = 1. - n[hi];
             nsum += n[hi];
         }
+
+#ifdef DEBUG
         if (this->stepCount % 100 == 0) {
+            DBG ("System computed " << this->stepCount << " times so far...");
             DBG ("sum of n+c is " << nsum+csum);
         }
+#endif
 
         // 2. Do integration of a (RK in the 1D model). Involves computing axon branching flux.
 

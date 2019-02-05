@@ -19,7 +19,7 @@
  * This will be passed as the template argument for RD_plot and RD.
  */
 #ifndef FLOATTYPE
-# define FLOATTYPE float
+# define FLOATTYPE double
 #endif
 
 /*!
@@ -168,6 +168,7 @@ int main (int argc, char **argv)
     // FIXME: Create directory if necessary
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
+    const FLOATTYPE k = root.get ("k", 3).asDouble();
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -260,6 +261,8 @@ int main (int argc, char **argv)
 
     // After allocate(), we can set up parameters:
     RD.set_D (D);
+    RD.contour_threshold = contour_threshold;
+    RD.k = k;
 
     // Index through thalamocortical fields, setting params:
     for (unsigned int i = 0; i < tcs.size(); ++i) {
@@ -310,9 +313,6 @@ int main (int argc, char **argv)
         cerr << "Something went wrong setting gamma values" << endl;
         return paramRtn;
     }
-
-    // Set a threshold for the drawing of the contour graphs
-    RD.contour_threshold = contour_threshold;
 
     // Now have the guidance molecule densities and their gradients computed:
     RD.init();

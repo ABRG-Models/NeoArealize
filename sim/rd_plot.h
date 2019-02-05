@@ -98,7 +98,7 @@ public:
         unsigned int N = f.size();
         unsigned int nhex = hg->num();
 
-#define INDIVIDUAL_SCALING 1
+//#define INDIVIDUAL_SCALING 1
 #ifdef INDIVIDUAL_SCALING
         // Copies data to plot out of the model
         vector<Flt> maxa (N, -1e7);
@@ -132,7 +132,7 @@ public:
             }
         }
 
-#else // NB; with no individual scaling, get flickering in plots.
+#else // Scale to max/min of the group
 
         // Copies data to plot out of the model
         Flt maxa = -1e7;

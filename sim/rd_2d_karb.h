@@ -1122,7 +1122,7 @@ public:
             double term3 = this->g[i][0][h->vi] * this->grad_a[i][0][h->vi]
                 + this->g[i][1][h->vi] * this->grad_a[i][1][h->vi];
 
-            this->divJ[i][h->vi] = term1 + term2 + term3;
+            this->divJ[i][h->vi] = term1 - term2 - term3;
         }
     }
 

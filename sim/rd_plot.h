@@ -208,22 +208,17 @@ public:
             rtn.push_back (lh);
         }
 
-        // Determine min and max
-        vector<Flt> maxf (N, -1e7);
-        vector<Flt> minf (N, +1e7);
+        Flt maxf = -1e7;
+        Flt minf = +1e7;
         for (auto h : hg->hexen) {
             if (h.onBoundary() == false) {
                 for (unsigned int i = 0; i<N; ++i) {
-                    if (f[i][h.vi] > maxf[i]) { maxf[i] = f[i][h.vi]; }
-                    if (f[i][h.vi] < minf[i]) { minf[i] = f[i][h.vi]; }
+                    if (f[i][h.vi] > maxf) { maxf = f[i][h.vi]; }
+                    if (f[i][h.vi] < minf) { minf = f[i][h.vi]; }
                 }
             }
         }
-
-        vector<Flt> scalef (5, 0);
-        for (unsigned int i = 0; i<N; ++i) {
-            scalef[i] = 1.0 / (maxf[i]-minf[i]);
-        }
+        Flt scalef = 1.0 / (maxf-minf);
 
         // Re-normalize
         vector<vector<Flt> > norm_f;
@@ -234,7 +229,7 @@ public:
 
         for (unsigned int i = 0; i<N; ++i) {
             for (unsigned int h=0; h<nhex; h++) {
-                norm_f[i][h] = fmin (fmax (((f[i][h]) - minf[i]) * scalef[i], 0.0), 1.0);
+                norm_f[i][h] = (f[i][h] - minf) * scalef;
             }
         }
 

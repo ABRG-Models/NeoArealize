@@ -82,6 +82,7 @@
 % Emphasis and bold.
 \newcommand{\e}{\emph}
 \newcommand{\mycite}[1]{\cite{#1}}
+\newcommand{\code}[1]{\textsf{#1}}
 %% END aliases
 
 % Custom font defs
@@ -355,12 +356,14 @@ the brackets we have:
 %
 \begin{equation} \label{eq:divJExpanded}
 %
+\boxed{
 \nabla\vcdot\mb{J}_i(\mb{x}) =
-D \nabla\vcdot\nabla a_i(\mb{x},t)
+%
+D \nabla\vcdot\nabla a_i(\mb{x},t) % term1
 -
-a_i(\mb{x},t)\nabla\vcdot\mb{g}(\mb{x})
+a_i(\mb{x},t)\nabla\vcdot\mb{g}(\mb{x}) % term2
 -
-\mb{g}(\mb{x})\vcdot\nabla a_i(\mb{x},t)
+\mb{g}(\mb{x})\vcdot\nabla a_i(\mb{x},t)} % term3
 %
 \end{equation}
 %
@@ -369,7 +372,9 @@ $a_i(\mb{x},t)$; a time-independent modulator of
 $a_i(\mb{x},t)$ [because $\nabla\vcdot\mb{g}(\mb{x})$ is a
 time-independent static field]; and the dot product of the static
 vector field $\mb{g}(\mb{x})$ and the gradient of
-$a_i(\mb{x},t)$.
+$a_i(\mb{x},t)$. These three terms (named, very sensibly \code{term1},
+\code{term2} and \code{term3}) are computed in the \code{compute\_divJ()}
+method of both the \code{RD\_2D\_Karb} and \code{RD\_James} classes.
 
 Each of the divergences can be simplified by means of Gauss's Theorem.
 Reference \cite{lee_hexagonal_2014} presents an application of Gauss's
@@ -379,15 +384,17 @@ value of our Laplacian, $D \nabla\vcdot\nabla a_i(\mb{x},t)$, across
 the area of one hexagon located at position $\mb{p}_0$, with
 neighbours at positions $\mb{p}_1$--$\mb{p}_6$ is:
 %
-\begin{equation}
+\begin{equation} \label{eq:computeDivJTerm1}
+\boxed{
 D \nabla\vcdot\nabla a_i(\mb{p}_0,t) = D\frac{2}{3d^2} \sum_{j=1}^{6}\big(a_i(\mb{p}_j) - a_i(\mb{p}_0)\big)
+}
 \end{equation}
 %
 where $d$ is the centre-to-centre distance between hexes in the
-grid. Let's work it through. In the following, $v$ is the length of
+grid. This is \code{term1}. Let's work it through. In the following, $v$ is the length of
 each of the 6 edges of the hexagon's perimeter and $v =
 d/\sqrt{3}$. $d\gamma$ is an infinitessimally small distance along the
-perimeter of the hexagon. The area of each hexagon in the lattice is
+perimeter of the hexagon. The area, $\Omega$, of each hexagon in the lattice is
 $\frac{\sqrt{3}}{2}d^2$.
 
 \begin{equation}
@@ -403,7 +410,7 @@ Applying Gauss's Theorem to the second term, the computation of
 $a_i(\mb{p}_0,t)\nabla\vcdot\mb{g}(\mb{p}_0)$ can be written out in a
 similar way:
 %
-\begin{equation}
+\begin{equation} \label{eq:divg}
 \begin{split}
 \frac{1}{\Omega} \iint_A a_i\nabla\vcdot\mb{g}\;dxdy & = \frac{a_i(\mb{p}_0)}{\Omega}  \oint_c \mb{g}\vcdot d\hat{\mathbf{n}} \\
 & \approx \frac{a_i(\mb{p}_0,t)}{\Omega} \sum_{j=1}^{6} \frac{\mb{g}_j + \mb{g}_0}{2}\vcdot \hat{\mb{n}}\;v \\
@@ -413,11 +420,19 @@ similar way:
 \end{split}
 \end{equation}
 %
-The final expression is suitable for a numerical computation. Lastly,
-the final term in Eq.~\ref{eq:divJExpanded} is the
-scalar product of two vector fields which I'll carry out simply with
-Cartesian $x$ and $y$ components - so I'll re-use my spacegrad2D
-function to find $\nabla a_i$.
+
+\begin{equation} \label{eq:computeDivJTerm2}
+\boxed{
+a_i(\mb{x},t)\nabla\vcdot\mb{g}(\mb{x}) = \frac{a_i(\mb{p}_0,t)}{3d} \bigg( \sum_{j=1}^{6} \big(\mb{g}_j^x + \mb{g}_0^x\big) \cos (60\times(j-1)) + \sum_{j=1}^{6} \big({\mb{g}_j^y + \mb{g}_0^y}\big) \sin (60\times(j-1)) \bigg)
+}
+\end{equation}
+
+The final expression is suitable for a numerical computation and can
+be found in \code{compute\_divJ()} as \code{term2}. Lastly, the final
+term in Eq.~\ref{eq:divJExpanded} is the scalar product of two vector
+fields which I'll carry out simply with Cartesian $x$ and $y$
+components - so I'll re-use my spacegrad2D function to find $\nabla
+a_i$. That can be found as \code{term3}.
 
 I think that the advantage of separating this computation out is that
 I can ensure that $\mb{J}$ resulting from the first term remains 0, by
@@ -447,23 +462,23 @@ was observed ($\approx$20\% reduction).
 We're modifying the system above so that we have N TC populations and
 M curated gradients.
 %
-\begin{equation} \label{eq:Karb2D_dc}
+\begin{equation} \label{eq:Karb2D_dc_NM}
 \frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t) + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da}
+\begin{equation} \label{eq:Karb2D_da_NM}
 \frac{\partial a_i(\mb{x},t)}{\partial t} = \nabla\vcdot\mb{J}_i(\mb{x},t) + \alpha_i c_i(\mb{x},t) - \beta_i n(\mb{x},t)
 [a_i(\mb{x}, t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve}
+\begin{equation} \label{eq:Karb2D_conserve_NM}
 n(\mb{x},t) + \sum_{i=1}^{N} c_i(\mb{x}, t) = 1
 \end{equation}
 %
 with the flux current
 %
-\begin{equation} \label{eq:Karb2D_J}
+\begin{equation} \label{eq:Karb2D_J_NM}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}

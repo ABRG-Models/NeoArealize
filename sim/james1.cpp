@@ -261,14 +261,14 @@ int main (int argc, char **argv)
     RD.set_D (D);
 
     // Index through thalamocortical fields, setting params:
-    for (int i = 0; i < tcs.size(); ++i) {
+    for (unsigned int i = 0; i < tcs.size(); ++i) {
         Json::Value v = tcs[i];
         RD.alpha[i] = v.get("alpha", 0.0).asDouble();
         RD.beta[i] = v.get("beta", 0.0).asDouble();
     }
 
     // Index through guidance molecule parameters:
-    for (int j = 0; j < guid.size(); ++j) {
+    for (unsigned int j = 0; j < guid.size(); ++j) {
         Json::Value v = guid[j];
         // What guidance molecule method will we use?
         string rmeth = v.get ("shape", "Sigmoid1D").asString();
@@ -293,10 +293,10 @@ int main (int argc, char **argv)
     // Set up the interaction parameters between the different TC
     // populations and the guidance molecules (aka gamma).
     int paramRtn = 0;
-    for (int i = 0; i < tcs.size(); ++i) {
+    for (unsigned int i = 0; i < tcs.size(); ++i) {
         Json::Value tcv = tcs[i];
         Json::Value gamma = tcv["gamma"];
-        for (int j = 0; j < guid.size(); ++j) {
+        for (unsigned int j = 0; j < guid.size(); ++j) {
             // Set up gamma values using a setter which checks we
             // don't set a value that's off the end of the gamma
             // container.

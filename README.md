@@ -12,7 +12,22 @@ Make sure these packages are installed (Debian/Ubuntu example):
 
 sudo apt install python python-numpy xterm
 
-Now build:
+Build and install jsoncpp (in a directory '~/src', just for example,
+you can build it wherever suits):
+
+```bash
+mkdir -p ~/src
+cd ~/src
+git clone https://github.com/open-source-parsers/jsoncpp.git
+cd jsoncpp
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_SHARED_LIBS=YES ..
+make
+sudo make install
+```
+
+Now you can build NeoArealize:
 
 ```bash
 cd NeoArealize
@@ -26,13 +41,8 @@ cd ..
 To run:
 
 ```bash
-python sim2.py
+./build/sim/james1 ./config/c1.json
 ```
 
-or, more recently, as I've removed the need for the sim.py master program, just
-
-```bash
-./build/sim/process w0 logs/w0 1
-```
-where w0 is the sim name, logs/w0 will be the logged output and 1 is a seed
-for the random number generator.
+The program reads parameters from c1.json and writes results into
+./logs/

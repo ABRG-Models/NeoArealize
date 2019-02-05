@@ -1076,7 +1076,7 @@ public:
      */
     void compute_divJ (vector<Flt>& fa, unsigned int i) {
 
-        // Three terms to compute; see Eq. 14 in methods_notes.pdf
+        // Three terms to compute; see Eq. 17 in methods_notes.pdf
 
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
@@ -1085,7 +1085,7 @@ public:
 #pragma omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
-            // 1. The D Del^2 a_i term
+            // 1. The D Del^2 a_i term. Eq. 18.
             // Compute the sum around the neighbours
             Flt thesum = -6 * fa[hi];
 #if 0
@@ -1163,7 +1163,7 @@ public:
             Flt term3 = this->g[i][0][hi] * this->grad_a[i][0][hi]
                 + this->g[i][1][hi] * this->grad_a[i][1][hi];
 
-            this->divJ[i][hi] = term1 + term2 + term3;
+            this->divJ[i][hi] = term1 - term2 - term3;
         }
     }
 

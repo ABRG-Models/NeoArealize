@@ -1,11 +1,11 @@
 {
     // Global simulation parameters
     "steps" : 5000,                // Number of steps to simulate for
-    "logevery" : 10,               // How often to log
-    "hextohex_d" : 0.03,           // Hex to hex distance, determines num hexes
+    "logevery" : 1000,             // How often to log
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.1,                     // Global diffusion constant
+    "D" : 0.4,                     // Global diffusion constant
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
@@ -13,31 +13,30 @@
         {
             "alpha" : 3,
             "beta" : 3,
-            "gamma" : [1.0,1.0] // Array of interactions of this TC popn and guidance mols
+            // Array of interactions of this TC popn and guidance
+            // mols. For THIS TC projection, these are the interaction
+            // of guidance molecule 0, molecule 1, molecule 2 and so
+            // on. These multiply the x and y components of the
+            // gradient of the expression level of molecule 0, 1, 2
+            // and so on.
+            "gamma" : [-1.0]
         },
         // The next TC population
         {
             "alpha" : 3,
             "beta" : 3,
-            "gamma" : [-1.0,1.0]
+            "gamma" : [-0.5]
         } // and so on.
     ], // end tc
 
     // Array of parameters for the guidance molecules
     "guidance": [
         {
-            "shape" : "Sigmoid1D", // and so on
-            "gain" : 0.5,
-            "phi" : 0.8,
-            "width" : 0.2,
-            "offset" : 0.0
-        },
-        {
-            "shape" : "Sigmoid1D", // and so on
-            "gain" : 0.5,
-            "phi" : -0.8,
-            "width" : 0.1,
-            "offset" : 0.0
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0.0,
+            "width"  : 0.15,
+            "offset" : 0.2
         }
     ] // end guidance
 }

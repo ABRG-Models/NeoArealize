@@ -536,9 +536,6 @@ public:
             this->alpha[i] = 3;
             this->beta[i] = 3;
         }
-
-        // Save information about the HexGrid to file:
-        this->savePositions();
     }
 
     /*!
@@ -608,9 +605,6 @@ public:
                 }
             }
         }
-
-        // Save the guidance molecules to a file. rho, grad_rho and g?
-        this->saveGuidance();
     }
 
 private:
@@ -719,7 +713,7 @@ public:
     }
 
     /*!
-     * Save the guidance molecules to a file. rho, grad_rho and g?
+     * Save the guidance molecules to a file (guidance.h5)
      */
     void saveGuidance (void) {
         stringstream fname;

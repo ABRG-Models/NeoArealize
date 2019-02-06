@@ -18,18 +18,14 @@ matplotlib.rc('font', **fnt)
 # Get target x/y hex to show trace for and the time step to show the
 # map for from the arguments:
 if len(sys.argv) < 4:
-    print('Provide x,y,t on cmd line please.')
+    print('Provide x,y, and t index on cmd line please.')
     exit(1)
 trgx = float(sys.argv[1])
 trgy = float(sys.argv[2])
 trgt = int(sys.argv[3])
 
-
-# External knowledge - I know that I save the time every 100 time steps:
-timejump = 3
-
 # Read the data
-(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles (timejump)
+(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles ('../logs/2N1M')
 
 # Select an index nearest to a target
 ix = ld.selectIndex (x, y, (trgx,trgy))

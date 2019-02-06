@@ -3,10 +3,13 @@ from pathlib import Path
 import h5py
 import re
 
-def readFiles(timejump):
+#
+# Load and read the files in logdir.
+#
+def readFiles (logdir):
 
     # Read x and y first
-    pf = h5py.File('../logs/positions.h5', 'r')
+    pf = h5py.File(logdir+'/positions.h5', 'r')
     klist = list(pf.keys())
     # Count up how many c files we have in each time point:
     d = -1
@@ -19,12 +22,17 @@ def readFiles(timejump):
             d = pf[k][0];
 
     # From ../logs get list of c_*.h5 files
-    p = Path('../logs/')
+    p = Path(logdir+'/')
     globstr = 'c_*.h5'
     files = list(p.glob(globstr))
+    # Ensure file list is in order:
+    files.sort()
 
     numtimes = len(files)
-    print ('Have {0} files/timepoints'.format(numtimes))
+    print ('Have {0} files/timepoints which are: {1}'.format(numtimes,files))
+
+    # Create the time series to return. Values to be filled in from c_*.h5 file names
+    t = np.empty([numtimes], dtype=int)
 
     # Count up how many c files we have in each time point once only:
     f = h5py.File(files[0], 'r')
@@ -39,35 +47,38 @@ def readFiles(timejump):
     # We're expecting the data from this file to be a matrix with c0,
     # c1 etc as cols and spatial index as rows, all relating to a
     # single time point.
-    print ('Creating empty 3d matrix of dims [{0},{1},{2}]'.format (numcs, numhexes,numtimes))
+    print ('Creating empty 3d matrix of dims [{0},{1},{2}]'.format (numcs, numhexes, numtimes))
     cmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
     # There are as many 'a's as 'c's:
     amatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
     nmatrix = np.empty([numhexes, numtimes], dtype=float)
 
+    fileidx = 0
     for filename in files:
 
+        print ('{0}'.format(filename))
+
         # Get the time index from the filename with a reg. expr.
-        idxsearch = re.search('../logs/c_(.*).h5', '{0}'.format(filename))
-        timeidx = int(-1+int('{0}'.format(idxsearch.group(1))) / timejump)
-        #print ('Time index: {0}'.format(timeidx))
+        idxsearch = re.search(logdir+'/c_(.*).h5', '{0}'.format(filename))
+        thetime = int('{0}'.format(idxsearch.group(1)))
+        t[fileidx] = thetime
+        print ('Time {0}: {1}'.format(fileidx, thetime))
 
         f = h5py.File(filename, 'r')
         klist = list(f.keys())
 
         for k in klist:
-            #print ('Key: {0}'.format(k))
+            print ('Key: {0}'.format(k))
             if k[0] == 'c':
                 cnum = int(k[1:])
-                cmatrix[cnum,:,timeidx] = np.array(f[k])
+                cmatrix[cnum,:,fileidx] = np.array(f[k])
             elif k[0] == 'a':
                 anum = int(k[1:])
-                amatrix[anum,:,timeidx] = np.array(f[k])
+                amatrix[anum,:,fileidx] = np.array(f[k])
             elif k[0] == 'n':
-                nmatrix[:,timeidx] = np.array(f[k])
+                nmatrix[:,fileidx] = np.array(f[k])
 
-    # Create the time series to return
-    t = np.linspace(timejump,(timejump*numtimes),numtimes)
+        fileidx = fileidx + 1
 
     return (x, y, t, cmatrix, amatrix, nmatrix)
 

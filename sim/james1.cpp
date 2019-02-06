@@ -367,6 +367,9 @@ int main (int argc, char **argv)
     plt.scalarfields (displays[5], RD.hg, gy);
 #endif
 
+    // Save model state at start
+    RD.save();
+
     // Start the loop
     bool finished = false;
     while (finished == false) {

@@ -5,22 +5,29 @@
  * connections in an elliptical region.
  */
 
-#include <iostream>
-#include <vector>
-#include <list>
-#include <string>
-#include <limits>
-
-#include <time.h>      // clock()
-#include <sys/types.h> // getpid()
-#include <unistd.h>
-
 /*!
  * This will be passed as the template argument for RD_plot and RD.
  */
 #ifndef FLOATTYPE
 # define FLOATTYPE double
 #endif
+
+/*!
+ * General STL includes
+ */
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <list>
+#include <string>
+#include <limits>
+
+/*!
+ * for clock() and getpid()
+ */
+#include <time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 /*!
  * Include the reaction diffusion class
@@ -36,10 +43,14 @@
 #endif
 
 /*!
+ * Included for directory manipulation code
+ */
+#include "morph/tools.h"
+
+/*!
  * I'm using JSON to read in simulation parameters
  */
 #include <json/json.h>
-#include <fstream>
 
 using namespace std;
 
@@ -114,7 +125,7 @@ int main (int argc, char **argv)
     srand (rseed);
 
     if (argc < 2) {
-        cerr << "Usage: " << argv[0] << " /path/to/params.json" << endl;
+        cerr << "Usage: " << argv[0] << " /path/to/params.json [/path/to/logdir]" << endl;
         return 1;
     }
     string paramsfile (argv[1]);
@@ -132,7 +143,7 @@ int main (int argc, char **argv)
         // Good, file exists.
         jsonfile_test.close();
     } else {
-        cerr << "luminances.json file not found." << endl;
+        cerr << "json config file " << paramsfile << " not found." << endl;
         return 1;
     }
 
@@ -164,11 +175,24 @@ int main (int argc, char **argv)
     const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
     const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
     const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
-    const string logpath = root.get ("logpath", "logs").asString();
-    // FIXME: Create directory if necessary
+    string logpath = root.get ("logpath", "logs").asString();
+    if (argc == 3) {
+        string argpath(argv[2]);
+        cerr << "Overriding the config-given logpath " << logpath << " with " << argpath << endl;
+        logpath = argpath;
+    }
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
+
+    // Create log directory if necessary
+    if (morph::Tools::dirExists (logpath) == false) {
+        morph::Tools::createDir (logpath);
+        if (morph::Tools::dirExists (logpath) == false) {
+            cerr << "Failed to create the logpath directory " << logpath << " which does not exist."<< endl;
+            return 1;
+        }
+    }
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -351,6 +375,17 @@ int main (int argc, char **argv)
         if (RD.stepCount > steps) {
             finished = true;
         }
+    }
+
+    // We'll save a copy of the parameters for the simulation in the log directory as params.json
+    const string paramsCopy = logpath + "/params.json";
+    ofstream paramsConf;
+    paramsConf.open (paramsCopy.c_str(), ios::out|ios::trunc);
+    if (paramsConf.is_open()) {
+        paramsConf << root;
+        paramsConf.close();
+    } else {
+        cerr << "Warning: Failed to open file to write a copy of the params.json" << endl;
     }
 
 #ifdef COMPILE_PLOTTING

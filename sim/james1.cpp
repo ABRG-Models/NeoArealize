@@ -9,7 +9,8 @@
  * This will be passed as the template argument for RD_plot and RD.
  */
 #ifndef FLOATTYPE
-# define FLOATTYPE double
+// NB: This is just the default. Check CMakeLists.txt to try double vs. float
+# define FLOATTYPE float
 #endif
 
 /*!
@@ -175,24 +176,16 @@ int main (int argc, char **argv)
     const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
     const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
     const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
-    string logpath = root.get ("logpath", "logs").asString();
+    string logpath = root.get ("logpath", "logs/james1").asString();
     if (argc == 3) {
         string argpath(argv[2]);
         cerr << "Overriding the config-given logpath " << logpath << " with " << argpath << endl;
         logpath = argpath;
     }
+
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
-
-    // Create log directory if necessary
-    if (morph::Tools::dirExists (logpath) == false) {
-        morph::Tools::createDir (logpath);
-        if (morph::Tools::dirExists (logpath) == false) {
-            cerr << "Failed to create the logpath directory " << logpath << " which does not exist."<< endl;
-            return 1;
-        }
-    }
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -214,7 +207,7 @@ int main (int argc, char **argv)
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);
     vector<double> eye(3, 0.0);
-    eye[2] = 0.12; // This also acts as a zoom. +ve and larger to zoom out, negative and larger to zoom in.
+    eye[2] = 0.12; // This also acts as a zoom. more +ve to zoom out, more -ve to zoom in.
     vector<double> rot(3, 0.0);
 
     // A plot object.
@@ -341,6 +334,31 @@ int main (int argc, char **argv)
     // Now have the guidance molecule densities and their gradients computed:
     RD.init();
 
+    // Now is the time to create a log directory if necessary, and exit on any failures.
+    if (morph::Tools::dirExists (logpath) == false) {
+        morph::Tools::createDir (logpath);
+        if (morph::Tools::dirExists (logpath) == false) {
+            cerr << "Failed to create the logpath directory "
+                 << logpath << " which does not exist."<< endl;
+            return 1;
+        }
+    } else {
+        // Directory DOES exist. See if it contains a previous run and
+        // exit without overwriting to avoid confusion.
+        if (morph::Tools::fileExists (logpath + "/params.json") == true
+            || morph::Tools::fileExists (logpath + "/guidance.h5") == true
+            || morph::Tools::fileExists (logpath + "/positions.h5") == true) {
+            cerr << "Seems like a previous simulation was logged in " << logpath
+                 << ". Please clean it out manually or choose another directory." << endl;
+            return 1;
+        }
+    }
+
+    // As RD.allocate() as been called, positions can be saved to file.
+    RD.savePositions();
+    // Save the guidance molecules now.
+    RD.saveGuidance();
+
 #ifdef COMPILE_PLOTTING
     plt.scalarfields (displays[0], RD.hg, RD.rho);
     vector<vector<FLOATTYPE> > gx = plt.separateVectorField (RD.g, 0);
@@ -367,8 +385,8 @@ int main (int argc, char **argv)
             displays[5].redrawDisplay();
         }
 #endif
-        // Save some frames ('c' variable only for now)
-        if (RD.stepCount % logevery == 0) {
+        // Save data every 'logevery' steps
+        if ((RD.stepCount % logevery) == 0) {
             RD.save();
         }
 
@@ -376,6 +394,13 @@ int main (int argc, char **argv)
             finished = true;
         }
     }
+
+    // Before saving the json, we'll place any additional useful info
+    // in there, such as the FLOATTYPE. If float_width is 4, then
+    // results were computed with single precision, if 8, then double
+    // precision was used.
+    root["float_width"] = sizeof(FLOATTYPE);
+    root["sim_ran_at_time"] = morph::Tools::timeNow();
 
     // We'll save a copy of the parameters for the simulation in the log directory as params.json
     const string paramsCopy = logpath + "/params.json";

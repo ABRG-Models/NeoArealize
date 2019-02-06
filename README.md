@@ -60,3 +60,7 @@ Or use the findfastest.sh script in misc/.
 
 On an Intel i9 7980XE with 18 cores, 13 seems to be fastest, but
 there's not much difference for the range 6 cores to 18 cores.
+
+On an AMD Threadripper 2990WX with 32 cores, about 20 seems to be
+fastest. This CPU is slower for these reaction diffusion equations
+than the 7980XE. (2 seconds for the Intel, 3 seconds for the AMD).

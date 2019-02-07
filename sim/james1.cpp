@@ -178,17 +178,22 @@ int main (int argc, char **argv)
     const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
     const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
     const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
+    bool overwrite_logs = root.get ("overwrite_logs", false).asBool();
     string logpath = root.get ("logpath", "logs/james1").asString();
     if (argc == 3) {
         string argpath(argv[2]);
         cerr << "Overriding the config-given logpath " << logpath << " with " << argpath << endl;
         logpath = argpath;
+        if (overwrite_logs == true) {
+            cerr << "WARNING: You set a command line log path.\n"
+                 << "       : Note that the parameters config permits the program to OVERWRITE LOG\n"
+                 << "       : FILES on each run (\"overwrite_logs\" is set to true)." << endl;
+        }
     }
 
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
-    const bool overwrite_logs = root.get ("overwrite_logs", false).asBool();
 
     cout << "steps to simulate: " << steps << endl;
 

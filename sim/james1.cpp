@@ -162,7 +162,9 @@ int main (int argc, char **argv)
         return 1;
     }
 
-    // Get simulation-wide parameters
+    /*
+     * Get simulation-wide parameters from JSON
+     */
     const unsigned int steps = root.get ("steps", 1000).asUInt();
     if (steps == 0) {
         cerr << "Not much point simulating 0 steps! Exiting." << endl;
@@ -186,6 +188,7 @@ int main (int argc, char **argv)
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
+    const bool overwrite_logs = root.get ("overwrite_logs", false).asBool();
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -345,11 +348,13 @@ int main (int argc, char **argv)
     } else {
         // Directory DOES exist. See if it contains a previous run and
         // exit without overwriting to avoid confusion.
-        if (morph::Tools::fileExists (logpath + "/params.json") == true
-            || morph::Tools::fileExists (logpath + "/guidance.h5") == true
-            || morph::Tools::fileExists (logpath + "/positions.h5") == true) {
-            cerr << "Seems like a previous simulation was logged in " << logpath
-                 << ". Please clean it out manually or choose another directory." << endl;
+        if (overwrite_logs == false
+            && (morph::Tools::fileExists (logpath + "/params.json") == true
+                || morph::Tools::fileExists (logpath + "/guidance.h5") == true
+                || morph::Tools::fileExists (logpath + "/positions.h5") == true)) {
+            cerr << "Seems like a previous simulation was logged in " << logpath << ".\n"
+                 << "Please clean it out manually, choose another directory or set\n"
+                 << "overwrite_logs to true in your parameters config JSON file." << endl;
             return 1;
         }
     }

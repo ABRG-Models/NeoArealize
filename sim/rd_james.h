@@ -496,7 +496,8 @@ public:
      * Perform memory allocations, vector resizes and so on.
      */
     void allocate (void) {
-        // Create a HexGrid
+        // Create a HexGrid. 3 is the 'x span' which determines how
+        // many hexes are initially created. 0 is the z co-ordinate for the HexGrid.
         this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
         // Read the curves which make a boundary
         ReadCurves r(this->svgpath);
@@ -742,7 +743,7 @@ public:
     }
 
     /*!
-     * Save positions of the hexes - note using two vector<Flts>
+     * Save positions of the hexes - note using two vector<float>s
      * that have been populated with the positions from the HexGrid,
      * to fit in with the HDF API.
      */
@@ -1198,112 +1199,6 @@ public:
         }
     }
 
-    /*!
-     * Data saving code
-     */
-    //@{
-
-    /*!
-     * Get the c contours in this case.
-     */
-    vector<list<Hex> > get_contours (Flt threshold) {
-        return this->get_contours (this->c, threshold);
-    }
-
-    /*!
-     * Obtain the contours (as list<Hex>?) in the scalar fields f,
-     * where threshold is crossed. Is some sort of list of hexes
-     * right, or would list of locations (r,g,b or x,y) be better?
-     */
-    vector<list<Hex> > get_contours (vector<vector<Flt> >& f, Flt threshold) {
-
-        vector<list<Hex> > rtn;
-        // Initialise
-        for (unsigned int li = 0; li < this->N; ++li) {
-            list<Hex> lh;
-            rtn.push_back (lh);
-        }
-
-        // Determine min and max
-        vector<Flt> maxf (this->N, -1e7);
-        vector<Flt> minf (this->N, +1e7);
-        for (auto h : this->hg->hexen) {
-            if (h.onBoundary() == false) {
-                for (unsigned int i = 0; i<this->N; ++i) {
-                    if (f[i][h.vi] > maxf[i]) { maxf[i] = f[i][h.vi]; }
-                    if (f[i][h.vi] < minf[i]) { minf[i] = f[i][h.vi]; }
-                }
-            }
-        }
-
-        vector<Flt> scalef (5, 0);
-        #pragma omp parallel for
-        for (unsigned int i = 0; i<this->N; ++i) {
-            scalef[i] = 1.0 / (maxf[i]-minf[i]);
-        }
-
-        // Re-normalize
-        vector<vector<Flt> > norm_f;
-        this->resize_vector_vector (norm_f);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            #pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; h++) {
-                norm_f[i][h] = fmin (fmax (((f[i][h]) - minf[i]) * scalef[i], 0.0), 1.0);
-            }
-        }
-
-        // Collate
-        #pragma omp parallel for
-        for (unsigned int i = 0; i<this->N; ++i) {
-
-            for (auto h : this->hg->hexen) {
-                if (h.onBoundary() == false) {
-#ifdef DEBUG__
-                    if (!i) {
-                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " OFF boundary with value: " << norm_f[i][h.vi]);
-                    }
-#endif
-                    if (norm_f[i][h.vi] > threshold) {
-#ifdef DEBUG__
-                        if (!i) {
-                            DBG("Value over threshold...");
-                        }
-#endif
-                        if ( (h.has_ne && norm_f[i][h.ne->vi] < threshold)
-                             || (h.has_nne && norm_f[i][h.nne->vi] < threshold)
-                             || (h.has_nnw && norm_f[i][h.nnw->vi] < threshold)
-                             || (h.has_nw && norm_f[i][h.nw->vi] < threshold)
-                             || (h.has_nsw && norm_f[i][h.nsw->vi] < threshold)
-                             || (h.has_nse && norm_f[i][h.nse->vi] < threshold) ) {
-#ifdef DEBUG__
-                            if (!i) {
-                                DBG("...with neighbour under threshold (push_back)");
-                            }
-#endif
-                            rtn[i].push_back (h);
-                        }
-                    }
-                } else { // h.onBoundary() is true
-#ifdef DEBUG__
-                    if (!i) {
-                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " ON boundary with value: " << norm_f[i][h.vi]);
-                    }
-#endif
-                    if (norm_f[i][h.vi] > threshold) {
-#ifdef DEBUG__
-                        if (!i) {
-                            DBG("...Value over threshold (push_back)");
-                        }
-#endif
-                        rtn[i].push_back (h);
-                    }
-                }
-            }
-        }
-
-        return rtn;
-    }
-
 #ifdef GAUSSIAN_CODE_NEEDED
     /*!
      * Create a symmetric, 1D Gaussian hill centred at coordinate (x) with
@@ -1381,3 +1276,105 @@ public:
 #endif
 
 }; // RD_James
+
+/*!
+ * A helper class, containing (at time of writing) get_contours()
+ */
+template <class Flt>
+class RD_Help
+{
+public:
+    /*!
+     * Obtain the contours (as a vector of list<Hex>) in the scalar
+     * fields f, where threshold is crossed.
+     */
+    static vector<list<Hex> > get_contours (HexGrid* hg,
+                                            vector<vector<Flt> >& f,
+                                            Flt threshold) {
+
+        unsigned int nhex = hg->num();
+        unsigned int N = f.size();
+
+        vector<list<Hex> > rtn;
+        // Initialise
+        for (unsigned int li = 0; li < N; ++li) {
+            list<Hex> lh;
+            rtn.push_back (lh);
+        }
+
+        Flt maxf = -1e7;
+        Flt minf = +1e7;
+        for (auto h : hg->hexen) {
+            if (h.onBoundary() == false) {
+                for (unsigned int i = 0; i<N; ++i) {
+                    if (f[i][h.vi] > maxf) { maxf = f[i][h.vi]; }
+                    if (f[i][h.vi] < minf) { minf = f[i][h.vi]; }
+                }
+            }
+        }
+        Flt scalef = 1.0 / (maxf-minf);
+
+        // Re-normalize
+        vector<vector<Flt> > norm_f;
+        norm_f.resize (N);
+        for (unsigned int i=0; i<N; ++i) {
+            norm_f[i].resize (nhex, 0.0);
+        }
+
+        for (unsigned int i = 0; i<N; ++i) {
+            for (unsigned int h=0; h<nhex; h++) {
+                norm_f[i][h] = (f[i][h] - minf) * scalef;
+            }
+        }
+
+        // Collate
+        for (unsigned int i = 0; i<N; ++i) {
+
+            for (auto h : hg->hexen) {
+                if (h.onBoundary() == false) {
+#ifdef DEBUG__
+                    if (!i) {
+                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " OFF boundary with value: " << norm_f[i][h.vi]);
+                    }
+#endif
+                    if (norm_f[i][h.vi] > threshold) {
+#ifdef DEBUG__
+                        if (!i) {
+                            DBG("Value over threshold...");
+                        }
+#endif
+                        if ( (h.has_ne && norm_f[i][h.ne->vi] < threshold)
+                             || (h.has_nne && norm_f[i][h.nne->vi] < threshold)
+                             || (h.has_nnw && norm_f[i][h.nnw->vi] < threshold)
+                             || (h.has_nw && norm_f[i][h.nw->vi] < threshold)
+                             || (h.has_nsw && norm_f[i][h.nsw->vi] < threshold)
+                             || (h.has_nse && norm_f[i][h.nse->vi] < threshold) ) {
+#ifdef DEBUG__
+                            if (!i) {
+                                DBG("...with neighbour under threshold (push_back)");
+                            }
+#endif
+                            rtn[i].push_back (h);
+                        }
+                    }
+                } else { // h.onBoundary() is true
+#ifdef DEBUG__
+                    if (!i) {
+                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " ON boundary with value: " << norm_f[i][h.vi]);
+                    }
+#endif
+                    if (norm_f[i][h.vi] > threshold) {
+#ifdef DEBUG__
+                        if (!i) {
+                            DBG("...Value over threshold (push_back)");
+                        }
+#endif
+                        rtn[i].push_back (h);
+                    }
+                }
+            }
+        }
+
+        return rtn;
+    }
+}; // RD_Helper

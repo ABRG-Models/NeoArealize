@@ -6,11 +6,12 @@
  */
 
 /*!
- * This will be passed as the template argument for RD_plot and RD.
+ * This will be passed as the template argument for RD_plot and RD and
+ * should be defined when compiling.
  */
 #ifndef FLOATTYPE
-// NB: This is just the default. Check CMakeLists.txt to try double vs. float
-# define FLOATTYPE float
+// Check CMakeLists.txt to change to double or float
+# error "Please define FLOATTYPE when compiling (hint: See CMakeLists.txt)"
 #endif
 
 /*!
@@ -22,13 +23,6 @@
 #include <list>
 #include <string>
 #include <limits>
-
-/*!
- * for clock() and getpid()
- */
-#include <time.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 /*!
  * Include the reaction diffusion class
@@ -54,25 +48,6 @@
 #include <json/json.h>
 
 using namespace std;
-
-/*!
- * For mixing up bits of three args; used to generate a good random
- * seed using time() getpid() and clock().
- */
-unsigned int
-mix (unsigned int a, unsigned int b, unsigned int c)
-{
-    a=a-b;  a=a-c;  a=a^(c >> 13);
-    b=b-c;  b=b-a;  b=b^(a << 8);
-    c=c-a;  c=c-b;  c=c^(b >> 13);
-    a=a-b;  a=a-c;  a=a^(c >> 12);
-    b=b-c;  b=b-a;  b=b^(a << 16);
-    c=c-a;  c=c-b;  c=c^(b >> 5);
-    a=a-b;  a=a-c;  a=a^(c >> 3);
-    b=b-c;  b=b-a;  b=b^(a << 10);
-    c=c-a;  c=c-b;  c=c^(b >> 15);
-    return c;
-}
 
 /*!
  * main(): Run a simulation, using parameters obtained from a JSON
@@ -122,8 +97,7 @@ mix (unsigned int a, unsigned int b, unsigned int c)
 int main (int argc, char **argv)
 {
     // Randomly set the RNG seed
-    unsigned int rseed = mix(clock(), time(NULL), getpid());
-    srand (rseed);
+    srand (morph::Tools::randomSeed());
 
     if (argc < 2) {
         cerr << "Usage: " << argv[0] << " /path/to/params.json [/path/to/logdir]" << endl;
@@ -162,7 +136,9 @@ int main (int argc, char **argv)
         return 1;
     }
 
-    // Get simulation-wide parameters
+    /*
+     * Get simulation-wide parameters from JSON
+     */
     const unsigned int steps = root.get ("steps", 1000).asUInt();
     if (steps == 0) {
         cerr << "Not much point simulating 0 steps! Exiting." << endl;
@@ -176,11 +152,17 @@ int main (int argc, char **argv)
     const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
     const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
     const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
+    bool overwrite_logs = root.get ("overwrite_logs", false).asBool();
     string logpath = root.get ("logpath", "logs/james1").asString();
     if (argc == 3) {
         string argpath(argv[2]);
         cerr << "Overriding the config-given logpath " << logpath << " with " << argpath << endl;
         logpath = argpath;
+        if (overwrite_logs == true) {
+            cerr << "WARNING: You set a command line log path.\n"
+                 << "       : Note that the parameters config permits the program to OVERWRITE LOG\n"
+                 << "       : FILES on each run (\"overwrite_logs\" is set to true)." << endl;
+        }
     }
 
     const double D = root.get ("D", 0.1).asDouble();
@@ -345,11 +327,13 @@ int main (int argc, char **argv)
     } else {
         // Directory DOES exist. See if it contains a previous run and
         // exit without overwriting to avoid confusion.
-        if (morph::Tools::fileExists (logpath + "/params.json") == true
-            || morph::Tools::fileExists (logpath + "/guidance.h5") == true
-            || morph::Tools::fileExists (logpath + "/positions.h5") == true) {
-            cerr << "Seems like a previous simulation was logged in " << logpath
-                 << ". Please clean it out manually or choose another directory." << endl;
+        if (overwrite_logs == false
+            && (morph::Tools::fileExists (logpath + "/params.json") == true
+                || morph::Tools::fileExists (logpath + "/guidance.h5") == true
+                || morph::Tools::fileExists (logpath + "/positions.h5") == true)) {
+            cerr << "Seems like a previous simulation was logged in " << logpath << ".\n"
+                 << "Please clean it out manually, choose another directory or set\n"
+                 << "overwrite_logs to true in your parameters config JSON file." << endl;
             return 1;
         }
     }
@@ -379,7 +363,7 @@ int main (int argc, char **argv)
 #ifdef COMPILE_PLOTTING
         if (RD.stepCount % 10 == 0) {
             // Do a final plot of the ctrs as found.
-            vector<list<Hex> > ctrs = plt.get_contours (RD.hg, RD.c, RD.contour_threshold);
+            vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             plt.plot_contour (displays[3], RD.hg, ctrs);
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
@@ -416,23 +400,53 @@ int main (int argc, char **argv)
         cerr << "Warning: Failed to open file to write a copy of the params.json" << endl;
     }
 
-#ifdef COMPILE_PLOTTING
-# if 0
     // Extract contours
-    vector<list<Hex> > ctrs = RD.get_contours (0.6);
-    // Create new HexGrids from the contours
-    cout << "Creating final hexgrids..." << endl;
-    HexGrid* hg1 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
-    hg1->setBoundary (ctrs[0]);
-    HexGrid* hg2 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
-    hg2->setBoundary (ctrs[1]);
-    // Do a final plot of the ctrs as found.
-    //plt.plot_contour (displays[4], RD.hg, ctrs);
-    // Output information about the contours
-    cout << "Sizes: countour 0: " << hg1->num() << ", contour 1: " << hg2->num() << endl;
-    cout << "Ratio: " << ((double)hg1->num()/(double)hg2->num()) << endl;
-# endif
-    // Allow for a keypress so that images can be studied
+    vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
+    {
+        // Write each contour to a contours.h5 file
+        stringstream ctrname;
+        ctrname << logpath << "/contours.h5";
+        HdfData ctrdata(ctrname.str());
+        unsigned int nctrs = ctrs.size();
+        ctrdata.add_val ("/num_contours", nctrs);
+        for (unsigned int ci = 0; ci < nctrs; ++ci) {
+            vector<FLOATTYPE> vx, vy;
+            auto hi = ctrs[ci].begin();
+            while (hi != ctrs[ci].end()) {
+                vx.push_back (hi->x);
+                vy.push_back (hi->y);
+                ++hi;
+            }
+            stringstream ciss;
+            ciss << ci;
+            string pth = "/x" + ciss.str();
+            ctrdata.add_contained_vals (pth.c_str(), vx);
+            pth[1] = 'y';
+            ctrdata.add_contained_vals (pth.c_str(), vy);
+
+            // Generate hex grids from contours to obtain the size of the region enclosed by the contour
+            HexGrid* hg1 = new HexGrid (RD.hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
+            hg1->setBoundary (ctrs[ci]);
+            pth[1] = 'n';
+            ctrdata.add_val(pth.c_str(), hg1->num());
+            delete hg1;
+        }
+
+        // Also extract the boundary of the main, enclosing hexgrid and write that.
+        list<Hex> outerBoundary = RD.hg->getBoundary();
+        vector<FLOATTYPE> vx, vy;
+        auto bi = outerBoundary.begin();
+        while (bi != outerBoundary.end()) {
+            vx.push_back (bi->x);
+            vy.push_back (bi->y);
+            ++bi;
+        }
+        ctrdata.add_contained_vals ("/xb", vx);
+        ctrdata.add_contained_vals ("/yb", vy);
+    }
+
+#ifdef COMPILE_PLOTTING
+    // Ask for a keypress before exiting so that the final images can be studied
     int a;
     cout << "Press any key[return] to exit.\n";
     cin >> a;

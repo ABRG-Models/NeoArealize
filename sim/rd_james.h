@@ -307,6 +307,7 @@ private:
     alignas(Flt) Flt twov = this->v+this->v;
     alignas(Flt) Flt oneover2v = 1.0/this->twov;
     alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
+    alignas(Flt) Flt oneover3d = 1.0/(3*this->d);
     alignas(Flt) Flt twoDover3dd = this->d+this->d / 3*this->d*this->d;
     //@}
 
@@ -618,6 +619,7 @@ private:
         this->d = d_;
         this->oneoverd = 1.0/this->d;
         this->oneover2d = 1.0/(this->d+this->d);
+        this->oneover3d = 1.0/(3*this->d);
         this->updateTwoDover3dd();
     }
 
@@ -1021,9 +1023,6 @@ public:
             }
 
             // Find y gradient
-#if 0 // Debug
-            gradf[1][hi] = 0.0;
-#else
             if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
                 gradf[1][hi] = ((f[NNE(hi)] - f[NSE(hi)]) + (f[NNW(hi)] - f[NSW(hi)])) * oneoverv;
@@ -1043,7 +1042,6 @@ public:
                 // Leave grady at 0
                 gradf[1][hi] = 0.0;
             }
-#endif
         }
     }
 
@@ -1071,28 +1069,16 @@ public:
      */
     void compute_divJ (vector<Flt>& fa, unsigned int i) {
 
-        // Three terms to compute; see Eq. 17 in methods_notes.pdf
-
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
+        // Three terms to compute; see Eq. 17 in methods_notes.pdf
 #pragma omp parallel for schedule(static) // This is about 10% faster than schedule(dynamic,50).
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term. Eq. 18.
             // Compute the sum around the neighbours
             Flt thesum = -6 * fa[hi];
-#if 0
-            if (hi == 3398) {
-                DBG ("Hex " << hi << " has:"
-                     << "\nNE:  fa[" << (HAS_NE(hi)  ? NE(hi)  : hi) << "] = " << fa[(HAS_NE(hi)  ? NE(hi)  : hi)]
-                     << "\nNNE: fa[" << (HAS_NNE(hi) ? NNE(hi) : hi) << "] = " << fa[(HAS_NNE(hi) ? NNE(hi) : hi)]
-                     << "\nNNW: fa[" << (HAS_NNW(hi) ? NNW(hi) : hi) << "] = " << fa[(HAS_NNW(hi) ? NNW(hi) : hi)]
-                     << "\nNW:  fa[" << (HAS_NW(hi) ? NW(hi) : hi)   << "] = " << fa[(HAS_NW(hi)  ? NW(hi)  : hi)]
-                     << "\nNSW: fa[" << (HAS_NSW(hi) ? NSW(hi) : hi) << "] = " << fa[(HAS_NSW(hi) ? NSW(hi) : hi)]
-                     << "\nNSE: fa[" << (HAS_NSE(hi) ? NSE(hi) : hi) << "] = " << fa[(HAS_NSE(hi) ? NSE(hi) : hi)]);
-            }
-#endif
 
             thesum += fa[(HAS_NE(hi)  ? NE(hi)  : hi)];
             thesum += fa[(HAS_NNE(hi) ? NNE(hi) : hi)];
@@ -1104,11 +1090,13 @@ public:
             // Multiply bu 2D/3d^2
             Flt term1 = this->twoDover3dd * thesum;
 
-            // 2. The a div(g) term. Two sums for this.
+            // 2. The a div(g) term. Error MUST be here...
             Flt term2 = 0.0;
             // First sum
             if (HAS_NE(hi)) {
                 term2 += /*cos (0)*/ (this->g[i][0][NE(hi)] + this->g[i][0][hi]);
+                DBG ("NE adds " << (this->g[i][0][NE(hi)] + this->g[i][0][hi]) << " to term2_x");
+                DBG ("NE adds 0 to term2_y");
             } else {
                 // Boundary condition _should_ be satisfied by
                 // sigmoidal roll-off of g towards the boundary, so
@@ -1149,13 +1137,12 @@ public:
                     - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi])); // 2nd sum
             }
 
-            term2 /= (3.0 * this->d);
-            term2 *= fa[hi];
+            term2 *= (fa[hi] * this->oneover3d);
 
             // 3. Third term is this->g . grad a_i. Should not
             // contribute to J, as g(x) decays towards boundary.
             Flt term3 = this->g[i][0][hi] * this->grad_a[i][0][hi]
-                + this->g[i][1][hi] * this->grad_a[i][1][hi];
+                + (this->g[i][1][hi] * this->grad_a[i][1][hi]);
 
             this->divJ[i][hi] = term1 - term2 - term3;
         }
@@ -1190,10 +1177,11 @@ public:
     void sigmoid_guidance (void) {
         for (auto h : this->hg->hexen) {
             for (unsigned int m = 0; m<this->M; ++m) {
-                Flt cosphi = (Flt) cos (this->guidance_phi[m]); // FIXME:
+                Flt cosphi = (Flt) cos (this->guidance_phi[m]);
                 Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+                //DBG("phi= " << this->guidance_phi[m] << ". cosphi: " << cosphi << " sinphi: " << sinphi);
                 Flt x_ = (h.x * cosphi) + (h.y * sinphi);
-                DBG2 ("x_[h.vi] = " << x_);
+                //DBG ("x_[" << h.vi << "] = " << x_);
                 this->rho[m][h.vi] = guidance_gain[m] / (1.0 + exp(-(x_-guidance_offset[m])/this->guidance_width[m]));
             }
         }

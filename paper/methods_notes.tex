@@ -412,11 +412,17 @@ similar way:
 %
 \begin{equation} \label{eq:divg}
 \begin{split}
+%
 \frac{1}{\Omega} \iint_A a_i\nabla\vcdot\mb{g}\;dxdy & = \frac{a_i(\mb{p}_0)}{\Omega}  \oint_c \mb{g}\vcdot d\hat{\mathbf{n}} \\
+%
 & \approx \frac{a_i(\mb{p}_0,t)}{\Omega} \sum_{j=1}^{6} \frac{\mb{g}_j + \mb{g}_0}{2}\vcdot \hat{\mb{n}}\;v \\
-& = \frac{2 a_i(\mb{p}_0,t)v}{\sqrt{3}d^2} \bigg( \sum_{j=1}^{6} \frac{\mb{g}_j^x + \mb{g}_0^x}{2} \vcdot  \hat{\mb{n}} + \frac{1}{\Omega}  \sum_{j=1}^{6} \frac{\mb{g}_j^y + \mb{g}_0^y}{2} \vcdot  \hat{\mb{n}} \bigg) \\
-& = \frac{2 a_i(\mb{p}_0,t)d}{\sqrt{3}d^2\sqrt{3}} \bigg( \sum_{j=1}^{6} \frac{\mb{g}_j^x + \mb{g}_0^x}{2} \vcdot  \hat{\mb{n}} + \frac{1}{\Omega}  \sum_{j=1}^{6} \frac{\mb{g}_j^y + \mb{g}_0^y}{2} \vcdot  \hat{\mb{n}} \bigg) \\
+%
+& = \frac{2 a_i(\mb{p}_0,t)v}{\sqrt{3}d^2} \bigg( \sum_{j=1}^{6} \frac{\mb{g}_j^x + \mb{g}_0^x}{2} \vcdot  \hat{\mb{n}} + \sum_{j=1}^{6} \frac{\mb{g}_j^y + \mb{g}_0^y}{2} \vcdot  \hat{\mb{n}} \bigg) \\
+%
+& = \frac{2 a_i(\mb{p}_0,t)d}{\sqrt{3}d^2\sqrt{3}} \bigg( \sum_{j=1}^{6} \frac{\mb{g}_j^x + \mb{g}_0^x}{2} \vcdot  \hat{\mb{n}} + \sum_{j=1}^{6} \frac{\mb{g}_j^y + \mb{g}_0^y}{2} \vcdot  \hat{\mb{n}} \bigg) \\
+%
 & = \frac{a_i(\mb{p}_0,t)}{3d} \bigg( \sum_{j=1}^{6} \big(\mb{g}_j^x + \mb{g}_0^x\big) \cos (60\times(j-1)) + \sum_{j=1}^{6} \big({\mb{g}_j^y + \mb{g}_0^y}\big) \sin (60\times(j-1)) \bigg) \\
+%
 \end{split}
 \end{equation}
 %
@@ -435,12 +441,12 @@ components - so I'll re-use my spacegrad2D function to find $\nabla
 a_i$. That can be found as \code{term3}.
 
 I think that the advantage of separating this computation out is that
-I can ensure that $\mb{J}$ resulting from the first term remains 0, by
-the ghost cell method, then I can tailor $\mb{g}(\mb{x})$ so that it,
-and its normal derivative go to 0 at the boundary, ensuring that the
-second and third terms also contribute nothing to $\mb{J}$ at the
-boundary. To do this, I'll apply a fairly sharp logistic function
-based on distance to the boundary to $\mb{g}(\mb{x})$.
+I can ensure that, at the boundary, $\mb{J}$ resulting from the first
+term remains 0, by the ghost cell method, then I can tailor
+$\mb{g}(\mb{x})$ so that it, and its normal derivative go to 0 at the
+boundary, ensuring that the second and third terms also contribute
+nothing to $\mb{J}$. To do this, I'll apply a fairly sharp logistic
+function based on distance to the boundary to $\mb{g}(\mb{x})$.
 
 \section {Signalling}
 

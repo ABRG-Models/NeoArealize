@@ -72,7 +72,8 @@ enum class GuidanceMoleculeMethod {
     Gauss1D,
     Gauss2D,
     Exponential1D,
-    Sigmoid1D
+    Sigmoid1D,
+    Linear1D
 };
 
 /*!
@@ -152,6 +153,13 @@ public:
      */
     alignas(alignof(vector<array<vector<Flt>, 2> >))
     vector<array<vector<Flt>, 2> > g;
+
+    /*!
+     * To hold div(g) / 3d, a static scalar field. There are M of
+     * these vectors of Flts
+     */
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > divg_over3d;
 
     /*!
      * n(x,t) variable from the Karb2004 paper.
@@ -306,6 +314,7 @@ private:
     alignas(Flt) Flt oneoverv = 1.0/this->v;
     alignas(Flt) Flt twov = this->v+this->v;
     alignas(Flt) Flt oneover2v = 1.0/this->twov;
+    alignas(Flt) Flt oneover4v = 1.0/(this->twov+this->twov);
     alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
     alignas(Flt) Flt oneover3d = 1.0/(3*this->d);
     alignas(Flt) Flt twoDover3dd = this->d+this->d / 3*this->d*this->d;
@@ -476,7 +485,7 @@ public:
      */
     void noiseify_vector_vector (vector<vector<Flt> >& vv) {
         Flt randNoiseOffset = 0.8;
-        Flt randNoiseGain = 0.1;
+        Flt randNoiseGain = 0.0; // For Debug
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
@@ -510,7 +519,9 @@ public:
         this->nhex = this->hg->num();
         // Spatial d comes from the HexGrid, too.
         this->set_d(this->hg->getd());
+        DBG ("HexGrid set d to " << this->d);
         this->set_v(this->hg->getv());
+        DBG ("HexGrid set v to " << this->v);
 
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
@@ -518,6 +529,7 @@ public:
         this->resize_vector_vector (this->betaterm);
         this->resize_vector_vector (this->alpha_c_beta_na);
         this->resize_vector_vector (this->divJ);
+        this->resize_vector_vector (this->divg_over3d);
 
         this->resize_vector_variable (this->n);
         this->resize_guidance_variable (this->rho);
@@ -586,6 +598,8 @@ public:
 
         } else if (this->rhoMethod == GuidanceMoleculeMethod::Sigmoid1D) {
             this->sigmoid_guidance();
+        } else if (this->rhoMethod == GuidanceMoleculeMethod::Linear1D) {
+            this->linear_guidance();
         } // etc - linear, exponential etc. also need a scheme to set
           // the parameters for the guidance methods.
 
@@ -607,6 +621,8 @@ public:
                 }
             }
         }
+
+        this->compute_divg_over3d();
     }
 
 private:
@@ -618,7 +634,7 @@ private:
     void set_d (Flt d_) {
         this->d = d_;
         this->oneoverd = 1.0/this->d;
-        this->oneover2d = 1.0/(this->d+this->d);
+        this->oneover2d = 1.0/(2*this->d);
         this->oneover3d = 1.0/(3*this->d);
         this->updateTwoDover3dd();
     }
@@ -628,6 +644,7 @@ private:
         this->oneoverv = 1.0/this->v;
         this->twov = this->v+this->v;
         this->oneover2v = 1.0/this->twov;
+        this->oneover4v = 1.0/(this->twov+this->twov);
     }
     //@}
 
@@ -731,6 +748,12 @@ public:
             data.add_contained_vals (pth.c_str(), this->grad_rho[m][0]);
             pth[2] = 'y';
             data.add_contained_vals (pth.c_str(), this->grad_rho[m][1]);
+        }
+        for (unsigned int i = 0; i<this->N; ++i) {
+            stringstream path;
+            path << "/divg_" << i;
+            string pth(path.str());
+            data.add_contained_vals (pth.c_str(), this->divg_over3d[i]);
         }
     }
 
@@ -1005,12 +1028,13 @@ public:
     void spacegrad2D (vector<Flt>& f, array<vector<Flt>, 2>& gradf) {
 
         // Note - East is positive x; North is positive y. Does this match how it's drawn in the display??
-#pragma omp parallel for schedule(static)
+#pragma _omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // Find x gradient
             if (HAS_NE(hi) && HAS_NW(hi)) {
                 gradf[0][hi] = (f[NE(hi)] - f[NW(hi)]) * oneover2d;
+                DBG2("FULL x: gradf[0] from (f[NE] - f[NW]) * 1/2d = (" << f[NE(hi)] << " - " << f[NW(hi)] << ") * " << oneover2d);
             } else if (HAS_NE(hi)) {
                 gradf[0][hi] = (f[NE(hi)] - f[hi]) * oneoverd;
             } else if (HAS_NW(hi)) {
@@ -1025,7 +1049,9 @@ public:
             // Find y gradient
             if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
-                gradf[1][hi] = ((f[NNE(hi)] - f[NSE(hi)]) + (f[NNW(hi)] - f[NSW(hi)])) * oneoverv;
+                gradf[1][hi] = ( (f[NNE(hi)] - f[NSE(hi)]) + (f[NNW(hi)] - f[NSW(hi)]) ) * oneover4v;
+                DBG2 ("FULL y: gradf[1] from (f[NNE] - f[NSE] + f[NNW] - f[NSW]) * 1/4v = ("
+                     << f[NNE(hi)] << " - " << f[NSE(hi)] <<  " + " << f[NNW(hi)] << " - " <<  f[NSW(hi)] << ") * " << oneover4v);
 
             } else if (HAS_NNW(hi) && HAS_NNE(hi)) {
                 gradf[1][hi] = ( (f[NNE(hi)] + f[NNW(hi)]) * 0.5 - f[hi]) * oneoverv;
@@ -1059,6 +1085,120 @@ public:
     }
 
     /*!
+     * Compute the divergence of g and divide by 3d. Used in
+     * computation of term2 in compute_divJ().
+     */
+    void compute_divg_over3d (void) {
+
+        for (unsigned int i = 0; i < this->N; ++i) {
+
+#pragma omp__ parallel for schedule(static)
+            for (unsigned int hi=0; hi<this->nhex; ++hi) {
+
+                unsigned int dbghex = 0;
+                if (abs(hg->d_x[hi]) < 0.01) {
+                    dbghex = 1;
+                    DBG2 ("Debugging hex " << hi << " at position " << (hg->d_x[hi]) << "," << (hg->d_y[hi]));
+                    cout << (hg->d_x[hi]) << "," << (hg->d_y[hi]) << ",";
+                }
+
+                Flt term2 = 0.0;
+                // First sum
+                if (HAS_NE(hi)) {
+                    term2 += /*cos (0)*/ (this->g[i][0][NE(hi)] + this->g[i][0][hi]);
+                    if (dbghex) {
+                        //cout << (this->g[i][0][NE(hi)] + this->g[i][0][hi]) << ",";
+                        cout << "0" << ",";
+                    }
+                } else {
+                    // Boundary condition _should_ be satisfied by
+                    // sigmoidal roll-off of g towards the boundary, so
+                    // add only g[i][0][hi]
+                    term2 += /*cos (0)*/ (this->g[i][0][hi]);
+                    //if (dbghex) { cout << (this->g[i][0][hi]) << ","; }
+                    if (dbghex) { cout << "0,"; }
+                }
+                if (HAS_NNE(hi)) {
+                    term2 += /*cos (60)*/ 0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])
+                        + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]);
+                    if (dbghex) {
+                        //cout << (0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])) << ",";
+                        cout << (R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi])) << ",";
+                    }
+                } else {
+                    term2 += /*cos (60)*/ 0.5 * (this->g[i][0][hi])
+                        + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]);
+                    if (dbghex) {
+                        //cout << 0.5 * (this->g[i][0][hi]) << ",";
+                        cout << (R3_OVER_2 * (this->g[i][1][hi])) << ",";
+                    }
+                }
+                if (HAS_NNW(hi)) {
+                    term2 += -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))
+                        + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]);
+                    if (dbghex) {
+                        //cout << ( -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))) << ",";
+                        cout << (R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi])) << ",";
+                    }
+                } else {
+                    term2 += -(/*cos (120)*/ 0.5 * (this->g[i][0][hi]))
+                        + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]);
+                    if (dbghex) {
+                        //cout << (0.5 * (this->g[i][0][hi])) << ",";
+                        cout << (R3_OVER_2 * (this->g[i][1][hi])) << ",";
+                    }
+                }
+                if (HAS_NW(hi)) {
+                    term2 -= /*cos (180)*/ (this->g[i][0][NW(hi)] + this->g[i][0][hi]);
+                    if (dbghex) {
+                        //cout << (-(this->g[i][0][NW(hi)] + this->g[i][0][hi])) << ",";
+                        cout << "0,";
+                    }
+                } else {
+                    term2 -= /*cos (180)*/ (this->g[i][0][hi]);
+                    if (dbghex) {
+                        //cout << (this->g[i][0][hi]) << ",";
+                        cout << "0,";
+                    }
+                }
+                if (HAS_NSW(hi)) {
+                    term2 -= (/*cos (240)*/ 0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])
+                              + (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi])));
+                    if (dbghex) {
+                        //cout << (-0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])) << ",";
+                        cout << (+ (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi]))) << ",";
+                    }
+                } else {
+                    term2 -= (/*cos (240)*/ 0.5 * (this->g[i][0][hi])
+                        + (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi])));
+                    if (dbghex) {
+                        //cout << (0.5 * (this->g[i][0][hi])) << ",";
+                        cout << (-R3_OVER_2 * (this->g[i][1][hi])) << ",";
+                    }
+                }
+                if (HAS_NSE(hi)) {
+                    term2 += /*cos (300)*/ 0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi])
+                        - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
+                    if (dbghex) {
+                        //cout << (0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi]));
+                        cout << (-(/*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi])));
+                    }
+                } else {
+                    term2 += /*cos (300)*/ 0.5 * (this->g[i][0][hi])      // 1st sum
+                        - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi])); // 2nd sum
+                    if (dbghex) {
+                        //cout << (0.5 * (this->g[i][0][hi]));
+                        cout << (- (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi])));
+                    }
+                }
+                if (dbghex) {cout << endl;}
+
+                this->divg_over3d[i][hi] = term2 * this->oneover3d;
+            }
+        }
+    }
+
+    /*!
      * Computes the "flux of axonal branches" term, J_i(x) (Eq 4)
      *
      * Inputs: this->g, fa (which is this->a[i] or a q in the RK
@@ -1073,7 +1213,7 @@ public:
         this->spacegrad2D (fa, this->grad_a[i]);
 
         // Three terms to compute; see Eq. 17 in methods_notes.pdf
-#pragma omp parallel for schedule(static) // This is about 10% faster than schedule(dynamic,50).
+#pragma omp parallel for schedule(static) // This was about 10% faster than schedule(dynamic,50).
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term. Eq. 18.
@@ -1091,12 +1231,25 @@ public:
             Flt term1 = this->twoDover3dd * thesum;
 
             // 2. The a div(g) term. Error MUST be here...
+            // ALSO: ONLY need to compute this stuff once, because g is static in time.
+#if 0
             Flt term2 = 0.0;
+            unsigned int dbghex = 0;
+            if (abs(hg->d_x[hi]) < 0.001) {
+                if (abs(hg->d_y[hi]) < 0.001) {
+                    dbghex = 1;
+                    DBG ("Debuggering hex " << hi << " at position " << (hg->d_x[hi]) << "," << (hg->d_y[hi]));
+                }
+            }
+
             // First sum
             if (HAS_NE(hi)) {
                 term2 += /*cos (0)*/ (this->g[i][0][NE(hi)] + this->g[i][0][hi]);
-                DBG ("NE adds " << (this->g[i][0][NE(hi)] + this->g[i][0][hi]) << " to term2_x");
-                DBG ("NE adds 0 to term2_y");
+                if (dbghex) {
+                    DBG ("------------------------------------");
+                    DBG ("NE adds " << (this->g[i][0][NE(hi)] + this->g[i][0][hi]) << " to term2_x");
+                    DBG ("NE adds 0 to term2_y");
+                }
             } else {
                 // Boundary condition _should_ be satisfied by
                 // sigmoidal roll-off of g towards the boundary, so
@@ -1106,6 +1259,12 @@ public:
             if (HAS_NNE(hi)) {
                 term2 += /*cos (60)*/ 0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])
                     + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]);
+                if (dbghex) {
+                    DBG ("NNE adds " << (0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])) << " to term2_x");
+                    DBG ("NNE adds " << (R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi])) << " to term2_y");
+                    //DBG ("g[i][0][hex] = " << g[i][0][hi] << ", g[i][1][hex] = " << g[i][1][hi]);
+                    //DBG ("g[i][0][NNE] = " << g[i][0][NNE(hi)] << ", g[i][1][NNE] = " << g[i][1][NNE(hi)]);
+                }
             } else {
                 term2 += /*cos (60)*/ 0.5 * (this->g[i][0][hi])
                     + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]);
@@ -1113,18 +1272,30 @@ public:
             if (HAS_NNW(hi)) {
                 term2 += -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))
                     + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]);
+                if (dbghex) {
+                    DBG ("NNW adds " << ( -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))) << " to term2_x");
+                    DBG ("NNW adds " << (R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi])) << " to term2_y");
+                }
             } else {
                 term2 += -(/*cos (120)*/ 0.5 * (this->g[i][0][hi]))
                     + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]);
             }
             if (HAS_NW(hi)) {
                 term2 -= /*cos (180)*/ (this->g[i][0][NW(hi)] + this->g[i][0][hi]);
+                if (dbghex) {
+                    DBG ("NW adds " << (-(this->g[i][0][NW(hi)] + this->g[i][0][hi])) << " to term2_x");
+                    DBG ("NW adds " << 0 << " to term2_y");
+                }
             } else {
                 term2 -= /*cos (180)*/ (this->g[i][0][hi]);
             }
             if (HAS_NSW(hi)) {
                 term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])
                     - (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi]));
+                if (dbghex) {
+                    DBG ("NSW adds " << (-0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])) << " to term2_x");
+                    DBG ("NSW adds " << (- (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi]))) << " to term2_y");
+                }
             } else {
                 term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][hi])
                     - (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi]));
@@ -1132,12 +1303,19 @@ public:
             if (HAS_NSE(hi)) {
                 term2 += /*cos (300)*/ 0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi])
                     - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
+                if (dbghex) {
+                    DBG ("NSE adds " << (0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi])) << " to term2_x");
+                    DBG ("NSE adds " << (-(/*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi])))  << " to term2_y");
+                }
             } else {
                 term2 += /*cos (300)*/ 0.5 * (this->g[i][0][hi])      // 1st sum
                     - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi])); // 2nd sum
             }
 
+            // To become term2 = fa[hi] * divg_over3d[i][hi];
             term2 *= (fa[hi] * this->oneover3d);
+#endif
+            Flt term2 = fa[hi] * this->divg_over3d[i][hi];
 
             // 3. Third term is this->g . grad a_i. Should not
             // contribute to J, as g(x) decays towards boundary.
@@ -1183,6 +1361,17 @@ public:
                 Flt x_ = (h.x * cosphi) + (h.y * sinphi);
                 //DBG ("x_[" << h.vi << "] = " << x_);
                 this->rho[m][h.vi] = guidance_gain[m] / (1.0 + exp(-(x_-guidance_offset[m])/this->guidance_width[m]));
+            }
+        }
+    }
+
+    void linear_guidance (void) {
+        for (auto h : this->hg->hexen) {
+            for (unsigned int m = 0; m<this->M; ++m) {
+                Flt cosphi = (Flt) cos (this->guidance_phi[m]);
+                Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+                Flt x_ = (h.x * cosphi) + (h.y * sinphi);
+                this->rho[m][h.vi] = (x_-guidance_offset[m]) * this->guidance_gain[m];
             }
         }
     }

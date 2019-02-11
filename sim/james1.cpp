@@ -205,39 +205,44 @@ int main (int argc, char **argv)
 
     string worldName("j");
 
-    string winTitle = worldName + ": Guidance molecules";
+    string winTitle = worldName + ": Guidance molecules"; // 0
     displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300, winTitle.c_str(), rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
-    winTitle = worldName + ": a[0] to a[N]";
+    winTitle = worldName + ": a[0] to a[N]"; // 1
     displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
-    winTitle = worldName + ": c[0] to c[N]";
+    winTitle = worldName + ": c[0] to c[N]"; // 2
     displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     // SW - Contours
-    winTitle = worldName + ": contours (from c)";
+    winTitle = worldName + ": contours (from c)"; //3
     displays.push_back (morph::Gdisplay (360, 300, 100, 1500, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
-    winTitle = worldName + ": Guidance gradient (x)";
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-
-    winTitle = worldName + ": Guidance gradient (y)";
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-
-    winTitle = worldName + ": n";
+    winTitle = worldName + ": n"; //4
     displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
+    winTitle = worldName + ": Guidance gradient (x)";//5
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
+    winTitle = worldName + ": Guidance gradient (y)";//6
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
+    winTitle = worldName + ": div(g)/3d";//7
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
@@ -281,6 +286,8 @@ int main (int argc, char **argv)
         string rmeth = v.get ("shape", "Sigmoid1D").asString();
         if (rmeth == "Sigmoid1D") {
             RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+        } else if (rmeth == "Linear1D") {
+            RD.rhoMethod = GuidanceMoleculeMethod::Linear1D;
         } else if (rmeth == "Exponential1D") {
             RD.rhoMethod = GuidanceMoleculeMethod::Exponential1D;
         } else if (rmeth == "Gauss1D") {
@@ -354,24 +361,40 @@ int main (int argc, char **argv)
     vector<vector<FLOATTYPE> > gy = plt.separateVectorField (RD.g, 1);
     // Determine scale of gx and gy so that a common scale can be
     // applied to both gradient_x and gradient_y.
-    FLOATTYPE mina = 1e7;
-    FLOATTYPE maxa = -1e7;
+    FLOATTYPE ming = 1e7;
+    FLOATTYPE maxg = -1e7;
     for (unsigned int hi=0; hi<RD.nhex; ++hi) {
         Hex* h = RD.hg->vhexen[hi];
         if (h->onBoundary() == false) {
             for (unsigned int i = 0; i<RD.N; ++i) {
-                if (gx[i][h->vi]>maxa) { maxa = gx[i][h->vi]; }
-                if (gx[i][h->vi]<mina) { mina = gx[i][h->vi]; }
-                if (gy[i][h->vi]>maxa) { maxa = gy[i][h->vi]; }
-                if (gy[i][h->vi]<mina) { mina = gy[i][h->vi]; }
+                if (gx[i][h->vi]>maxg) { maxg = gx[i][h->vi]; }
+                if (gx[i][h->vi]<ming) { ming = gx[i][h->vi]; }
+                if (gy[i][h->vi]>maxg) { maxg = gy[i][h->vi]; }
+                if (gy[i][h->vi]<ming) { ming = gy[i][h->vi]; }
             }
         }
     }
+    FLOATTYPE mindivg = 1e7;
+    FLOATTYPE maxdivg = -1e7;
+    for (unsigned int hi=0; hi<RD.nhex; ++hi) {
+        Hex* h = RD.hg->vhexen[hi];
+        if (h->onBoundary() == false) {
+            for (unsigned int i = 0; i<RD.N; ++i) {
+                if (RD.divg_over3d[i][h->vi]>maxdivg) { maxdivg = RD.divg_over3d[i][h->vi]; }
+                if (RD.divg_over3d[i][h->vi]<mindivg) { mindivg = RD.divg_over3d[i][h->vi]; }
+            }
+        }
+    }
+    cout << "min g = " << ming << " and max g = " << maxg << endl;
+    cout << "min div(g) = " << mindivg << " and max div(g) = " << maxdivg << endl;
+
     // Now plot fields and redraw display
-    plt.scalarfields (displays[4], RD.hg, gx, mina, maxa);
-    displays[4].redrawDisplay();
-    plt.scalarfields (displays[5], RD.hg, gy, mina, maxa);
+    plt.scalarfields (displays[5], RD.hg, gx, ming, maxg);
     displays[5].redrawDisplay();
+    plt.scalarfields (displays[6], RD.hg, gy, ming, maxg);
+    displays[6].redrawDisplay();
+    plt.scalarfields (displays[7], RD.hg, RD.divg_over3d, mindivg, maxdivg);
+    displays[7].redrawDisplay();
 #endif
 
     // Save model state at start
@@ -390,9 +413,10 @@ int main (int argc, char **argv)
             plt.plot_contour (displays[3], RD.hg, ctrs);
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
-            plt.scalarfields (displays[6], RD.hg, RD.n);
-            displays[4].redrawDisplay();
+            plt.scalarfields (displays[4], RD.hg, RD.n);
             displays[5].redrawDisplay();
+            displays[6].redrawDisplay();
+            displays[7].redrawDisplay();
         }
 #endif
         // Save data every 'logevery' steps

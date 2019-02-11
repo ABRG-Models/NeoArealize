@@ -149,6 +149,7 @@ int main (int argc, char **argv)
         cerr << "Can't log every 0 steps. Exiting." << endl;
         return 1;
     }
+    const unsigned int plotevery = root.get ("plotevery", 10).asUInt();
     const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
     const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
     const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
@@ -344,11 +345,30 @@ int main (int argc, char **argv)
     RD.saveGuidance();
 
 #ifdef COMPILE_PLOTTING
+    // Plot gradients of the guidance effect g.
     plt.scalarfields (displays[0], RD.hg, RD.rho);
     vector<vector<FLOATTYPE> > gx = plt.separateVectorField (RD.g, 0);
     vector<vector<FLOATTYPE> > gy = plt.separateVectorField (RD.g, 1);
-    plt.scalarfields (displays[4], RD.hg, gx);
-    plt.scalarfields (displays[5], RD.hg, gy);
+    // Determine scale of gx and gy so that a common scale can be
+    // applied to both gradient_x and gradient_y.
+    FLOATTYPE mina = 1e7;
+    FLOATTYPE maxa = -1e7;
+    for (unsigned int hi=0; hi<RD.nhex; ++hi) {
+        Hex* h = RD.hg->vhexen[hi];
+        if (h->onBoundary() == false) {
+            for (unsigned int i = 0; i<RD.N; ++i) {
+                if (gx[i][h->vi]>maxa) { maxa = gx[i][h->vi]; }
+                if (gx[i][h->vi]<mina) { mina = gx[i][h->vi]; }
+                if (gy[i][h->vi]>maxa) { maxa = gy[i][h->vi]; }
+                if (gy[i][h->vi]<mina) { mina = gy[i][h->vi]; }
+            }
+        }
+    }
+    // Now plot fields and redraw display
+    plt.scalarfields (displays[4], RD.hg, gx, mina, maxa);
+    displays[4].redrawDisplay();
+    plt.scalarfields (displays[5], RD.hg, gy, mina, maxa);
+    displays[5].redrawDisplay();
 #endif
 
     // Save model state at start
@@ -361,7 +381,7 @@ int main (int argc, char **argv)
         RD.step();
 
 #ifdef COMPILE_PLOTTING
-        if (RD.stepCount % 10 == 0) {
+        if (RD.stepCount % plotevery == 0) {
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             plt.plot_contour (displays[3], RD.hg, ctrs);

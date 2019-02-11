@@ -78,7 +78,8 @@ public:
                 cout << "value: " << ff << endl;
             }
 #endif
-            vf.push_back (fia[arrayIdx]);
+            vector<Flt> tmpv = fia[arrayIdx];
+            vf.push_back (tmpv);
         }
         return vf;
     }
@@ -88,55 +89,18 @@ public:
      * the HexGrid hg. These are plotted in a row; it's up to the
      * programmer to make the window large enough when instantiating
      * the Gdisplay.
+     *
+     * Optionally pass in a min and a max to help scale the gradients
      */
     void scalarfields (Gdisplay& disp,
                        HexGrid* hg,
-                       vector<vector<Flt> >& f) {
+                       vector<vector<Flt> >& f,
+                       Flt mina = +1e7, Flt maxa = -1e7) {
 
         disp.resetDisplay (this->fix, this->eye, this->rot);
 
         unsigned int N = f.size();
         unsigned int nhex = hg->num();
-
-//#define INDIVIDUAL_SCALING 1
-#ifdef INDIVIDUAL_SCALING
-        // Copies data to plot out of the model
-        vector<Flt> maxa (N, -1e7);
-        vector<Flt> mina (N, +1e7);
-        // Determines min and max
-        for (auto h : hg->hexen) {
-            if (h.onBoundary() == false) {
-                for (unsigned int i = 0; i<N; ++i) {
-                    if (f[i][h.vi]>maxa[i]) { maxa[i] = f[i][h.vi]; }
-                    if (f[i][h.vi]<mina[i]) { mina[i] = f[i][h.vi]; }
-                }
-            }
-        }
-        vector<Flt> scalea (N, 0);
-        for (unsigned int i = 0; i<N; ++i) {
-            scalea[i] = 1.0 / (maxa[i]-mina[i]);
-        }
-
-        // Determine a colour from min, max and current value
-        vector<vector<Flt> > norm_a;
-
-        // These 4 lines were resize_vector_vector:
-        norm_a.resize (N);
-        for (unsigned int i=0; i<N; ++i) {
-            norm_a[i].resize (nhex, 0.0);
-        }
-
-        for (unsigned int i = 0; i<N; ++i) {
-            for (unsigned int h=0; h<nhex; h++) {
-                norm_a[i][h] = fmin (fmax (((f[i][h]) - mina[i]) * scalea[i], 0.0), 1.0);
-            }
-        }
-
-#else // Scale to max/min of the group
-
-        // Copies data to plot out of the model
-        Flt maxa = -1e7;
-        Flt mina = +1e7;
 
         // Determines min and max
         for (unsigned int hi=0; hi<nhex; ++hi) {
@@ -148,6 +112,7 @@ public:
                 }
             }
         }
+
         Flt scalea = 1.0 / (maxa-mina);
 
         // Determine a colour from min, max and current value
@@ -161,7 +126,6 @@ public:
                 norm_a[i][h] = fmin (fmax (((f[i][h]) - mina) * scalea, 0.0), 1.0);
             }
         }
-#endif
 
         // Create an offset which we'll increment by the width of the
         // map, starting from the left-most map (f[0])

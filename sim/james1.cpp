@@ -149,7 +149,6 @@ int main (int argc, char **argv)
         cerr << "Can't log every 0 steps. Exiting." << endl;
         return 1;
     }
-    const unsigned int plotevery = root.get ("plotevery", 10).asUInt();
     const float hextohex_d = root.get ("hextohex_d", 0.01).asFloat();
     const float boundaryFalloffDist = root.get ("boundaryFalloffDist", 0.01).asFloat();
     const string svgpath = root.get ("svgpath", "./ellipse.svg").asString();
@@ -186,6 +185,10 @@ int main (int argc, char **argv)
     unsigned int M_GUID = static_cast<unsigned int>(guid.size());
 
 #ifdef COMPILE_PLOTTING
+
+    // Parameters from the config that apply only to plotting:
+    const unsigned int plotevery = root.get ("plotevery", 10).asUInt();
+
     // Create some displays
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);

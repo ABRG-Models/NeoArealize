@@ -485,14 +485,13 @@ public:
      */
     void noiseify_vector_vector (vector<vector<Flt> >& vv) {
         Flt randNoiseOffset = 0.8;
-        Flt randNoiseGain = 0.0; // For Debug
+        Flt randNoiseGain = 0.1;
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
                 // sharper) over length scale 0.05 to 1. So if
                 // distance from boundary > 0.05, noise has normal
                 // value. Close to boundary, noise is less.
-                // FIXME: specialise, or template morph::Tools::randF<>()
                 vv[i][h.vi] = morph::Tools::randF<Flt>() * randNoiseGain + randNoiseOffset;
                 if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
                     Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
@@ -517,11 +516,12 @@ public:
         this->hg->computeDistanceToBoundary();
         // Vector size comes from number of Hexes in the HexGrid
         this->nhex = this->hg->num();
+        DBG ("HexGrid says num hexes = " << this->nhex);
         // Spatial d comes from the HexGrid, too.
         this->set_d(this->hg->getd());
-        DBG ("HexGrid set d to " << this->d);
+        DBG ("HexGrid says d = " << this->d);
         this->set_v(this->hg->getv());
-        DBG ("HexGrid set v to " << this->v);
+        DBG ("HexGrid says v = " << this->v);
 
         // Resize and zero-initialise the various containers
         this->resize_vector_vector (this->c);
@@ -1080,6 +1080,8 @@ public:
     /*!
      * Compute the divergence of g and divide by 3d. Used in
      * computation of term2 in compute_divJ().
+     *
+     * This computation is based on Gauss's theorem.
      */
     void compute_divg_over3d (void) {
 
@@ -1100,17 +1102,17 @@ public:
                 }
                 if (HAS_NNE(hi)) {
                     divg += /*cos (60)*/ 0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])
-                        + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]);
+                        +  (/*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]));
                 } else {
-                    divg += /*cos (60)*/ 0.5 * (this->g[i][0][hi])
-                        + /*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]);
+                    //divg += /*cos (60)*/ (0.5 * (this->g[i][0][hi]))
+                    //    +  (/*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]));
                 }
                 if (HAS_NNW(hi)) {
                     divg += -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))
-                        + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]);
+                        +    (/*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]));
                 } else {
-                    divg += -(/*cos (120)*/ 0.5 * (this->g[i][0][hi]))
-                        + /*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]);
+                    //divg += -(/*cos (120)*/ 0.5 * (this->g[i][0][hi]))
+                    //    +    (/*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]));
                 }
                 if (HAS_NW(hi)) {
                     divg -= /*cos (180)*/ (this->g[i][0][NW(hi)] + this->g[i][0][hi]);
@@ -1119,17 +1121,17 @@ public:
                 }
                 if (HAS_NSW(hi)) {
                     divg -= (/*cos (240)*/ 0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])
-                              + (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi])));
+                             + ( /*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi])));
                 } else {
                     divg -= (/*cos (240)*/ 0.5 * (this->g[i][0][hi])
-                        + (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi])));
+                             + (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi])));
                 }
                 if (HAS_NSE(hi)) {
                     divg += /*cos (300)*/ 0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi])
-                        - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
+                        - ( /*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
                 } else {
-                    divg += /*cos (300)*/ 0.5 * (this->g[i][0][hi])      // 1st sum
-                        - (/*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi])); // 2nd sum
+                    divg += /*cos (300)*/ 0.5 * (this->g[i][0][hi])
+                        - ( /*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi]));
                 }
 
                 this->divg_over3d[i][hi] = divg * this->oneover3d;

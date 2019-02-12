@@ -367,7 +367,7 @@ public:
      * Sets the function of the guidance molecule method (FIXME: Make
      * this a vector)
      */
-    GuidanceMoleculeMethod rhoMethod = GuidanceMoleculeMethod::Gauss1D;
+    vector<GuidanceMoleculeMethod> rhoMethod;
 
     /*!
      * The logpath for this model. Used when saving data out.
@@ -545,6 +545,13 @@ public:
         this->resize_vector_array_vector (this->g);
         this->resize_vector_array_vector (this->J);
 
+        // rhomethod is a vector of size M
+        this->rhoMethod.resize (this->M);
+        for (unsigned int j=0; j<this->M; ++j) {
+            // Set up with Sigmoid1D as default
+            this->rhoMethod[j] = GuidanceMoleculeMethod::Sigmoid1D;
+        }
+
         // Initialise alpha and beta
         for (unsigned int i=0; i<this->N; ++i) {
             this->alpha[i] = 3;
@@ -588,20 +595,22 @@ public:
             }
         }
 
-        if (this->rhoMethod == GuidanceMoleculeMethod::Gauss1D) {
-            // Construct Gaussian-waves rather than doing the full-Karbowski shebang.
-            this->gaussian1D_guidance();
+        for (unsigned int m=0; m<this->M; ++m) {
+            if (this->rhoMethod[m] == GuidanceMoleculeMethod::Gauss1D) {
+                // Construct Gaussian-waves rather than doing the full-Karbowski shebang.
+                this->gaussian1D_guidance (m);
 
-        } else if (this->rhoMethod == GuidanceMoleculeMethod::Gauss2D) {
-            // Construct 2 dimensional gradients
-            this->gaussian2D_guidance();
+            } else if (this->rhoMethod[m] == GuidanceMoleculeMethod::Gauss2D) {
+                // Construct 2 dimensional gradients
+                this->gaussian2D_guidance (m);
 
-        } else if (this->rhoMethod == GuidanceMoleculeMethod::Sigmoid1D) {
-            this->sigmoid_guidance();
-        } else if (this->rhoMethod == GuidanceMoleculeMethod::Linear1D) {
-            this->linear_guidance();
-        } // etc - linear, exponential etc. also need a scheme to set
-          // the parameters for the guidance methods.
+            } else if (this->rhoMethod[m] == GuidanceMoleculeMethod::Sigmoid1D) {
+                this->sigmoid_guidance (m);
+
+            } else if (this->rhoMethod[m] == GuidanceMoleculeMethod::Linear1D) {
+                this->linear_guidance (m);
+            }
+        }
 
         // Compute gradients of guidance molecule concentrations once only
         for (unsigned int m = 0; m<this->M; ++m) {
@@ -1187,47 +1196,36 @@ public:
      * Instead of using the Karbowski equations, just make some
      * gaussian 'waves'
      */
-    void gaussian1D_guidance (void) {
-#if 0
-        Flt xoffA = this->guidance_offset[0];
-        Flt xoffC = this->guidance_offset[2];
-        Flt xoffB = (xoffA + xoffC) / 2.0;
-#endif
+    void gaussian1D_guidance (unsigned int m) {
         for (auto h : this->hg->hexen) {
-            for (unsigned int m = 0; m<this->M; ++m) {
-                Flt cosphi = (Flt) cos (guidance_phi[m]);
-                Flt sinphi = (Flt) sin (guidance_phi[m]);
-                DBG ("phi: " << guidance_phi[m]);
-                Flt x_ = (h.x * cosphi) + (h.y * sinphi);
-                this->rho[m][h.vi] = guidance_gain[m] * exp(-((x_-guidance_offset[m])*(x_-guidance_offset[m])) / guidance_width[m]);
-            }
+            Flt cosphi = (Flt) cos (guidance_phi[m]);
+            Flt sinphi = (Flt) sin (guidance_phi[m]);
+            DBG2 ("phi: " << guidance_phi[m]);
+            Flt x_ = (h.x * cosphi) + (h.y * sinphi);
+            this->rho[m][h.vi] = guidance_gain[m] * exp(-((x_-guidance_offset[m])*(x_-guidance_offset[m])) / guidance_width[m]);
         }
     }
 
-    void gaussian2D_guidance (void) {
+    void gaussian2D_guidance (unsigned int m) {
     }
 
-    void sigmoid_guidance (void) {
+    void sigmoid_guidance (unsigned int m) {
         for (auto h : this->hg->hexen) {
-            for (unsigned int m = 0; m<this->M; ++m) {
-                Flt cosphi = (Flt) cos (this->guidance_phi[m]);
-                Flt sinphi = (Flt) sin (this->guidance_phi[m]);
-                //DBG("phi= " << this->guidance_phi[m] << ". cosphi: " << cosphi << " sinphi: " << sinphi);
-                Flt x_ = (h.x * cosphi) + (h.y * sinphi);
-                //DBG ("x_[" << h.vi << "] = " << x_);
-                this->rho[m][h.vi] = guidance_gain[m] / (1.0 + exp(-(x_-guidance_offset[m])/this->guidance_width[m]));
-            }
+            Flt cosphi = (Flt) cos (this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+            //DBG("phi= " << this->guidance_phi[m] << ". cosphi: " << cosphi << " sinphi: " << sinphi);
+            Flt x_ = (h.x * cosphi) + (h.y * sinphi);
+            //DBG ("x_[" << h.vi << "] = " << x_);
+            this->rho[m][h.vi] = guidance_gain[m] / (1.0 + exp(-(x_-guidance_offset[m])/this->guidance_width[m]));
         }
     }
 
-    void linear_guidance (void) {
+    void linear_guidance (unsigned int m) {
         for (auto h : this->hg->hexen) {
-            for (unsigned int m = 0; m<this->M; ++m) {
-                Flt cosphi = (Flt) cos (this->guidance_phi[m]);
-                Flt sinphi = (Flt) sin (this->guidance_phi[m]);
-                Flt x_ = (h.x * cosphi) + (h.y * sinphi);
-                this->rho[m][h.vi] = (x_-guidance_offset[m]) * this->guidance_gain[m];
-            }
+            Flt cosphi = (Flt) cos (this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+            Flt x_ = (h.x * cosphi) + (h.y * sinphi);
+            this->rho[m][h.vi] = (x_-guidance_offset[m]) * this->guidance_gain[m];
         }
     }
 

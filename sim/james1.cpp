@@ -246,6 +246,11 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+    winTitle = worldName + ": div(J)";//8
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.back().resetDisplay (fix, eye, rot);
+    displays.back().redrawDisplay();
+
 #endif
 
     // Instantiate the model object
@@ -284,21 +289,21 @@ int main (int argc, char **argv)
         Json::Value v = guid[j];
         // What guidance molecule method will we use?
         string rmeth = v.get ("shape", "Sigmoid1D").asString();
+        DBG ("guidance modelecule shape: " << rmeth);
         if (rmeth == "Sigmoid1D") {
-            RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+            RD.rhoMethod[j] = GuidanceMoleculeMethod::Sigmoid1D;
         } else if (rmeth == "Linear1D") {
-            RD.rhoMethod = GuidanceMoleculeMethod::Linear1D;
+            RD.rhoMethod[j] = GuidanceMoleculeMethod::Linear1D;
         } else if (rmeth == "Exponential1D") {
-            RD.rhoMethod = GuidanceMoleculeMethod::Exponential1D;
+            RD.rhoMethod[j] = GuidanceMoleculeMethod::Exponential1D;
         } else if (rmeth == "Gauss1D") {
-            RD.rhoMethod = GuidanceMoleculeMethod::Gauss1D;
+            RD.rhoMethod[j] = GuidanceMoleculeMethod::Gauss1D;
         } else if (rmeth == "Gauss2D") {
-            RD.rhoMethod = GuidanceMoleculeMethod::Gauss2D;
-        } else {
-            RD.rhoMethod = GuidanceMoleculeMethod::Sigmoid1D;
+            RD.rhoMethod[j] = GuidanceMoleculeMethod::Gauss2D;
         }
         // Set up guidance molecule method parameters
         RD.guidance_gain.push_back (v.get("gain", 1.0).asDouble());
+        DBG ("guidance modelecule gain: " << RD.guidance_gain.back());
         RD.guidance_phi.push_back (v.get("phi", 1.0).asDouble());
         RD.guidance_width.push_back (v.get("width", 1.0).asDouble());
         RD.guidance_offset.push_back (v.get("offset", 1.0).asDouble());
@@ -395,6 +400,8 @@ int main (int argc, char **argv)
     displays[6].redrawDisplay();
     plt.scalarfields (displays[7], RD.hg, RD.divg_over3d, mindivg, maxdivg);
     displays[7].redrawDisplay();
+    plt.scalarfields (displays[8], RD.hg, RD.divJ);
+    displays[8].redrawDisplay();
 #endif
 
     // Save model state at start
@@ -414,6 +421,7 @@ int main (int argc, char **argv)
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
             plt.scalarfields (displays[4], RD.hg, RD.n);
+            plt.scalarfields (displays[8], RD.hg, RD.divJ);
             displays[5].redrawDisplay();
             displays[6].redrawDisplay();
             displays[7].redrawDisplay();

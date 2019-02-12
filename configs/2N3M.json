@@ -9,7 +9,7 @@
     "D" : 0.01,                     // Global diffusion constant
     "contour_threshold" : 0.55,
     "k" : 3,
-    "logpath" : "logs/2N1M",
+    "logpath" : "logs/2N3M",
     "overwrite_logs" : true,
 
     // Array of parameters for N thalamocortical populations:
@@ -17,12 +17,12 @@
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [-1.0] // Array of interactions of this TC popn and guidance mols
+            "gamma" : [-1, 1, 0] // Array of interactions of this TC popn and guidance mols
         },
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [1.0]
+            "gamma" : [0, 0, 0]
         }
     ], // end tc
 
@@ -30,11 +30,24 @@
     "guidance": [
         {
             "shape"  : "Sigmoid1D",
-            //"shape"  : "Linear1D",
             "gain"   : 0.5,
             "phi"    : 0,
             "width"  : 0.05,
-            "offset" : 0.1
+            "offset" : -0.15
+        },
+        {
+            "shape"  : "Gauss1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.05,
+            "offset" : 0.0
+        },
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.05,
+            "offset" : 0.15
         }
     ] // end guidance
 }

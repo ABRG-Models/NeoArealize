@@ -1,15 +1,15 @@
 {
     // Global simulation parameters
     "steps" : 5000,               // Number of steps to simulate for
-    "logevery" : 1000,
+    "logevery" : 100,
     "plotevery" : 10,
-    "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
-    "boundaryFalloffDist" : 0.06,
+    "boundaryFalloffDist" : 0.01,
     "D" : 0.01,                     // Global diffusion constant
     "contour_threshold" : 0.55,
     "k" : 3,
-    "logpath" : "logs/2N1M",
+    "logpath" : "logs/2N1M_0",
     "overwrite_logs" : true,
 
     // Array of parameters for N thalamocortical populations:
@@ -17,7 +17,7 @@
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [-1.0] // Array of interactions of this TC popn and guidance mols
+            "gamma" : [1.0] // Array of interactions of this TC popn and guidance mols
         },
         {
             "alpha" : 3,

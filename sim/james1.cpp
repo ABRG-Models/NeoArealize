@@ -105,9 +105,11 @@ int main (int argc, char **argv)
     }
     string paramsfile (argv[1]);
 
-    // Set up JSON code for reading the parameters
+    /*
+     * Set up JSON code for reading the parameters
+     */
 
-    // Test for existence of the file.
+    // Test for existence of the JSON file.
     ifstream jsonfile_test;
     int srtn = system ("pwd");
     if (srtn) {
@@ -122,13 +124,12 @@ int main (int argc, char **argv)
         return 1;
     }
 
+    // Parse the JSON
     ifstream jsonfile (paramsfile, ifstream::binary);
-
     Json::Value root;
     string errs;
     Json::CharReaderBuilder rbuilder;
     rbuilder["collectComments"] = false;
-
     bool parsingSuccessful = Json::parseFromStream (rbuilder, jsonfile, &root, &errs);
     if (!parsingSuccessful) {
         // report to the user the failure and their locations in the document.
@@ -206,54 +207,65 @@ int main (int argc, char **argv)
     string worldName("j");
 
     string winTitle = worldName + ": Guidance molecules"; // 0
-    displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300, winTitle.c_str(), rhoInit, thetaInit, phiInit));
+    displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300,
+                                         winTitle.c_str(), rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": a[0] to a[N]"; // 1
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": c[0] to c[N]"; // 2
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     // SW - Contours
     winTitle = worldName + ": contours (from c)"; //3
-    displays.push_back (morph::Gdisplay (360, 300, 100, 1500, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (360, 300, 100, 1500, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": n"; //4
-    displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": Guidance gradient (x)";//5
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": Guidance gradient (y)";//6
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": div(g)/3d";//7
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": div(J)";//8
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
 #endif
 
-    // Instantiate the model object
+    /*
+     * Instantiate and set up the model object
+     */
     RD_James<FLOATTYPE> RD;
 
     RD.svgpath = svgpath;
@@ -329,10 +341,13 @@ int main (int argc, char **argv)
         return paramRtn;
     }
 
-    // Now have the guidance molecule densities and their gradients computed:
+    // Now have the guidance molecule densities and their gradients computed, call init()
     RD.init();
 
-    // Now is the time to create a log directory if necessary, and exit on any failures.
+    /*
+     * Now create a log directory if necessary, and exit on any
+     * failures.
+     */
     if (morph::Tools::dirExists (logpath) == false) {
         morph::Tools::createDir (logpath);
         if (morph::Tools::dirExists (logpath) == false) {
@@ -354,7 +369,8 @@ int main (int argc, char **argv)
         }
     }
 
-    // As RD.allocate() as been called, positions can be saved to file.
+    // As RD.allocate() as been called (and log directory has been
+    // created/verified ready), positions can be saved to file.
     RD.savePositions();
     // Save the guidance molecules now.
     RD.saveGuidance();
@@ -501,6 +517,12 @@ int main (int argc, char **argv)
     }
 
 #ifdef COMPILE_PLOTTING
+
+    // Save images in log folder
+    plt.savePngs (logpath, "guidance", steps, displays[0]);
+    plt.savePngs (logpath, "connections", steps, displays[2]);
+    plt.savePngs (logpath, "contours", steps, displays[3]);
+
     // Ask for a keypress before exiting so that the final images can be studied
     int a;
     cout << "Press any key[return] to exit.\n";

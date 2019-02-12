@@ -5,7 +5,7 @@
     "plotevery" : 10,
     "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
-    "boundaryFalloffDist" : 0.06,
+    "boundaryFalloffDist" : 0.01,
     "D" : 0.01,                     // Global diffusion constant
     "contour_threshold" : 0.55,
     "k" : 3,

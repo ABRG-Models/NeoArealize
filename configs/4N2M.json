@@ -5,7 +5,7 @@
     "plotevery" : 10,
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
-    "boundaryFalloffDist" : 0.04,
+    "boundaryFalloffDist" : 0.01,
     "D" : 0.05,                     // Global diffusion constant
     "contour_threshold" : 0.55,
     "k" : 3,
@@ -22,12 +22,12 @@
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [-1,-1]
+            "gamma" : [-1,1]
         },
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [1,1]
+            "gamma" : [1,-1]
         },
         {
             "alpha" : 3,
@@ -42,14 +42,14 @@
             "shape"  : "Sigmoid1D",
             "gain"   : 1,
             "phi"    : 0,
-            "width"  : 0.02,
+            "width"  : 0.3,
             "offset" : 0.0
         },
         {
             "shape"  : "Sigmoid1D",
             "gain"   : 1,
             "phi"    : 1.57,
-            "width"  : 0.02,
+            "width"  : 0.3,
             "offset" : 0.0
         }
     ] // end guidance

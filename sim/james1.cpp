@@ -190,6 +190,11 @@ int main (int argc, char **argv)
     // Parameters from the config that apply only to plotting:
     const unsigned int plotevery = root.get ("plotevery", 10).asUInt();
 
+    // If true, then write out the logs in consecutive order numbers,
+    // rather than numbers that relate to the simulation timestep.
+    const bool vidframes = root.get ("vidframes", false).asBool();
+    unsigned int framecount = 0;
+
     // Create some displays
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);
@@ -418,6 +423,12 @@ int main (int argc, char **argv)
     displays[7].redrawDisplay();
     plt.scalarfields (displays[8], RD.hg, RD.divJ);
     displays[8].redrawDisplay();
+
+    // Save images in log folder
+    if (RD.M > 0) { plt.savePngs (logpath, "guidance", 0, displays[0]); }
+    plt.savePngs (logpath, "connections", 0, displays[2]);
+    plt.savePngs (logpath, "contours", 0, displays[3]);
+
 #endif
 
     // Save model state at start
@@ -430,7 +441,7 @@ int main (int argc, char **argv)
         RD.step();
 
 #ifdef COMPILE_PLOTTING
-        if (RD.stepCount % plotevery == 0) {
+        if ((RD.stepCount % plotevery) == 0) {
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             plt.plot_contour (displays[3], RD.hg, ctrs);
@@ -441,6 +452,15 @@ int main (int argc, char **argv)
             displays[5].redrawDisplay();
             displays[6].redrawDisplay();
             displays[7].redrawDisplay();
+
+            if (vidframes) {
+                plt.savePngs (logpath, "connections", framecount, displays[2]);
+                plt.savePngs (logpath, "contours", framecount, displays[3]);
+                ++framecount;
+            } else {
+                plt.savePngs (logpath, "connections", RD.stepCount, displays[2]);
+                plt.savePngs (logpath, "contours", RD.stepCount, displays[3]);
+            }
         }
 #endif
         // Save data every 'logevery' steps
@@ -517,11 +537,9 @@ int main (int argc, char **argv)
     }
 
 #ifdef COMPILE_PLOTTING
-
-    // Save images in log folder
-    plt.savePngs (logpath, "guidance", steps, displays[0]);
-    plt.savePngs (logpath, "connections", steps, displays[2]);
-    plt.savePngs (logpath, "contours", steps, displays[3]);
+    // Save final images
+    plt.savePngs (logpath, "connections", RD.stepCount, displays[2]);
+    plt.savePngs (logpath, "contours", RD.stepCount, displays[3]);
 
     // Ask for a keypress before exiting so that the final images can be studied
     int a;

@@ -290,14 +290,6 @@ public:
     vector<array<vector<Flt>, 2> > grad_rho;
     //@}
 
-    /*!
-     * Rowlen and numrows in the parallelogram domain.
-     */
-    //@{
-    alignas(Flt) unsigned int rl = 0;
-    alignas(Flt) unsigned int nr = 0;
-    //@}
-
 private:
     /*!
      * Hex to hex distance. Populate this from hg.d after hg has been
@@ -339,11 +331,6 @@ public:
      * that's reason enough.
      */
     alignas(Flt) unsigned int stepCount = 0;
-
-    /*!
-     * A frame number, incremented when an image is plotted to a PNG file.
-     */
-    alignas(Flt) unsigned int frameN = 0;
 
     /*!
      * The contour threshold. For contour plotting [see

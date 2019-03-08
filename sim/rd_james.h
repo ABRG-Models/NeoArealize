@@ -224,6 +224,12 @@ public:
     alignas(alignof(vector<Flt>))
     vector<Flt> beta;
 
+    /*!
+     * epsilon_i parameters. axon competition parameter
+     */
+    alignas(alignof(vector<Flt>))
+    vector<Flt> epsilon;
+
 private: // We have a setter for gamma.
     /*!
      * gamma_A/B/C_i (etc) parameters from Eq 4. There are M vectors
@@ -536,6 +542,7 @@ public:
 
         this->resize_vector_param (this->alpha);
         this->resize_vector_param (this->beta);
+        this->resize_vector_param (this->epsilon);
         this->resize_vector_vector_param (this->gamma);
 
         this->resize_guidance_gradient_field (this->grad_rho);
@@ -552,10 +559,11 @@ public:
             this->rhoMethod[j] = GuidanceMoleculeMethod::Sigmoid1D;
         }
 
-        // Initialise alpha and beta
+        // Initialise alpha, beta and epsilon
         for (unsigned int i=0; i<this->N; ++i) {
             this->alpha[i] = 3;
             this->beta[i] = 3;
+            this->epsilon[i] = 3;
         }
     }
 

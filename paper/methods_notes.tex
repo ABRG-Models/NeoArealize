@@ -495,6 +495,32 @@ The boundary condition that I'd like to apply to these equations is:
 \mb{J}_i(\mb{x},t) \bigg\rvert_{boundary} = 0
 \end{equation}
 
+\section{Two dimensional system with changed competition}
+
+Here are some modifications to the equations to enable competition
+between regions
+
+\subsection{Allow the branching rate of all other TC axon types to change $\dot{a}_i$}
+%
+\begin{equation} \label{eq:Karb2D_dc_compo_1}
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t)
++ \beta_i n(\mb{x},t)
+[a_i(\mb{x},t)]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_da_compo_1}
+\frac{\partial a_i(\mb{x},t)}{\partial t}
+= \nabla\vcdot\mb{J}_i(\mb{x},t) + \alpha_i c_i(\mb{x},t) - \beta_i n(\mb{x},t)
+[a_i(\mb{x}, t)]^k - \epsilon_i \sum_{j \ne i}^{N} a_j(\mb{x}, t)^l
+\end{equation}
+%
+\begin{equation}
+n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
+\end{equation}
+%
+with the flux current as given by Eq.~\ref{eq:Karb2D_J} and Neumann
+boundary conditions as usual. This adds two parameter sets; $\epsilon$
+and $l$.
 %
 % BIBLIOGRAPHY
 %

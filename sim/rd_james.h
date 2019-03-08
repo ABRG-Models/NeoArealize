@@ -323,7 +323,7 @@ public:
      * Holds an intermediate value for the computation of Eqs 1 and 2.
      */
     alignas(alignof(vector<vector<Flt> >))
-    vector<vector<Flt> > alpha_c_beta_na;
+    vector<vector<Flt> > alpha_c;
 
     /*!
      * Track the number of computational steps that we've carried
@@ -514,7 +514,7 @@ public:
         this->resize_vector_vector (this->c);
         this->resize_vector_vector (this->a);
         this->resize_vector_vector (this->betaterm);
-        this->resize_vector_vector (this->alpha_c_beta_na);
+        this->resize_vector_vector (this->alpha_c);
         this->resize_vector_vector (this->divJ);
         this->resize_vector_vector (this->divg_over3d);
 
@@ -723,7 +723,7 @@ public:
             path.str("");
             path.clear();
             path << "/A" << i;
-            data.add_contained_vals (path.str().c_str(), this->alpha_c_beta_na[i]);
+            data.add_contained_vals (path.str().c_str(), this->alpha_c[i]);
         }
         data.add_contained_vals ("/n", this->n);
     }
@@ -917,7 +917,11 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 #pragma omp parallel for shared(i,k)
             for (unsigned int h=0; h<this->nhex; ++h) {
-                this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
+                // Fixme: I think the beta_n_a term needs to come OUT
+                // of this, as it's the dependent variable in the RK
+                // integration for A.
+                //this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
+                this->alpha_c[i][h] = alpha[i] * c[i][h];// -beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
             }
         }
 
@@ -933,7 +937,7 @@ public:
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k1[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
                 q[h] = this->a[i][h] + k1[h] * halfdt;
             }
 
@@ -941,7 +945,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (q[h], k));
                 q[h] = this->a[i][h] + k2[h] * halfdt;
             }
 
@@ -949,7 +953,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (q[h], k));
                 q[h] = this->a[i][h] + k3[h] * dt;
             }
 
@@ -957,7 +961,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h] + this->alpha_c_beta_na[i][h];
+                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (q[h], k));
                 a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * sixthdt;
             }
         }
@@ -967,6 +971,7 @@ public:
 
 #pragma omp parallel for
             for (unsigned int h=0; h<nhex; h++) {
+                // Note: betaterm used in compute_dci_dt()
                 this->betaterm[i][h] = beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
             }
 

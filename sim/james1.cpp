@@ -431,9 +431,6 @@ int main (int argc, char **argv)
 
 #endif
 
-    // Save model state at start
-    RD.save();
-
     // Start the loop
     bool finished = false;
     while (finished == false) {

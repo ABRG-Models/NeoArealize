@@ -476,9 +476,14 @@ int main (int argc, char **argv)
     // Before saving the json, we'll place any additional useful info
     // in there, such as the FLOATTYPE. If float_width is 4, then
     // results were computed with single precision, if 8, then double
-    // precision was used.
+    // precision was used. Also save various parameters from the RD system.
     root["float_width"] = sizeof(FLOATTYPE);
-    root["sim_ran_at_time"] = morph::Tools::timeNow();
+    string tnow = morph::Tools::timeNow();
+    root["sim_ran_at_time"] = tnow.substr(0,tnow.size()-1);
+    root["hextohex_d"] = RD.hextohex_d;
+    root["D"] = RD.get_D();
+    root["k"] = RD.k;
+    root["dt"] = RD.dt;
 
     // We'll save a copy of the parameters for the simulation in the log directory as params.json
     const string paramsCopy = logpath + "/params.json";

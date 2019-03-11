@@ -56,19 +56,19 @@ def readFiles (logdir):
     fileidx = 0
     for filename in files:
 
-        print ('{0}'.format(filename))
+        #print ('{0}'.format(filename))
 
         # Get the time index from the filename with a reg. expr.
         idxsearch = re.search(logdir+'/c_(.*).h5', '{0}'.format(filename))
         thetime = int('{0}'.format(idxsearch.group(1)))
         t[fileidx] = thetime
-        print ('Time {0}: {1}'.format(fileidx, thetime))
+        #print ('Time {0}: {1}'.format(fileidx, thetime))
 
         f = h5py.File(filename, 'r')
         klist = list(f.keys())
 
         for k in klist:
-            print ('Key: {0}'.format(k))
+            #print ('Key: {0}'.format(k))
             if k[0] == 'c':
                 cnum = int(k[1:])
                 cmatrix[cnum,:,fileidx] = np.array(f[k])

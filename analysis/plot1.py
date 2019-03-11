@@ -18,15 +18,15 @@ matplotlib.rc('font', **fnt)
 # Get target x/y hex to show trace for and the time step to show the
 # map for from the arguments:
 if len(sys.argv) < 5:
-    print('Provide filepath, x, y, and t index on cmd line please.')
+    print('Provide logdirname, x, y, and t index on cmd line please.')
     exit(1)
-thefilename = sys.argv[1]
+logdirname = sys.argv[1]
 trgx = float(sys.argv[2])
 trgy = float(sys.argv[3])
 trgt = int(sys.argv[4])
 
 # Read the data
-(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles (thefilename)#'../logs/4N2M')
+(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles (logdirname)
 
 # Select an index nearest to a target
 ix = ld.selectIndex (x, y, (trgx,trgy))

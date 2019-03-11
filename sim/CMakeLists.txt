@@ -50,6 +50,11 @@ add_executable(james1c james1.cpp)
 target_compile_definitions(james1c PUBLIC FLOATTYPE=float)
 target_link_libraries(james1c ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY} jsoncpp)
 
+# Compile compute-only with floats
+add_executable(scanspace scanspace.cpp)
+target_compile_definitions(scanspace PUBLIC FLOATTYPE=float)
+target_link_libraries(scanspace ${MORPH_LDFLAGS} ${HDF5_C_${LIB_TYPE}_LIBRARY} jsoncpp)
+
 # Compile with doubles:
 add_executable(james1cd james1.cpp)
 target_compile_definitions(james1cd PUBLIC FLOATTYPE=double)

@@ -1,10 +1,13 @@
 {
     // Global simulation parameters
-    "steps" : 30000,                // Number of steps to simulate for
+    "steps" : 5000,                // Number of steps to simulate for
+    "logevery": 1000,
+    "overwrite_logs": true,
+    "logpath" : "./logs/2N0M",
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.4,                     // Global diffusion constant
+    "D" : 0.1,                     // Global diffusion constant
 
     // Array of parameters for N thalamocortical populations:
     "tc": [

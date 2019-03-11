@@ -401,11 +401,20 @@ public:
         }
     }
 
+    void zero_vector_vector (vector<vector<Flt> >& vv) {
+        for (unsigned int i=0; i<this->N; ++i) {
+            vv[i].assign (this->nhex, 0.0);
+        }
+    }
+
     /*!
      * Resize a variable that'll be nhex elements long
      */
     void resize_vector_variable (vector<Flt>& v) {
         v.resize (this->nhex, 0.0);
+    }
+    void zero_vector_variable (vector<Flt>& v) {
+        v.assign (this->nhex, 0.0);
     }
 
     /*!
@@ -417,12 +426,20 @@ public:
             v[m].resize (this->nhex, 0.0);
         }
     }
+    void zero_guidance_variable (vector<vector<Flt> >& v) {
+        for (unsigned int m = 0; m<this->M; ++m) {
+            v[m].assign (this->nhex, 0.0);
+        }
+    }
 
     /*!
      * Resize a parameter that'll be N elements long
      */
     void resize_vector_param (vector<Flt>& p) {
         p.resize (this->N, 0.0);
+    }
+    void zero_vector_param (vector<Flt>& p) {
+        p.assign (this->N, 0.0);
     }
 
     /*!
@@ -435,6 +452,11 @@ public:
             vp[m].resize (this->N, 0.0);
         }
     }
+    void zero_vector_vector_param (vector<vector<Flt> >& vp) {
+        for (unsigned int m = 0; m<this->M; ++m) {
+            vp[m].assign (this->N, 0.0);
+        }
+    }
 
     /*!
      * Resize a gradient field
@@ -442,6 +464,10 @@ public:
     void resize_gradient_field (array<vector<Flt>, 2>& g) {
         g[0].resize (this->nhex, 0.0);
         g[1].resize (this->nhex, 0.0);
+    }
+    void zero_gradient_field (array<vector<Flt>, 2>& g) {
+        g[0].assign (this->nhex, 0.0);
+        g[1].assign (this->nhex, 0.0);
     }
 
     /*!
@@ -455,11 +481,21 @@ public:
             this->resize_gradient_field (vav[i]);
         }
     }
+    void zero_vector_array_vector (vector<array<vector<Flt>, 2> >& vav) {
+        for (unsigned int i = 0; i<this->N; ++i) {
+            this->zero_gradient_field (vav[i]);
+        }
+    }
 
     void resize_guidance_gradient_field (vector<array<vector<Flt>, 2> >& vav) {
         vav.resize (this->M);
         for (unsigned int m = 0; m<this->M; ++m) {
             this->resize_gradient_field (vav[m]);
+        }
+    }
+    void zero_guidance_gradient_field (vector<array<vector<Flt>, 2> >& vav) {
+        for (unsigned int m = 0; m<this->M; ++m) {
+            this->zero_gradient_field (vav[m]);
         }
     }
 
@@ -548,9 +584,31 @@ public:
 
     /*!
      * Initialise variables and parameters. Carry out one-time
-     * computations required of the model.
+     * computations required of the model. This should be able to
+     * re-initialise a finished simulation as well as initialise the
+     * first time.
      */
     void init (void) {
+
+        this->stepCount = 0;
+
+        // Zero c and n and other temporary variables
+        this->zero_vector_vector (this->c);
+        //this->zero_vector_vector (this->a); // gets noisified below
+        this->zero_vector_vector (this->betaterm);
+        this->zero_vector_vector (this->alpha_c);
+        this->zero_vector_vector (this->divJ);
+        this->zero_vector_vector (this->divg_over3d);
+
+        this->zero_vector_variable (this->n);
+        this->zero_guidance_variable (this->rho);
+
+        this->zero_guidance_gradient_field (this->grad_rho);
+
+        // Resize grad_a and other vector-array-vectors
+        this->zero_vector_array_vector (this->grad_a);
+        this->zero_vector_array_vector (this->g);
+        this->zero_vector_array_vector (this->J);
 
         // Initialise a with noise
         this->noiseify_vector_vector (this->a);
@@ -665,6 +723,9 @@ public:
     void set_D (Flt D_) {
         this->D = D_;
         this->updateTwoDover3dd();
+    }
+    Flt get_D (void) {
+        return this->D;
     }
 
 private:
@@ -904,7 +965,7 @@ public:
             nsum += n[hi];
         }
 
-#ifdef DEBUG
+#ifdef DEBUG__
         if (this->stepCount % 100 == 0) {
             DBG ("System computed " << this->stepCount << " times so far...");
             DBG ("sum of n+c is " << nsum+csum);

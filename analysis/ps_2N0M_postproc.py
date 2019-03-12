@@ -21,8 +21,7 @@ if os.path.isfile(outputfile):
 logdir = 'logs'
 simtime = 5000
 
-#regex = re.compile("logs/ps_2N0M_.*")
-regex = re.compile("logs/scan.*")
+regex = re.compile("logs/ps_2N0M_.*")
 for dirpath, dirnames, filenames in os.walk(logdir):
     if regex.match(dirpath):
         print ('Analyse {0}'.format(dirpath))

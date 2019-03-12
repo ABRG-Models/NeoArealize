@@ -439,6 +439,7 @@ int main (int argc, char **argv)
 
 #ifdef COMPILE_PLOTTING
         if ((RD.stepCount % plotevery) == 0) {
+            DBG("Plot at step " << RD.stepCount);
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             plt.plot_contour (displays[3], RD.hg, ctrs);

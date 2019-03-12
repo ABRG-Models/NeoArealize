@@ -12,17 +12,22 @@ def sos_centroid_analyse (logdirname, trgt, output_h5_file=''):
     jf = open (jsonfilename, 'r')
     jo = json.loads(jf.read())
     # jo is a dict, access elements like this:
-    tc_list = jo['tc'] # jo['tc'] is a list
-    print ('tc_list: {0}'.format(tc_list))
-    # tc is list of dicts
     alpha = []
     beta = []
-    for tc in tc_list:
-        #print ('alpha {0}, beta {1}'.format(tc['alpha'], tc['beta']))
-        alpha.append(tc['alpha'])
-        beta.append(tc['beta'])
+    try:
+        tc_list = jo['tc'] # jo['tc'] is a list
+        print ('tc_list: {0}'.format(tc_list))
+        # tc is list of dicts
+        for tc in tc_list:
+            #print ('alpha {0}, beta {1}'.format(tc['alpha'], tc['beta']))
+            alpha.append(tc['alpha'])
+            beta.append(tc['beta'])
 
-    print('alpha {0}, beta {1}'.format(alpha, beta))
+        print('alpha {0}, beta {1}'.format(alpha, beta))
+    except:
+        # Perhaps only alpha and beta are written in the params
+        alpha.append(jo['alpha'])
+        beta.append(jo['beta'])
 
     D = jo['D'] # D comes out as a real number. Good.
     k = jo['k'] # key error right now.

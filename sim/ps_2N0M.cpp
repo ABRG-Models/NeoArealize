@@ -112,7 +112,7 @@ int main (int argc, char **argv)
                 RD.k = kk;
 
                 stringstream ss;
-                ss << "logs/scancpp" << scannum++;
+                ss << "logs/ps_2N0M_" << scannum++;
                 logpath = ss.str();
                 RD.logpath = logpath;
 

@@ -8,6 +8,9 @@ import re
 #
 def readFiles (logdir):
 
+    # Take off any training directory slash
+    logdir = logdir.rstrip ('/')
+
     # Read x and y first
     pf = h5py.File(logdir+'/positions.h5', 'r')
     klist = list(pf.keys())
@@ -56,7 +59,7 @@ def readFiles (logdir):
     fileidx = 0
     for filename in files:
 
-        #print ('{0}'.format(filename))
+        print ('Search {0} with RE pattern {1}'.format(filename, (logdir+'/c_(.*).h5')))
 
         # Get the time index from the filename with a reg. expr.
         idxsearch = re.search(logdir+'/c_(.*).h5', '{0}'.format(filename))

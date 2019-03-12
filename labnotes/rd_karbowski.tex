@@ -495,6 +495,49 @@ The boundary condition that I'd like to apply to these equations is:
 \mb{J}_i(\mb{x},t) \bigg\rvert_{boundary} = 0
 \end{equation}
 
+\section{Analyse competition in the 2D Karbowski system}
+
+First sight of the 2D Karbowski system, as implemented in
+rd\_james.h/james1.cpp with N=2 and M=0 is that competition is very
+weak indeed. Over the simulation timescale during which the guidance
+gradients act (about a thousand steps) pretty much nothing happens to
+the competition between the two TC connection types. If one waits a
+very long time, then eventually, there is a split between the two,
+with one winning over the other, but we're talking timescales on the
+order of 30000 and this effect is entirely dwarfed by the effect of
+the guidance molecules in the system.
+
+To see if competition is weak across the parameter space, I did a grid
+search, varying the parameter $\alpha$ [2:0.15:5], $\beta$ [2:0.15:5]
+and $k$ [2:0.1:4]. I left $D$ fixed at 0.1 and as there were no
+guidance molecules, the $\gamma$s were all 0.
+
+I created two methods to run through the parameter space. One, called
+analysis/scanspace.py creates a json file for each parameter set, then
+calls the program james1c, and finally calls sos\_centroid\_analyse() to
+add each result to logs/scanspace.h5. The problem with this method is
+that it repeatedly creates the morph::HexGrid, adding lots of
+worthless computation. To fix this, I wrote ps\_2N0M.cpp, which uses a
+single RD\_James instance, which it re-sets after each simulation,
+without having to re-compute the HexGrid. This can evaluate 5000
+timesteps of one parameter set with the Hex to Hex spacing set to 0.02
+in 1.3 seconds (on threadbeast). ps\_2N0M.cpp runs the simulations, but
+it doesn't apply the final analysis step of computing the sum of
+squared differences between c0 and c1. This is carried out by
+analysis/ps\_2N0M\_postproc.py and plotting by analysis/ps\_2N0M\_plot.py.
+
+\begin{figure}[htb!]
+\centering
+\includegraphics[width=\textwidth]{./plots/ps_2N0M.png}
+\caption[Parameter space search.]
+{A search of a region of parameter space around $k$=3, $\alpha$=3,
+$\beta$=3. The colour of each point represents a normalised scaling of
+the sum of squared differences between elements of $c_0$ and $c_1$
+after 5000 iterations of the simulation.}
+\label{fig:rd_2N0M}
+\end{figure}
+
+
 \section{Two dimensional system with changed competition}
 
 Here are some modifications to the equations to enable competition

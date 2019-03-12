@@ -27,6 +27,9 @@
 % Nice mathematics
 \usepackage{amsmath}
 
+% Left right harpoons for kinetic equations
+\usepackage{mathtools}
+
 % Control over maketitle
 \usepackage{titling}
 
@@ -193,23 +196,23 @@ consider extending this model into two dimensions.
 Equations 1-4 of \cite{karbowski_model_2004} is the full set of
 differential equations describing their system:
 
-\begin{equation}
+\begin{equation} \label{eq:Karb1D_dc}
 \frac{\partial c_i(x, t)}{\partial t} = -\alpha_i c_i(x, t) + \beta_i
 n(x, t)[a_i(x, t)]^k
 \end{equation}
 %
-\begin{equation}
+\begin{equation} \label{eq:Karb1D_da}
 \frac{\partial a_i(x, t)}{\partial t} = \frac{\partial J_i(x, t)}{\partial
 x} + \alpha_i c_i(x, t) - \beta_i n(x, t)[a_i(x, t)]^k
 \end{equation}
 %
-\begin{equation}
+\begin{equation} \label{eq:Karb1D_conserve}
 n(x, t) + \sum_{i=1}^{N} c_i(x, t) = 1
 \end{equation}
 %
 with the flux current
 %
-\begin{equation}
+\begin{equation} \label{eq:Karb1D_J}
 J_i(x, t) = D \frac{\partial a_i(x, t)}{\partial x} - a_i
 \bigg(\gamma_{Ai} \frac{\partial \rho_A(x)}{\partial x} +\gamma_{Bi} \frac{\partial \rho_B(x)}{\partial x} + \gamma_{Ci} \frac{\partial \rho_C(x)}{\partial x} \bigg)
 \end{equation}
@@ -498,7 +501,7 @@ The boundary condition that I'd like to apply to these equations is:
 \section{Analyse competition in the 2D Karbowski system}
 
 First sight of the 2D Karbowski system, as implemented in
-rd\_james.h/james1.cpp with N=2 and M=0 is that competition is very
+\code{rd\_james.h/james1.cpp} with N=2 and M=0 is that competition is very
 weak indeed. Over the simulation timescale during which the guidance
 gradients act (about a thousand steps) pretty much nothing happens to
 the competition between the two TC connection types. If one waits a
@@ -512,36 +515,53 @@ search, varying the parameter $\alpha$ [2:0.15:5], $\beta$ [2:0.15:5]
 and $k$ [2:0.1:4]. I left $D$ fixed at 0.1 and as there were no
 guidance molecules, the $\gamma$s were all 0.
 
-I created two methods to run through the parameter space. One, called
-analysis/scanspace.py creates a json file for each parameter set, then
-calls the program james1c, and finally calls sos\_centroid\_analyse() to
-add each result to logs/scanspace.h5. The problem with this method is
-that it repeatedly creates the morph::HexGrid, adding lots of
-worthless computation. To fix this, I wrote ps\_2N0M.cpp, which uses a
-single RD\_James instance, which it re-sets after each simulation,
-without having to re-compute the HexGrid. This can evaluate 5000
-timesteps of one parameter set with the Hex to Hex spacing set to 0.02
-in 1.3 seconds (on threadbeast). ps\_2N0M.cpp runs the simulations, but
-it doesn't apply the final analysis step of computing the sum of
-squared differences between c0 and c1. This is carried out by
-analysis/ps\_2N0M\_postproc.py and plotting by analysis/ps\_2N0M\_plot.py.
-
 \begin{figure}[htb!]
 \centering
-\includegraphics[width=\textwidth]{./plots/ps_2N0M.png}
+\includegraphics[width=0.8\textwidth]{./plots/ps_2N0M.png}
 \caption[Parameter space search.]
 {A search of a region of parameter space around $k$=3, $\alpha$=3,
 $\beta$=3. The colour of each point represents a normalised scaling of
 the sum of squared differences between elements of $c_0$ and $c_1$
 after 5000 iterations of the simulation.}
-\label{fig:rd_2N0M}
+\label{fig:ps_2N0M}
 \end{figure}
 
+I created two methods to run through the parameter space. One, called
+\code{analysis/scanspace.py}, creates a json file for each parameter set, then
+calls the program \code{james1c}, and finally
+calls \code{sos\_centroid\_analyse()} to add each result
+to \code{logs/scanspace.h5}. The problem with this method is that it
+repeatedly creates the \code{morph::HexGrid}, adding lots of worthless
+computation. To fix this, I wrote \code{ps\_2N0M.cpp}, which uses a
+single \code{RD\_James} instance, which it re-sets after each
+simulation, without having to re-compute the HexGrid. This can
+evaluate 5000 timesteps of one parameter set with the Hex to Hex
+spacing set to 0.02 in 1.3 seconds (on
+threadbeast). \code{ps\_2N0M.cpp} runs the simulations, but it doesn't
+apply the final analysis step of computing the sum of squared
+differences between c0 and c1. This is carried out by
+\code{analysis/ps\_2N0M\_postproc.py} and plotting by
+\code{analysis/ps\_2N0M\_plot.py}. See Fig.~\ref{fig:ps_2N0M}.
 
 \section{Two dimensional system with changed competition}
 
+Equations \ref{eq:Karb1D_dc} \& \ref{eq:Karb1D_da} result directly
+from the simple kinetic reaction:
+
+\begin{equation} \label{eq:kinetic}
+n + a_i \xrightleftharpoons[\alpha_{i}]{\beta_{i}} c_i
+\end{equation}
+
+Application of this symmetric scheme results in the symmetric terms in
+Eq.~\ref{eq:Karb1D_dc} and \ref{eq:Karb1D_da}.
+
+If I want to change the competition between axons from different
+thalamocortical regions, I need to consder exactly what it is about
+Eq.~\ref{eq:kinetic} that I want to modify, so that the model is
+changed with some sort of guiding principle.
+
 Here are some modifications to the equations to enable competition
-between regions
+between regions dreamed up in just such a flagrant, un-principled way:
 
 \subsection{Allow the branching rate of all other TC axon types to change $\dot{a}_i$}
 %
@@ -564,6 +584,17 @@ n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 with the flux current as given by Eq.~\ref{eq:Karb2D_J} and Neumann
 boundary conditions as usual. This adds two parameter sets; $\epsilon$
 and $l$.
+
+The additional term could result from some sort of axon-axon repulsion
+as the axons grow into the cortex, or an effect that occurs only once
+they are growing within the cortical layer.
+
+One issue with this model is that it starts with an initial condition
+which is that
+
+It may be helpful to create a more realistic axon model, where axons
+grow in a tree manner, with guidance and interactions, from physically
+plausible locations in a virtual thalamus.
 %
 % BIBLIOGRAPHY
 %

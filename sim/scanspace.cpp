@@ -68,15 +68,15 @@ int main (int argc, char **argv)
      * Variable parameters. Allow command line to specify range?
      */
     FLOATTYPE klo = 2.0;
-    FLOATTYPE khi = 2.3;//4.0;
+    FLOATTYPE khi = 4.0;
     FLOATTYPE kinc = 0.1;
 
     FLOATTYPE alo = 2.0;
-    FLOATTYPE ahi = 2.45; //5.0;
+    FLOATTYPE ahi = 5.0;
     FLOATTYPE ainc = 0.15;
 
     FLOATTYPE blo = 2.0;
-    FLOATTYPE bhi = 2.45; //5.0;
+    FLOATTYPE bhi = 5.0;
     FLOATTYPE binc = 0.15;
 
     /*

@@ -41,7 +41,7 @@ cd ..
 To run:
 
 ```bash
-./build/sim/james1 ./config/c1.json
+./build/sim/james1 ./configs/c1.json
 ```
 
 The program reads parameters from c1.json and writes results into
@@ -53,7 +53,7 @@ only program (like james1c) and set different values for
 OMP_NUM_THREADS. For example:
 
 ```bash
-export OMP_NUM_THREADS=10 && time ./build/sim/james1c ./config/c1.json >/dev/null
+export OMP_NUM_THREADS=10 && time ./build/sim/james1c ./configs/c1.json >/dev/null
 ```
 
 Or use the findfastest.sh script in misc/.

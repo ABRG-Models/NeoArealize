@@ -32,10 +32,14 @@ public:
     //vector<vector<Flt> > divJ;
 
     /*!
-     * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
-     * paper.
+     * Schnakenberg
+     * F = k1 - k2 A + k3 A^2 B
+     * G = k4        - k3 A^2 B
      */
-    alignas(Flt) Flt k = 3.0;
+    alignas(Flt) Flt k1 = 1.0;
+    alignas(Flt) Flt k2 = 1.0;
+    alignas(Flt) Flt k3 = 1.0;
+    alignas(Flt) Flt k4 = 1.0;
 
     /*!
      * The diffusion parameters.
@@ -44,12 +48,6 @@ public:
     alignas(Flt) Flt D_A = 0.1;
     alignas(Flt) Flt D_B = 0.1;
     //@}
-
-    /*!
-     * k parameters
-     */
-    alignas(alignof(vector<Flt>))
-    vector<Flt> k;
 
     /*!
      * Simple constructor; no arguments.
@@ -76,7 +74,6 @@ public:
         // Resize and zero-initialise the various containers
         this->resize_vector (this->A);
         this->resize_vector (this->B);
-        this->resize_vector_param (this->k);
     }
 
     /*!
@@ -131,67 +128,64 @@ public:
         this->stepCount++;
 
         // 2. Do integration of A
+        {
+            // Runge-Kutta integration for A. This time, I'm taking
+            // ownership of this code and properly understanding it.
 
-        // Runge-Kutta integration for A
-        vector<Flt> q(this->nhex, 0.0);
-        this->compute_divJ (A, i); // populates divJ[i]
+            // Amp: "A at a midpoint"
+            vector<Flt> Amp(this->nhex, 0.0);
+            // The function F from Schnakenberg
+            vector<Flt> F(this->nhex, 0.0);
 
-        vector<Flt> k1(this->nhex, 0.0);
+            // f(A,B) = F(A,B) + lapA
 #pragma omp parallel for
-        for (unsigned int h=0; h<this->nhex; ++h) {
-            k1[h] = this->divJ[i][h] + this->alpha_c_beta_nA[h]; // or whatever for Schakenberg
-            q[h] = this->A[h] + k1[h] * halfdt;
-        }
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                F[h] = this->k1 - (this->k2 * this->A[h]) + (this->k3 * this->A[h] * this->A[h] * this->B[h]);
+            }
+            this->compute_laplace (A, lapA); // From base class
 
-        vector<Flt> k2(this->nhex, 0.0);
-        this->compute_divJ (q, i);
+            vector<Flt> K1(this->nhex, 0.0);
 #pragma omp parallel for
-        for (unsigned int h=0; h<this->nhex; ++h) {
-            k2[h] = this->divJ[i][h] + this->alpha_c_beta_nA[h];
-            q[h] = this->A[h] + k2[h] * halfdt;
-        }
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K1[h] = (F[h] + this->lapA[h]) * dt;
+                // Amp allows us to compute new Laplacian for subsequent Ks
+                Amp[h] = this->A[h] + K1[h] * 0.5 ;// * halfdt;
+            }
 
-        vector<Flt> k3(this->nhex, 0.0);
-        this->compute_divJ (q, i);
+            // f(Amp,B) = F(Amp,B) + lapAmp
 #pragma omp parallel for
-        for (unsigned int h=0; h<this->nhex; ++h) {
-            k3[h] = this->divJ[i][h] + this->alpha_c_beta_nA[h];
-            q[h] = this->A[h] + k3[h] * dt;
-        }
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                F[h] = this->k1 - (this->k2 * Amp[h]) + (this->k3 * Amp[h] * Amp[h] * this->B[h]);
+            }
+            this->compute_laplace (Amp, lapA);
 
-        vector<Flt> k4(this->nhex, 0.0);
-        this->compute_divJ (q, i);
+            vector<Flt> K2(this->nhex, 0.0);
 #pragma omp parallel for
-        for (unsigned int h=0; h<this->nhex; ++h) {
-            k4[h] = this->divJ[i][h] + this->alpha_c_beta_nA[h];
-            A[h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * sixthdt;
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K2[h] = SOMETHINGUNKNOWN * dt;
+                q[h] = this->A[h] + K1[h] * halfdt;
+            }
+
+            vector<Flt> K2(this->nhex, 0.0);
+            this->compute_divJ (q, i);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K2[h] = this->lapA[h] + F[h];
+                q[h] = this->A[h] + K2[h] * dt;
+            }
+
+            vector<Flt> K3(this->nhex, 0.0);
+            this->compute_divJ (q, i);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K3[h] = this->lapA[h] + this->alpha_c_beta_nA[h];
+                A[h] += (K0[h] + 2.0 * (K1[h] + K2[h]) + K3[h]) * sixthdt;
+            }
         }
 
         // 3. Do integration of B
-        // Runge-Kutta integration for B
-        vector<Flt> q(nhex,0.);
-        vector<Flt> k1 = compute_dci_dt (B, i);
-#pragma omp parallel for
-        for (unsigned int h=0; h<nhex; h++) {
-            q[h] = B[h] + k1[h] * halfdt;
-        }
-
-        vector<Flt> k2 = compute_dci_dt (q, i);
-#pragma omp parallel for
-        for (unsigned int h=0; h<nhex; h++) {
-            q[h] = B[h] + k2[h] * halfdt;
-        }
-
-        vector<Flt> k3 = compute_dci_dt (q, i);
-#pragma omp parallel for
-        for (unsigned int h=0; h<nhex; h++) {
-            q[h] = B[h] + k3[h] * dt;
-        }
-
-        vector<Flt> k4 = compute_dci_dt (q, i);
-#pragma omp parallel for
-        for (unsigned int h=0; h<nhex; h++) {
-            B[h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * sixthdt;
+        {
+            // Addme
         }
     }
 

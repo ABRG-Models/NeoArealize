@@ -47,18 +47,28 @@ find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 find_package(X11 REQUIRED)
 
-set (LIB_TYPE SHARED) # STATIC or SHARED
-string(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
-#find_package (HDF5) # Find non-cmake built HDF5, as installed on Ubuntu
-# In case the above fails, something like this might work
-find_package (HDF5 NAMES hdf5 COMPONENTS C ${SEARCH_TYPE})
+if(APPLE)
+  find_package (HDF5 REQUIRED)
+  set (HDF5LIBLINK ${HDF5_C_LIBRARY_hdf5})
+else()
+  set (LIB_TYPE SHARED) # STATIC or SHARED
+  string(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
+  find_package (HDF5 NAMES hdf5 COMPONENTS C ${SEARCH_TYPE} REQUIRED)
+  set (HDF5LIBLINK ${HDF5_C_${LIB_TYPE}_LIBRARY})
+endif(APPLE)
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR} ${X11_INC_SEARCH_PATH} ${HDF5_INCLUDE_DIR})
 
 # Find libmorphologica using pkgconfig
 find_package(PkgConfig)
 if(PKG_CONFIG_FOUND)
-  message(STATUS "Have pkg_config")
+  message(STATUS "Have pkg_config, searching for libmorphologica...")
+
+  if(APPLE)
+    # Manually set PKG_CONFIG_PATH on Mac, as mac ports with by default search only in /opt/local
+    set(ENV{PKG_CONFIG_PATH}  "ENV{PKG_CONFIG_PATH}:${CMAKE_INSTALL_PREFIX}/lib/pkgconfig")
+  endif(APPLE)
+
   pkg_check_modules(MORPH REQUIRED libmorphologica)
   if (MORPH_FOUND)
     message(STATUS "pkg_config found libmorphologica")

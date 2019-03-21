@@ -177,7 +177,7 @@ int main (int argc, char **argv)
                 // results were computed with single precision, if 8, then double
                 // precision was used. Also save various parameters from the RD system.
                 Json::Value root;
-                root["float_width"] = sizeof(FLOATTYPE);
+                root["float_width"] = (unsigned int)sizeof(FLOATTYPE);
                 string tnow = morph::Tools::timeNow();
                 root["sim_ran_at_time"] = tnow.substr(0,tnow.size()-1);
                 root["hextohex_d"] = RD.hextohex_d;

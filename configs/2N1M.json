@@ -1,12 +1,13 @@
 {
     // Global simulation parameters
     "steps" : 5000,               // Number of steps to simulate for
-    "logevery" : 1000,
-    "plotevery" : 10,
-    "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
+    "logevery" : 5000,
+    "plotevery" : 100,
+    "vidframes" : false,
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.01,                     // Global diffusion constant
+    "D" : 0.1,                     // Global diffusion constant
     "contour_threshold" : 0.55,
     "k" : 3,
     "logpath" : "logs/2N1M",
@@ -30,11 +31,10 @@
     "guidance": [
         {
             "shape"  : "Sigmoid1D",
-            //"shape"  : "Linear1D",
             "gain"   : 0.5,
             "phi"    : 0,
-            "width"  : 0.05,
-            "offset" : 0.1
+            "width"  : 0.1,
+            "offset" : 0.0
         }
     ] // end guidance
 }

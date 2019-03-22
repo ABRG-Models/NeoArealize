@@ -81,8 +81,8 @@ public:
      */
     void init (void) {
         // Initialise A, B with noise
-        this->noiseify_vector (this->A);
-        this->noiseify_vector (this->B);
+        this->noiseify_vector_variable (this->A, 0.5, 1);
+        this->noiseify_vector_variable (this->B, 0.6, 1);
     }
 
 
@@ -129,7 +129,7 @@ public:
 #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             dAdt[h] = this->k1 - (this->k2 * A_[h])
-                + (this->k3 * A_[h] * A_[h] * this->B[h]) + lapA[h];
+                + (this->k3 * A_[h] * A_[h] * this->B[h]) + this->D_A * lapA[h];
         }
     }
     void compute_dBdt (vector<Flt>& B_, vector<Flt>& dBdt) {
@@ -138,7 +138,7 @@ public:
 #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
             // G = k4        - k3 A^2 B
-            dBdt[h] = this->k4 - (this->k3 * this->A[h] * this->A[h] * B_[h]) + lapB[h];
+            dBdt[h] = this->k4 - (this->k3 * this->A[h] * this->A[h] * B_[h]) + this->D_B * lapB[h];
         }
     }
     //@}

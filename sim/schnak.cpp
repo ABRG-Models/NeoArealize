@@ -139,6 +139,7 @@ int main (int argc, char **argv)
                  << "       : FILES on each run (\"overwrite_logs\" is set to true)." << endl;
         }
     }
+    const FLOATTYPE dt = root.get ("dt", 0.00001).asDouble();
 
     // Schakenberg model parameters
     const FLOATTYPE D_A = root.get ("D_A", 0.1).asDouble();
@@ -154,6 +155,9 @@ int main (int argc, char **argv)
 
     // Parameters from the config that apply only to plotting:
     const unsigned int plotevery = root.get ("plotevery", 10).asUInt();
+
+    // Should the plots be saved as png images?
+    const bool saveplots = root.get ("saveplots", false).asBool();
 
     // If true, then write out the logs in consecutive order numbers,
     // rather than numbers that relate to the simulation timestep.
@@ -178,13 +182,13 @@ int main (int argc, char **argv)
 
     string winTitle = worldName + ": A"; // 0
     displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
+                                         rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
     winTitle = worldName + ": B"; // 1
     displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[1].win));
+                                         rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 #endif
@@ -207,6 +211,7 @@ int main (int argc, char **argv)
     RD.allocate();
 
     // After allocate(), we can set up parameters:
+    RD.set_dt(dt);
     RD.k1 = k1;
     RD.k2 = k2;
     RD.k3 = k3;
@@ -257,19 +262,21 @@ int main (int argc, char **argv)
 
 #ifdef COMPILE_PLOTTING
         if ((RD.stepCount % plotevery) == 0) {
-            DBG("Plot at step " << RD.stepCount);
+            //DBG("Plot at step " << RD.stepCount);
             plt.scalarfields (displays[0], RD.hg, RD.A);
             plt.scalarfields (displays[1], RD.hg, RD.B);
             displays[0].redrawDisplay();
             displays[1].redrawDisplay();
 
-            if (vidframes) {
-                plt.savePngs (logpath, "A", framecount, displays[0]);
-                plt.savePngs (logpath, "B", framecount, displays[1]);
-                ++framecount;
-            } else {
-                plt.savePngs (logpath, "A", RD.stepCount, displays[0]);
-                plt.savePngs (logpath, "B", RD.stepCount, displays[1]);
+            if (saveplots) {
+                if (vidframes) {
+                    plt.savePngs (logpath, "A", framecount, displays[0]);
+                    plt.savePngs (logpath, "B", framecount, displays[1]);
+                    ++framecount;
+                } else {
+                    plt.savePngs (logpath, "A", RD.stepCount, displays[0]);
+                    plt.savePngs (logpath, "B", RD.stepCount, displays[1]);
+                }
             }
         }
 #endif
@@ -291,11 +298,16 @@ int main (int argc, char **argv)
     string tnow = morph::Tools::timeNow();
     root["sim_ran_at_time"] = tnow.substr(0,tnow.size()-1);
     root["hextohex_d"] = RD.hextohex_d;
-    //root["D"] = RD.get_D();
-    //root["k"] = RD.k;
-    root["dt"] = RD.dt;
+    root["D_A"] = RD.D_A;
+    root["D_B"] = RD.D_B;
+    root["k1"] = RD.k1;
+    root["k2"] = RD.k2;
+    root["k3"] = RD.k3;
+    root["k4"] = RD.k4;
+    root["dt"] = RD.get_dt();
 
-    // We'll save a copy of the parameters for the simulation in the log directory as params.json
+    // We'll save a copy of the parameters for the simulation in the
+    // log directory as params.json
     const string paramsCopy = logpath + "/params.json";
     ofstream paramsConf;
     paramsConf.open (paramsCopy.c_str(), ios::out|ios::trunc);

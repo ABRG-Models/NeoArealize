@@ -97,9 +97,16 @@ public:
     alignas(Flt) unsigned int nhex = 0;
 
     /*!
+     * Over what length scale should some values fall off to zero
+     * towards the boundary? Used in a couple of different locations.
+     */
+    alignas(Flt) Flt boundaryFalloffDist = 0.02; // 0.02 default
+
+protected:
+    /*!
      * Our choice of dt.
      */
-    alignas(Flt) Flt dt = 0.0001;
+    alignas(Flt) Flt dt = 0.00001;
 
     /*!
      * Compute half and sixth dt in constructor.
@@ -109,13 +116,6 @@ public:
     alignas(Flt) Flt sixthdt = 0.0;
     //@}
 
-    /*!
-     * Over what length scale should some values fall off to zero
-     * towards the boundary? Used in a couple of different locations.
-     */
-    alignas(Flt) Flt boundaryFalloffDist = 0.02; // 0.02 default
-
-protected:
     /*!
      * Hex to hex distance. Populate this from hg.d after hg has been
      * initialised.
@@ -128,13 +128,13 @@ protected:
      */
     //@{
     alignas(Flt) Flt oneoverd = 1.0/this->d;
+    alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
+    alignas(Flt) Flt oneover3d = 1.0/(3*this->d);
+
     alignas(Flt) Flt oneoverv = 1.0/this->v;
     alignas(Flt) Flt twov = this->v+this->v;
     alignas(Flt) Flt oneover2v = 1.0/this->twov;
     alignas(Flt) Flt oneover4v = 1.0/(this->twov+this->twov);
-    alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
-    alignas(Flt) Flt oneover3d = 1.0/(3*this->d);
-    alignas(Flt) Flt twoDover3dd = this->d+this->d / 3*this->d*this->d;
     //@}
 
 public:
@@ -256,15 +256,13 @@ public:
      * I apply a sigmoid to the boundary hexes, so that the noise
      * drops away towards the edge of the domain.
      */
-    void noiseify_vector (vector<Flt>& v) {
-        Flt randNoiseOffset = 0.8;
-        Flt randNoiseGain = 0.1;
+    void noiseify_vector_variable (vector<Flt>& v, Flt offset, Flt gain) {
         for (auto h : this->hg->hexen) {
             // boundarySigmoid. Jumps sharply (100, larger is
             // sharper) over length scale 0.05 to 1. So if
             // distance from boundary > 0.05, noise has normal
             // value. Close to boundary, noise is less.
-            v[h.vi] = morph::Tools::randF<Flt>() * randNoiseGain + randNoiseOffset;
+            v[h.vi] = morph::Tools::randF<Flt>() * gain + offset;
             if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
                 Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
                 v[h.vi] = v[h.vi] * bSig;
@@ -334,6 +332,20 @@ public:
 
     Flt get_v (void) {
         return this->v;
+    }
+    //@}
+
+    /*!
+     * Public accessors for dt
+     */
+    //@{
+    void set_dt (Flt _dt) {
+        this->dt = _dt;
+        this->halfdt = this->dt/2.0;
+        this->sixthdt = this->dt/6.0;
+    }
+    Flt get_dt (void) {
+        return this->dt;
     }
     //@}
 

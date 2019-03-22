@@ -4,7 +4,7 @@
  * Two component Schnakenberg Reaction Diffusion system
  */
 template <class Flt>
-class RD_Schnakenberg : public RD_Base
+class RD_Schnakenberg : public RD_Base<Flt>
 {
 public:
     /*!
@@ -53,15 +53,14 @@ public:
      * Simple constructor; no arguments.
      */
     RD_Schnakenberg (void) :
-        RD_Base() {
+        RD_Base<Flt>() {
         DBG("RD_Schakenberg constructor")
     }
 
     /*!
      * Destructor required to free up HexGrid memory
      */
-    ~RD_Schnakenbert (void) :
-        ~RD_Base() {
+    ~RD_Schnakenberg (void) {
         DBG("RD_Schakenberg deconstructor")
     }
 
@@ -70,10 +69,10 @@ public:
      */
     void allocate (void) {
         // Always call allocate() from the base class first.
-        RD_Base::allocate();
+        RD_Base<Flt>::allocate();
         // Resize and zero-initialise the various containers
-        this->resize_vector (this->A);
-        this->resize_vector (this->B);
+        this->resize_vector_variable (this->A);
+        this->resize_vector_variable (this->B);
     }
 
     /*!
@@ -104,12 +103,12 @@ public:
         HdfData data(fname.str());
         stringstream path;
         // The A variables
-        path << "/A" << i;
+        path << "/A";
         data.add_contained_vals (path.str().c_str(), this->A);
         // The B variable
         path.str("");
         path.clear();
-        path << "/B" << i;
+        path << "/B";
         data.add_contained_vals (path.str().c_str(), this->B);
 
         //data.add_contained_vals ("/n", this->n);
@@ -121,20 +120,28 @@ public:
     //@{
 
     /*!
-     * Schnakenberg function
+     * Schnakenberg functions
      */
+    //@{
     void compute_dAdt (vector<Flt>& A_, vector<Flt>& dAdt) {
-        vector<Flt> F(this->nhex, 0.0);
+        vector<Flt> lapA(this->nhex, 0.0);
+        this->compute_laplace (A_, lapA);
 #pragma omp parallel for
         for (unsigned int h=0; h<this->nhex; ++h) {
-            F[h] = this->k1 - (this->k2 * A_[h]) + (this->k3 * A_[h] * A_[h] * this->B[h]);
-        }
-        this->compute_laplace (A_, lapA); // From base class
-#pragma omp parallel for
-        for (unsigned int h=0; h<this->nhex; ++h) {
-            dAdt[h] = F[h] + lapA[h];
+            dAdt[h] = this->k1 - (this->k2 * A_[h])
+                + (this->k3 * A_[h] * A_[h] * this->B[h]) + lapA[h];
         }
     }
+    void compute_dBdt (vector<Flt>& B_, vector<Flt>& dBdt) {
+        vector<Flt> lapB(this->nhex, 0.0);
+        this->compute_laplace (B_, lapB);
+#pragma omp parallel for
+        for (unsigned int h=0; h<this->nhex; ++h) {
+            // G = k4        - k3 A^2 B
+            dBdt[h] = this->k4 - (this->k3 * this->A[h] * this->A[h] * B_[h]) + lapB[h];
+        }
+    }
+    //@}
 
     /*!
      * Do a single step through the model.
@@ -162,7 +169,7 @@ public:
             this->compute_dAdt (this->A, dAdt);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                K1[h] = dAdt[h] * dt;
+                K1[h] = dAdt[h] * this->dt;
                 Atst[h] = this->A[h] + K1[h] * 0.5 ;
             }
 
@@ -172,7 +179,7 @@ public:
             this->compute_dAdt (Atst, dAdt);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                K2[h] = dAdt[h] * dt;
+                K2[h] = dAdt[h] * this->dt;
                 Atst[h] = this->A[h] + K2[h] * 0.5;
             }
 
@@ -182,7 +189,7 @@ public:
             this->compute_dAdt (Atst, dAdt);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                K3[h] = dAdt[h] * dt;
+                K3[h] = dAdt[h] * this->dt;
                 Atst[h] = this->A[h] + K3[h];
             }
 
@@ -192,7 +199,7 @@ public:
             this->compute_dAdt (Atst, dAdt);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                K4[h] = dAdt[h] * dt;
+                K4[h] = dAdt[h] * this->dt;
             }
 
             /*
@@ -202,13 +209,68 @@ public:
              */
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                A[h] += ((K0[h] + 2.0 * (K1[h] + K2[h]) + K3[h])/(Flt)6.0);
+                A[h] += ((K1[h] + 2.0 * (K2[h] + K3[h]) + K4[h])/(Flt)6.0);
             }
         }
 
         // 3. Do integration of B
         {
-            // Addme
+            // Btst: "B at a test point". Btst is a temporary estimate for B.
+            vector<Flt> Btst(this->nhex, 0.0);
+            vector<Flt> dBdt(this->nhex, 0.0);
+            vector<Flt> K1(this->nhex, 0.0);
+            vector<Flt> K2(this->nhex, 0.0);
+            vector<Flt> K3(this->nhex, 0.0);
+            vector<Flt> K4(this->nhex, 0.0);
+
+            /*
+             * Stage 1
+             */
+            this->compute_dBdt (this->B, dBdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K1[h] = dBdt[h] * this->dt;
+                Btst[h] = this->B[h] + K1[h] * 0.5 ;
+            }
+
+            /*
+             * Stage 2
+             */
+            this->compute_dBdt (Btst, dBdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K2[h] = dBdt[h] * this->dt;
+                Btst[h] = this->B[h] + K2[h] * 0.5;
+            }
+
+            /*
+             * Stage 3
+             */
+            this->compute_dBdt (Btst, dBdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K3[h] = dBdt[h] * this->dt;
+                Btst[h] = this->B[h] + K3[h];
+            }
+
+            /*
+             * Stage 4
+             */
+            this->compute_dBdt (Btst, dBdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K4[h] = dBdt[h] * this->dt;
+            }
+
+            /*
+             * Final sum together. This could be incorporated in the
+             * for loop for Stage 4, but I've separated it out for
+             * pedagogy.
+             */
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                B[h] += ((K1[h] + 2.0 * (K2[h] + K3[h]) + K4[h])/(Flt)6.0);
+            }
         }
     }
 

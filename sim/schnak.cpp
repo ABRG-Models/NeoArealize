@@ -140,9 +140,13 @@ int main (int argc, char **argv)
         }
     }
 
-    const double D = root.get ("D", 0.1).asDouble();
-    const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
-    //const FLOATTYPE k = root.get ("k", 3).asDouble();
+    // Schakenberg model parameters
+    const FLOATTYPE D_A = root.get ("D_A", 0.1).asDouble();
+    const FLOATTYPE D_B = root.get ("D_A", 0.1).asDouble();
+    const FLOATTYPE k1 = root.get ("k1", 1).asDouble();
+    const FLOATTYPE k2 = root.get ("k1", 1).asDouble();
+    const FLOATTYPE k3 = root.get ("k1", 1).asDouble();
+    const FLOATTYPE k4 = root.get ("k1", 1).asDouble();
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -188,7 +192,7 @@ int main (int argc, char **argv)
     /*
      * Instantiate and set up the model object
      */
-    RD_Schakenberg<FLOATTYPE> RD;
+    RD_Schnakenberg<FLOATTYPE> RD;
 
     RD.svgpath = svgpath;
     RD.logpath = logpath;
@@ -203,8 +207,12 @@ int main (int argc, char **argv)
     RD.allocate();
 
     // After allocate(), we can set up parameters:
-    RD.contour_threshold = contour_threshold;
-    //RD.k1 = k1; // etc
+    RD.k1 = k1;
+    RD.k2 = k2;
+    RD.k3 = k3;
+    RD.k4 = k4;
+    RD.D_A = D_A;
+    RD.D_B = D_B;
 
     // Now parameters are set, call init()
     RD.init();
@@ -250,8 +258,6 @@ int main (int argc, char **argv)
 #ifdef COMPILE_PLOTTING
         if ((RD.stepCount % plotevery) == 0) {
             DBG("Plot at step " << RD.stepCount);
-            // Do a final plot of the ctrs as found.
-            vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             plt.scalarfields (displays[0], RD.hg, RD.A);
             plt.scalarfields (displays[1], RD.hg, RD.B);
             displays[0].redrawDisplay();

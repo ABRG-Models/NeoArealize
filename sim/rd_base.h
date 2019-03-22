@@ -110,22 +110,10 @@ public:
     //@}
 
     /*!
-     * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
-     * paper.
-     */
-    alignas(Flt) Flt k = 3.0;
-
-    /*!
      * Over what length scale should some values fall off to zero
      * towards the boundary? Used in a couple of different locations.
      */
     alignas(Flt) Flt boundaryFalloffDist = 0.02; // 0.02 default
-
-    /*!
-     * k parameters
-     */
-    alignas(alignof(vector<Flt>))
-    vector<Flt> k;
 
 protected:
     /*!
@@ -256,7 +244,7 @@ public:
      */
     void resize_vector_array_vector (vector<array<vector<Flt>, 2> >& vav, unsigned int N) {
         vav.resize (N);
-        for (unsigned int n = 0; i<N; ++n) {
+        for (unsigned int n = 0; n<N; ++n) {
             this->resize_gradient_field (vav[n]);
         }
     }
@@ -585,7 +573,7 @@ public:
                 thesum += F[hi];
             }
 
-            lapF[i][hi] = norm * thesum;
+            lapF[hi] = norm * thesum;
         }
     }
 

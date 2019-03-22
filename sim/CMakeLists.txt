@@ -61,6 +61,6 @@ target_compile_definitions(ps_2N0M PUBLIC FLOATTYPE=float)
 target_link_libraries(ps_2N0M ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Schnakenberg RD system
-add_executable(schnak rd_schnak.cpp)
+add_executable(schnak schnak.cpp)
 target_compile_definitions(schnak PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
 target_link_libraries(schnak ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

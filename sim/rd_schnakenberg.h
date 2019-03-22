@@ -121,6 +121,22 @@ public:
     //@{
 
     /*!
+     * Schnakenberg function
+     */
+    void compute_dAdt (vector<Flt>& A_, vector<Flt>& dAdt) {
+        vector<Flt> F(this->nhex, 0.0);
+#pragma omp parallel for
+        for (unsigned int h=0; h<this->nhex; ++h) {
+            F[h] = this->k1 - (this->k2 * A_[h]) + (this->k3 * A_[h] * A_[h] * this->B[h]);
+        }
+        this->compute_laplace (A_, lapA); // From base class
+#pragma omp parallel for
+        for (unsigned int h=0; h<this->nhex; ++h) {
+            dAdt[h] = F[h] + lapA[h];
+        }
+    }
+
+    /*!
      * Do a single step through the model.
      */
     void step (void) {
@@ -132,54 +148,61 @@ public:
             // Runge-Kutta integration for A. This time, I'm taking
             // ownership of this code and properly understanding it.
 
-            // Amp: "A at a midpoint"
-            vector<Flt> Amp(this->nhex, 0.0);
-            // The function F from Schnakenberg
-            vector<Flt> F(this->nhex, 0.0);
-
-            // f(A,B) = F(A,B) + lapA
-#pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                F[h] = this->k1 - (this->k2 * this->A[h]) + (this->k3 * this->A[h] * this->A[h] * this->B[h]);
-            }
-            this->compute_laplace (A, lapA); // From base class
-
+            // Atst: "A at a test point". Atst is a temporary estimate for A.
+            vector<Flt> Atst(this->nhex, 0.0);
+            vector<Flt> dAdt(this->nhex, 0.0);
             vector<Flt> K1(this->nhex, 0.0);
-#pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                K1[h] = (F[h] + this->lapA[h]) * dt;
-                // Amp allows us to compute new Laplacian for subsequent Ks
-                Amp[h] = this->A[h] + K1[h] * 0.5 ;// * halfdt;
-            }
-
-            // f(Amp,B) = F(Amp,B) + lapAmp
-#pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                F[h] = this->k1 - (this->k2 * Amp[h]) + (this->k3 * Amp[h] * Amp[h] * this->B[h]);
-            }
-            this->compute_laplace (Amp, lapA);
-
             vector<Flt> K2(this->nhex, 0.0);
-#pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                K2[h] = SOMETHINGUNKNOWN * dt;
-                q[h] = this->A[h] + K1[h] * halfdt;
-            }
-
-            vector<Flt> K2(this->nhex, 0.0);
-            this->compute_divJ (q, i);
-#pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                K2[h] = this->lapA[h] + F[h];
-                q[h] = this->A[h] + K2[h] * dt;
-            }
-
             vector<Flt> K3(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            vector<Flt> K4(this->nhex, 0.0);
+
+            /*
+             * Stage 1
+             */
+            this->compute_dAdt (this->A, dAdt);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                K3[h] = this->lapA[h] + this->alpha_c_beta_nA[h];
-                A[h] += (K0[h] + 2.0 * (K1[h] + K2[h]) + K3[h]) * sixthdt;
+                K1[h] = dAdt[h] * dt;
+                Atst[h] = this->A[h] + K1[h] * 0.5 ;
+            }
+
+            /*
+             * Stage 2
+             */
+            this->compute_dAdt (Atst, dAdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K2[h] = dAdt[h] * dt;
+                Atst[h] = this->A[h] + K2[h] * 0.5;
+            }
+
+            /*
+             * Stage 3
+             */
+            this->compute_dAdt (Atst, dAdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K3[h] = dAdt[h] * dt;
+                Atst[h] = this->A[h] + K3[h];
+            }
+
+            /*
+             * Stage 4
+             */
+            this->compute_dAdt (Atst, dAdt);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                K4[h] = dAdt[h] * dt;
+            }
+
+            /*
+             * Final sum together. This could be incorporated in the
+             * for loop for Stage 4, but I've separated it out for
+             * pedagogy.
+             */
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                A[h] += ((K0[h] + 2.0 * (K1[h] + K2[h]) + K3[h])/(Flt)6.0);
             }
         }
 

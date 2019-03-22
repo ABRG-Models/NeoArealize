@@ -540,48 +540,54 @@ public:
         }
     }
 
-#if 0
     /*!
-     * Could become compute_divF (F, gradF, divF), for general use in the base
-     * class.
-     *
-     * Computes the divergence term, J(x) (Eq 4). Probably too model
-     * specific to go here in base class. What I really want is
-     * compute Laplacian, which is simpler.
+     * Compute laplacian of scalar field F, with result placed in lapF.
      */
-    virtual void compute_divJ (vector<Flt>& Fa, array<vector<Flt>, 2>& gradFa, vector<Flt>& divFa) {
+    virtual void compute_laplace (const vector<Flt>& F, vector<Flt>& lapF) {
 
-        // Compute gradient of a_i(x), for use computing the third term, below.
-        this->spacegrad2D (fa, this->grad_a[i]);
+        Flt norm  = (Flt)2 / (Flt)(3.0 * this->d * this->d);
 
-        // Three terms to compute; see Eq. 17 in methods_notes.pdf
-#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
+#pragma omp parallel for schedule(static)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
-            // 1. The D Del^2 a_i term. Eq. 18.
+            // 1. The D Del^2 term
+
             // Compute the sum around the neighbours
-            Flt thesum = -6 * fa[hi];
+            Flt thesum = -6 * F[hi];
+            if (HAS_NE(hi)) {
+                thesum += F[NE(hi)];
+            } else {
+                thesum += F[hi]; // A ghost neighbour-east with same value as Hex_0
+            }
+            if (HAS_NNE(hi)) {
+                thesum += F[NNE(hi)];
+            } else {
+                thesum += F[hi];
+            }
+            if (HAS_NNW(hi)) {
+                thesum += F[NNW(hi)];
+            } else {
+                thesum += F[hi];
+            }
+            if (HAS_NW(hi)) {
+                thesum += F[NW(hi)];
+            } else {
+                thesum += F[hi];
+            }
+            if (HAS_NSW(hi)) {
+                thesum += F[NSW(hi)];
+            } else {
+                thesum += F[hi];
+            }
+            if (HAS_NSE(hi)) {
+                thesum += F[NSE(hi)];
+            } else {
+                thesum += F[hi];
+            }
 
-            thesum += fa[(HAS_NE(hi)  ? NE(hi)  : hi)];
-            thesum += fa[(HAS_NNE(hi) ? NNE(hi) : hi)];
-            thesum += fa[(HAS_NNW(hi) ? NNW(hi) : hi)];
-            thesum += fa[(HAS_NW(hi)  ? NW(hi)  : hi)];
-            thesum += fa[(HAS_NSW(hi) ? NSW(hi) : hi)];
-            thesum += fa[(HAS_NSE(hi) ? NSE(hi) : hi)];
-
-            // Multiply sum by 2D/3d^2 to give term1
-            Flt term1 = this->twoDover3dd * thesum;
-
-            // 2. The (a div(g)) term.
-            Flt term2 = fa[hi] * this->divg_over3d[i][hi];
-
-            // 3. Third term is this->g . grad a_i. Should not contribute to J, as g(x) decays towards boundary.
-            Flt term3 = this->g[i][0][hi] * this->grad_a[i][0][hi] + (this->g[i][1][hi] * this->grad_a[i][1][hi]);
-
-            this->divJ[i][hi] = term1 - term2 - term3;
+            lapF[i][hi] = norm * thesum;
         }
     }
-#endif
 
 }; // RD_Base
 

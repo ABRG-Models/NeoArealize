@@ -724,6 +724,10 @@ public:
     }
     //@}
 
+    Flt get_dt (void) {
+        return this->dt;
+    }
+
     /*!
      * A public setter for D, as it requires another attribute to be
      * updated at the same time.

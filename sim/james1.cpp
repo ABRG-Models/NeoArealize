@@ -481,7 +481,7 @@ int main (int argc, char **argv)
     root["hextohex_d"] = RD.hextohex_d;
     root["D"] = RD.get_D();
     root["k"] = RD.k;
-    root["dt"] = RD.dt;
+    root["dt"] = RD.get_dt();
 
     // We'll save a copy of the parameters for the simulation in the log directory as params.json
     const string paramsCopy = logpath + "/params.json";

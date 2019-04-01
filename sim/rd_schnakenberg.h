@@ -50,18 +50,18 @@ public:
     //@}
 
     /*!
-     * Simple constructor; no arguments.
+     * Simple constructor; no arguments. Simply call RD_Base
+     * constructor.
      */
     RD_Schnakenberg (void) :
         RD_Base<Flt>() {
-        DBG("RD_Schakenberg constructor")
     }
 
     /*!
-     * Destructor required to free up HexGrid memory
+     * Destructor
      */
     ~RD_Schnakenberg (void) {
-        DBG("RD_Schakenberg deconstructor")
+        // No operation. RD_Base destructor will free HexGrid.
     }
 
     /*!

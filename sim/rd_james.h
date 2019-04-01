@@ -408,12 +408,6 @@ private:
     //@{
     void set_d (Flt d_) {
         RD_Base<Flt>::set_d (d_);
-        /*
-        this->d = d_;
-        this->oneoverd = 1.0/this->d;
-        this->oneover2d = 1.0/(2*this->d);
-        this->oneover3d = 1.0/(3*this->d);
-        */
         this->updateTwoDover3dd();
     }
     //@}

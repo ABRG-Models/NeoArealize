@@ -183,7 +183,7 @@ int main (int argc, char **argv)
                 root["hextohex_d"] = RD.hextohex_d;
                 root["D"] = RD.get_D();
                 root["k"] = RD.k;
-                root["dt"] = RD.dt;
+                root["dt"] = RD.get_dt();
                 root["alpha"] = aa;
                 root["beta"] = bb;
 

@@ -180,7 +180,6 @@ public:
      * Simple constructor; no arguments.
      */
     RD_Base (void) {
-        DBG("RD_Base constructor")
         this->halfdt = this->dt/2.0;
         this->sixthdt = this->dt/6.0;
     }
@@ -189,7 +188,6 @@ public:
      * Destructor required to free up HexGrid memory
      */
     ~RD_Base (void) {
-        DBG("RD_Base deconstructor (deleting this->hg)")
         delete (this->hg);
     }
 

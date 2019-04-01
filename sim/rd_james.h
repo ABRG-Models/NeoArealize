@@ -1,69 +1,8 @@
-#include "morph/tools.h"
-#include "morph/ReadCurves.h"
-#include "morph/HexGrid.h"
-#include "morph/HdfData.h"
-#include <iostream>
-#include <sstream>
-#include <vector>
-#include <array>
-#include <iomanip>
-#include <cmath>
-#include <hdf5.h>
-#include <unistd.h>
-
-#define DEBUG 1
-#define DBGSTREAM std::cout
-#include <morph/MorphDbg.h>
-
-using std::vector;
-using std::array;
-using std::string;
-using std::stringstream;
-using std::cerr;
-using std::endl;
-using std::runtime_error;
-
-using morph::HexGrid;
-using morph::ReadCurves;
-using morph::HdfData;
-
-/*!
- * Macros for testing neighbours. The step along for neighbours on the
- * rows above/below is given by:
- *
- * Dest  | step
- * ----------------------
- * NNE   | +rowlen
- * NNW   | +rowlen - 1
- * NSW   | -rowlen
- * NSE   | -rowlen + 1
+/*
+ * Like RD_James, but derives from RD_Base
  */
-//@{
-#define NE(hi) (this->hg->d_ne[hi])
-#define HAS_NE(hi) (this->hg->d_ne[hi] == -1 ? false : true)
 
-#define NW(hi) (this->hg->d_nw[hi])
-#define HAS_NW(hi) (this->hg->d_nw[hi] == -1 ? false : true)
-
-#define NNE(hi) (this->hg->d_nne[hi])
-#define HAS_NNE(hi) (this->hg->d_nne[hi] == -1 ? false : true)
-
-#define NNW(hi) (this->hg->d_nnw[hi])
-#define HAS_NNW(hi) (this->hg->d_nnw[hi] == -1 ? false : true)
-
-#define NSE(hi) (this->hg->d_nse[hi])
-#define HAS_NSE(hi) (this->hg->d_nse[hi] == -1 ? false : true)
-
-#define NSW(hi) (this->hg->d_nsw[hi])
-#define HAS_NSW(hi) (this->hg->d_nsw[hi] == -1 ? false : true)
-//@}
-
-#define IF_HAS_NE(hi, yesval, noval)  (HAS_NE(hi)  ? yesval : noval)
-#define IF_HAS_NNE(hi, yesval, noval) (HAS_NNE(hi) ? yesval : noval)
-#define IF_HAS_NNW(hi, yesval, noval) (HAS_NNW(hi) ? yesval : noval)
-#define IF_HAS_NW(hi, yesval, noval)  (HAS_NW(hi)  ? yesval : noval)
-#define IF_HAS_NSW(hi, yesval, noval) (HAS_NSW(hi) ? yesval : noval)
-#define IF_HAS_NSE(hi, yesval, noval) (HAS_NSE(hi) ? yesval : noval)
+#include "rd_base.h"
 
 /*!
  * Enumerates the way that the guidance molecules are set up
@@ -85,32 +24,9 @@ enum class GuidanceMoleculeMethod {
  * (float) or double precision (double).
  */
 template <class Flt>
-class RD_James
+class RD_James : public RD_Base<Flt>
 {
 public:
-
-    /*!
-     * Constants
-     */
-    //@{
-    //! Square root of 3 over 2
-    const Flt R3_OVER_2 = 0.866025403784439;
-    //! Square root of 3
-    const Flt ROOT3 = 1.73205080756888;
-    //! Passed to HdfData constructor to say we want to read the data
-    const bool READ_DATA = true;
-    //@}
-
-    /*!
-     * Hex to hex d for the grid. Make smaller to increase the number
-     * of Hexes being computed.
-     */
-    alignas(float) float hextohex_d = 0.01;
-
-    /*!
-     * Holds the number of hexes in the populated HexGrid
-     */
-    alignas(Flt) unsigned int nhex = 0;
 
     /*!
      * how many thalamo-cortical axon types are there? Denoted by N in
@@ -181,19 +97,6 @@ public:
     vector<vector<Flt> > divJ;
 
     /*!
-     * Our choice of dt.
-     */
-    alignas(Flt) Flt dt = 0.0001;
-
-    /*!
-     * Compute half and sixth dt in constructor.
-     */
-    //@{
-    alignas(Flt) Flt halfdt = 0.0;
-    alignas(Flt) Flt sixthdt = 0.0;
-    //@}
-
-    /*!
      * The power to which a_i(x,t) is raised in Eqs 1 and 2 in the
      * paper.
      */
@@ -205,12 +108,9 @@ private:
      */
     alignas(Flt) Flt D = 0.1;
 
+    alignas(Flt) Flt twoDover3dd = this->D+this->D / 3*this->d*this->d;
+
 public:
-    /*!
-     * Over what length scale should some values fall off to zero
-     * towards the boundary? Used in a couple of different locations.
-     */
-    alignas(Flt) Flt boundaryFalloffDist = 0.02; // 0.02 default
 
     /*!
      * alpha_i parameters
@@ -296,29 +196,6 @@ public:
     vector<array<vector<Flt>, 2> > grad_rho;
     //@}
 
-private:
-    /*!
-     * Hex to hex distance. Populate this from hg.d after hg has been
-     * initialised.
-     */
-    alignas(Flt) Flt d = 1.0;
-    alignas(Flt) Flt v = 1;
-
-    /*!
-     * Parameters that depend on d and v:
-     */
-    //@{
-    alignas(Flt) Flt oneoverd = 1.0/this->d;
-    alignas(Flt) Flt oneoverv = 1.0/this->v;
-    alignas(Flt) Flt twov = this->v+this->v;
-    alignas(Flt) Flt oneover2v = 1.0/this->twov;
-    alignas(Flt) Flt oneover4v = 1.0/(this->twov+this->twov);
-    alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
-    alignas(Flt) Flt oneover3d = 1.0/(3*this->d);
-    alignas(Flt) Flt twoDover3dd = this->d+this->d / 3*this->d*this->d;
-    //@}
-
-public:
     /*!
      * Memory to hold an intermediate result
      */
@@ -330,13 +207,6 @@ public:
      */
     alignas(alignof(vector<vector<Flt> >))
     vector<vector<Flt> > alpha_c;
-
-    /*!
-     * Track the number of computational steps that we've carried
-     * out. Only to show a message saying "100 steps done...", but
-     * that's reason enough.
-     */
-    alignas(Flt) unsigned int stepCount = 0;
 
     /*!
      * The contour threshold. For contour plotting [see
@@ -352,157 +222,16 @@ public:
      */
 
     /*!
-     * The HexGrid "background" for the Reaction Diffusion system.
-     */
-    HexGrid* hg;
-
-    /*!
      * Sets the function of the guidance molecule method (FIXME: Make
      * this a vector)
      */
     vector<GuidanceMoleculeMethod> rhoMethod;
 
     /*!
-     * The logpath for this model. Used when saving data out.
+     * Simple constructor; no arguments. Just calls RD_Base constructor
      */
-    string logpath = "logs";
-
-    /*!
-     * Setter which attempts to ensure the path exists.
-     */
-    void setLogpath (const string p) {
-        this->logpath = p;
-        // Ensure log directory exists
-        morph::Tools::createDir (this->logpath);
-    }
-
-    /*!
-     * Make the svgpath something that can be set by client code...
-     */
-    string svgpath = "./trial.svg";
-
-    /*!
-     * Simple constructor; no arguments.
-     */
-    RD_James (void) {
-        this->halfdt = this->dt/2.0;
-        this->sixthdt = this->dt/6.0;
-    }
-
-    /*!
-     * Destructor required to free up HexGrid memory
-     */
-    ~RD_James (void) {
-        delete (this->hg);
-    }
-
-    /*!
-     * A utility function to resize the vector-vectors that hold a
-     * variable for the N different thalamo-cortical axon types.
-     */
-    void resize_vector_vector (vector<vector<Flt> >& vv) {
-        vv.resize (this->N);
-        for (unsigned int i=0; i<this->N; ++i) {
-            vv[i].resize (this->nhex, 0.0);
-        }
-    }
-
-    void zero_vector_vector (vector<vector<Flt> >& vv) {
-        for (unsigned int i=0; i<this->N; ++i) {
-            vv[i].assign (this->nhex, 0.0);
-        }
-    }
-
-    /*!
-     * Resize a variable that'll be nhex elements long
-     */
-    void resize_vector_variable (vector<Flt>& v) {
-        v.resize (this->nhex, 0.0);
-    }
-    void zero_vector_variable (vector<Flt>& v) {
-        v.assign (this->nhex, 0.0);
-    }
-
-    /*!
-     * M members, each nhex elements long
-     */
-    void resize_guidance_variable (vector<vector<Flt> >& v) {
-        v.resize (this->M);
-        for (unsigned int m = 0; m<this->M; ++m) {
-            v[m].resize (this->nhex, 0.0);
-        }
-    }
-    void zero_guidance_variable (vector<vector<Flt> >& v) {
-        for (unsigned int m = 0; m<this->M; ++m) {
-            v[m].assign (this->nhex, 0.0);
-        }
-    }
-
-    /*!
-     * Resize a parameter that'll be N elements long
-     */
-    void resize_vector_param (vector<Flt>& p) {
-        p.resize (this->N, 0.0);
-    }
-    void zero_vector_param (vector<Flt>& p) {
-        p.assign (this->N, 0.0);
-    }
-
-    /*!
-     * Resize a vector of M vectors of parameters that'll each be N
-     * elements long
-     */
-    void resize_vector_vector_param (vector<vector<Flt> >& vp) {
-        vp.resize (this->M);
-        for (unsigned int m = 0; m<this->M; ++m) {
-            vp[m].resize (this->N, 0.0);
-        }
-    }
-    void zero_vector_vector_param (vector<vector<Flt> >& vp) {
-        for (unsigned int m = 0; m<this->M; ++m) {
-            vp[m].assign (this->N, 0.0);
-        }
-    }
-
-    /*!
-     * Resize a gradient field
-     */
-    void resize_gradient_field (array<vector<Flt>, 2>& g) {
-        g[0].resize (this->nhex, 0.0);
-        g[1].resize (this->nhex, 0.0);
-    }
-    void zero_gradient_field (array<vector<Flt>, 2>& g) {
-        g[0].assign (this->nhex, 0.0);
-        g[1].assign (this->nhex, 0.0);
-    }
-
-    /*!
-     * Resize a vector (over TC types i) of an array of two
-     * vector<Flt>s which are the x and y components of a
-     * (mathematical) vector field.
-     */
-    void resize_vector_array_vector (vector<array<vector<Flt>, 2> >& vav) {
-        vav.resize (this->N);
-        for (unsigned int i = 0; i<this->N; ++i) {
-            this->resize_gradient_field (vav[i]);
-        }
-    }
-    void zero_vector_array_vector (vector<array<vector<Flt>, 2> >& vav) {
-        for (unsigned int i = 0; i<this->N; ++i) {
-            this->zero_gradient_field (vav[i]);
-        }
-    }
-
-    void resize_guidance_gradient_field (vector<array<vector<Flt>, 2> >& vav) {
-        vav.resize (this->M);
-        for (unsigned int m = 0; m<this->M; ++m) {
-            this->resize_gradient_field (vav[m]);
-        }
-    }
-    void zero_guidance_gradient_field (vector<array<vector<Flt>, 2> >& vav) {
-        for (unsigned int m = 0; m<this->M; ++m) {
-            this->zero_gradient_field (vav[m]);
-        }
+    RD_James (void)
+        : RD_Base<Flt>() {
     }
 
     /*!
@@ -534,46 +263,31 @@ public:
      * Perform memory allocations, vector resizes and so on.
      */
     void allocate (void) {
-        // Create a HexGrid. 3 is the 'x span' which determines how
-        // many hexes are initially created. 0 is the z co-ordinate for the HexGrid.
-        this->hg = new HexGrid (this->hextohex_d, 3, 0, morph::HexDomainShape::Boundary);
-        // Read the curves which make a boundary
-        ReadCurves r(this->svgpath);
-        // Set the boundary in the HexGrid
-        this->hg->setBoundary (r.getCorticalPath());
-        // Compute the distances from the boundary
-        this->hg->computeDistanceToBoundary();
-        // Vector size comes from number of Hexes in the HexGrid
-        this->nhex = this->hg->num();
-        DBG ("HexGrid says num hexes = " << this->nhex);
-        // Spatial d comes from the HexGrid, too.
-        this->set_d(this->hg->getd());
-        DBG ("HexGrid says d = " << this->d);
-        this->set_v(this->hg->getv());
-        DBG ("HexGrid says v = " << this->v);
+
+        RD_Base<Flt>::allocate();
 
         // Resize and zero-initialise the various containers
-        this->resize_vector_vector (this->c);
-        this->resize_vector_vector (this->a);
-        this->resize_vector_vector (this->betaterm);
-        this->resize_vector_vector (this->alpha_c);
-        this->resize_vector_vector (this->divJ);
-        this->resize_vector_vector (this->divg_over3d);
+        this->resize_vector_vector (this->c, this->N);
+        this->resize_vector_vector (this->a, this->N);
+        this->resize_vector_vector (this->betaterm, this->N);
+        this->resize_vector_vector (this->alpha_c, this->N);
+        this->resize_vector_vector (this->divJ, this->N);
+        this->resize_vector_vector (this->divg_over3d, this->N);
 
         this->resize_vector_variable (this->n);
-        this->resize_guidance_variable (this->rho);
+        this->resize_vector_vector (this->rho, this->M);
 
-        this->resize_vector_param (this->alpha);
-        this->resize_vector_param (this->beta);
-        this->resize_vector_param (this->epsilon);
-        this->resize_vector_vector_param (this->gamma);
+        this->resize_vector_param (this->alpha, this->N);
+        this->resize_vector_param (this->beta, this->N);
+        this->resize_vector_param (this->epsilon, this->N);
+        this->resize_vector_vector_param (this->gamma, this->N, this->M);
 
-        this->resize_guidance_gradient_field (this->grad_rho);
+        this->resize_vector_array_vector (this->grad_rho, this->M);
 
         // Resize grad_a and other vector-array-vectors
-        this->resize_vector_array_vector (this->grad_a);
-        this->resize_vector_array_vector (this->g);
-        this->resize_vector_array_vector (this->J);
+        this->resize_vector_array_vector (this->grad_a, this->N);
+        this->resize_vector_array_vector (this->g, this->N);
+        this->resize_vector_array_vector (this->J, this->N);
 
         // rhomethod is a vector of size M
         this->rhoMethod.resize (this->M);
@@ -601,22 +315,22 @@ public:
         this->stepCount = 0;
 
         // Zero c and n and other temporary variables
-        this->zero_vector_vector (this->c);
+        this->zero_vector_vector (this->c, this->N);
         //this->zero_vector_vector (this->a); // gets noisified below
-        this->zero_vector_vector (this->betaterm);
-        this->zero_vector_vector (this->alpha_c);
-        this->zero_vector_vector (this->divJ);
-        this->zero_vector_vector (this->divg_over3d);
+        this->zero_vector_vector (this->betaterm, this->N);
+        this->zero_vector_vector (this->alpha_c, this->N);
+        this->zero_vector_vector (this->divJ, this->N);
+        this->zero_vector_vector (this->divg_over3d, this->N);
 
         this->zero_vector_variable (this->n);
-        this->zero_guidance_variable (this->rho);
+        this->zero_vector_vector (this->rho, this->M);
 
-        this->zero_guidance_gradient_field (this->grad_rho);
+        this->zero_vector_array_vector (this->grad_rho, this->M);
 
         // Resize grad_a and other vector-array-vectors
-        this->zero_vector_array_vector (this->grad_a);
-        this->zero_vector_array_vector (this->g);
-        this->zero_vector_array_vector (this->J);
+        this->zero_vector_array_vector (this->grad_a, this->N);
+        this->zero_vector_array_vector (this->g, this->N);
+        this->zero_vector_array_vector (this->J, this->N);
 
         // Initialise a with noise
         this->noiseify_vector_vector (this->a);
@@ -689,49 +403,27 @@ public:
 
 private:
     /*!
-     * Require private setters for d and v as there are several other
-     * members that have to be updated at the same time.
+     * Require private setter for d. Slightly different from the base class version.
      */
     //@{
     void set_d (Flt d_) {
+        RD_Base<Flt>::set_d (d_);
+        /*
         this->d = d_;
         this->oneoverd = 1.0/this->d;
         this->oneover2d = 1.0/(2*this->d);
         this->oneover3d = 1.0/(3*this->d);
+        */
         this->updateTwoDover3dd();
-    }
-
-    void set_v (Flt v_) {
-        this->v = v_;
-        this->oneoverv = 1.0/this->v;
-        this->twov = this->v+this->v;
-        this->oneover2v = 1.0/this->twov;
-        this->oneover4v = 1.0/(this->twov+this->twov);
     }
     //@}
 
 public:
     /*!
-     * Public getters for d and v
-     */
-    //@{
-    Flt get_d (void) {
-        return this->d;
-    }
-
-    Flt get_v (void) {
-        return this->v;
-    }
-    //@}
-
-    Flt get_dt (void) {
-        return this->dt;
-    }
-
-    /*!
-     * A public setter for D, as it requires another attribute to be
+     * Public accessors for D, as it requires another attribute to be
      * updated at the same time.
      */
+    //@{
     void set_D (Flt D_) {
         this->D = D_;
         this->updateTwoDover3dd();
@@ -739,8 +431,12 @@ public:
     Flt get_D (void) {
         return this->D;
     }
+    //@}
 
 private:
+    /*!
+     * Compute 2D/3d^2
+     */
     void updateTwoDover3dd (void) {
         this->twoDover3dd = (this->D+this->D) / (3*this->d*this->d);
     }
@@ -827,134 +523,9 @@ public:
     }
 
     /*!
-     * Save position information
-     */
-    void savePositions (void) {
-        stringstream fname;
-        fname << this->logpath << "/positions.h5";
-        HdfData data(fname.str());
-        this->saveHexPositions (data);
-    }
-
-    /*!
-     * Save positions of the hexes - note using two vector<float>s
-     * that have been populated with the positions from the HexGrid,
-     * to fit in with the HDF API.
-     */
-    void saveHexPositions (HdfData& dat) {
-        dat.add_contained_vals ("/x", this->hg->d_x);
-        dat.add_contained_vals ("/y", this->hg->d_y);
-
-        // Add the neighbour information too.
-        vector<float> x_ne = this->hg->d_x;
-        vector<float> y_ne = this->hg->d_y;
-        unsigned int count = 0;
-        for (int i : this->hg->d_ne) {
-            if (i >= 0) {
-                x_ne[count] = this->hg->d_x[i];
-                y_ne[count] = this->hg->d_y[i];
-            }
-            ++count;
-        }
-        dat.add_contained_vals ("/x_ne", x_ne);
-        dat.add_contained_vals ("/y_ne", y_ne);
-
-        vector<float> x_nne = this->hg->d_x;
-        vector<float> y_nne = this->hg->d_y;
-        count = 0;
-        for (int i : this->hg->d_nne) {
-            if (i >= 0) {
-                x_nne[count] = this->hg->d_x[i];
-                y_nne[count] = this->hg->d_y[i];
-            }
-            ++count;
-        }
-        dat.add_contained_vals ("/x_nne", x_nne);
-        dat.add_contained_vals ("/y_nne", y_nne);
-
-        vector<float> x_nnw = this->hg->d_x;
-        vector<float> y_nnw = this->hg->d_y;
-        count = 0;
-        for (int i : this->hg->d_nnw) {
-            if (i >= 0) {
-                x_nnw[count] = this->hg->d_x[i];
-                y_nnw[count] = this->hg->d_y[i];
-            }
-            ++count;
-        }
-        dat.add_contained_vals ("/x_nnw", x_nnw);
-        dat.add_contained_vals ("/y_nnw", y_nnw);
-
-        vector<float> x_nw = this->hg->d_x;
-        vector<float> y_nw = this->hg->d_y;
-        count = 0;
-        for (int i : this->hg->d_nw) {
-            if (i >= 0) {
-                x_nw[count] = this->hg->d_x[i];
-                y_nw[count] = this->hg->d_y[i];
-            }
-            ++count;
-        }
-        dat.add_contained_vals ("/x_nw", x_nw);
-        dat.add_contained_vals ("/y_nw", y_nw);
-
-        vector<float> x_nsw = this->hg->d_x;
-        vector<float> y_nsw = this->hg->d_y;
-        count = 0;
-        for (int i : this->hg->d_nsw) {
-            if (i >= 0) {
-                x_nsw[count] = this->hg->d_x[i];
-                y_nsw[count] = this->hg->d_y[i];
-            }
-            ++count;
-        }
-        dat.add_contained_vals ("/x_nsw", x_nsw);
-        dat.add_contained_vals ("/y_nsw", y_nsw);
-
-        vector<float> x_nse = this->hg->d_x;
-        vector<float> y_nse = this->hg->d_y;
-        count = 0;
-        for (int i : this->hg->d_nse) {
-            if (i >= 0) {
-                x_nse[count] = this->hg->d_x[i];
-                y_nse[count] = this->hg->d_y[i];
-            }
-            ++count;
-        }
-        dat.add_contained_vals ("/x_nse", x_nse);
-        dat.add_contained_vals ("/y_nse", y_nse);
-
-        // And hex to hex distance:
-        dat.add_val ("/d", this->d);
-    }
-    //@} // HDF5
-
-    /*!
      * Computation methods
      */
     //@{
-
-    /*!
-     * Normalise the vector of Flts f.
-     */
-    void normalise (vector<Flt>& f) {
-
-        Flt maxf = -1e7;
-        Flt minf = +1e7;
-
-        // Determines min and max
-        for (auto val : f) {
-            if (val>maxf) { maxf = val; }
-            if (val<minf) { minf = val; }
-        }
-        Flt scalef = 1.0 /(maxf - minf);
-
-        vector<vector<Flt> > norm_a;
-        this->resize_vector_vector (norm_a);
-        for (unsigned int fi = 0; fi < f.size(); ++fi) {
-            f[fi] = fmin (fmax (((f[fi]) - minf) * scalef, 0.0), 1.0);
-        }
-    }
 
     /*!
      * Do a single step through the model.
@@ -1011,7 +582,7 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
-                q[h] = this->a[i][h] + k1[h] * halfdt;
+                q[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2(this->nhex, 0.0);
@@ -1019,7 +590,7 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (q[h], k));
-                q[h] = this->a[i][h] + k2[h] * halfdt;
+                q[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
             vector<Flt> k3(this->nhex, 0.0);
@@ -1027,7 +598,7 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (q[h], k));
-                q[h] = this->a[i][h] + k3[h] * dt;
+                q[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
             vector<Flt> k4(this->nhex, 0.0);
@@ -1035,7 +606,7 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (q[h], k));
-                a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * sixthdt;
+                a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
             }
         }
 
@@ -1043,35 +614,35 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 
 #pragma omp parallel for
-            for (unsigned int h=0; h<nhex; h++) {
+            for (unsigned int h=0; h<this->nhex; h++) {
                 // Note: betaterm used in compute_dci_dt()
                 this->betaterm[i][h] = beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
             }
 
             // Runge-Kutta integration for C (or ci)
-            vector<Flt> q(nhex,0.);
+            vector<Flt> q(this->nhex,0.);
             vector<Flt> k1 = compute_dci_dt (c[i], i);
 #pragma omp parallel for
-            for (unsigned int h=0; h<nhex; h++) {
-                q[h] = c[i][h] + k1[h] * halfdt;
+            for (unsigned int h=0; h<this->nhex; h++) {
+                q[h] = c[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2 = compute_dci_dt (q, i);
 #pragma omp parallel for
-            for (unsigned int h=0; h<nhex; h++) {
-                q[h] = c[i][h] + k2[h] * halfdt;
+            for (unsigned int h=0; h<this->nhex; h++) {
+                q[h] = c[i][h] + k2[h] * this->halfdt;
             }
 
             vector<Flt> k3 = compute_dci_dt (q, i);
 #pragma omp parallel for
-            for (unsigned int h=0; h<nhex; h++) {
-                q[h] = c[i][h] + k3[h] * dt;
+            for (unsigned int h=0; h<this->nhex; h++) {
+                q[h] = c[i][h] + k3[h] * this->dt;
             }
 
             vector<Flt> k4 = compute_dci_dt (q, i);
 #pragma omp parallel for
-            for (unsigned int h=0; h<nhex; h++) {
-                c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * sixthdt;
+            for (unsigned int h=0; h<this->nhex; h++) {
+                c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
             }
         }
     }
@@ -1089,51 +660,6 @@ public:
                 while (wait++ < 120) {
                     usleep (1000000);
                 }
-            }
-        }
-    }
-
-    /*!
-     * 2D spatial integration of the function f. Result placed in gradf.
-     *
-     * For each Hex, work out the gradient in x and y directions
-     * using whatever neighbours can contribute to an estimate.
-     */
-    void spacegrad2D (vector<Flt>& f, array<vector<Flt>, 2>& gradf) {
-
-        // Note - East is positive x; North is positive y.
-#pragma omp parallel for schedule(static)
-        for (unsigned int hi=0; hi<this->nhex; ++hi) {
-
-            // Find x gradient
-            if (HAS_NE(hi) && HAS_NW(hi)) {
-                gradf[0][hi] = (f[NE(hi)] - f[NW(hi)]) * oneover2d;
-            } else if (HAS_NE(hi)) {
-                gradf[0][hi] = (f[NE(hi)] - f[hi]) * oneoverd;
-            } else if (HAS_NW(hi)) {
-                gradf[0][hi] = (f[hi] - f[NW(hi)]) * oneoverd;
-            } else {
-                // zero gradient in x direction as no neighbours in
-                // those directions? Or possibly use the average of
-                // the gradient between the nw,ne and sw,se neighbours
-                gradf[0][hi] = 0.0;
-            }
-
-            // Find y gradient
-            if (HAS_NNW(hi) && HAS_NNE(hi) && HAS_NSW(hi) && HAS_NSE(hi)) {
-                // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
-                gradf[1][hi] = ( (f[NNE(hi)] - f[NSE(hi)]) + (f[NNW(hi)] - f[NSW(hi)]) ) * oneover4v;
-            } else if (HAS_NNW(hi) && HAS_NNE(hi)) {
-                gradf[1][hi] = ( (f[NNE(hi)] + f[NNW(hi)]) * 0.5 - f[hi]) * oneoverv;
-            } else if (HAS_NSW(hi) && HAS_NSE(hi)) {
-                gradf[1][hi] = (f[hi] - (f[NSE(hi)] + f[NSW(hi)]) * 0.5) * oneoverv;
-            } else if (HAS_NNW(hi) && HAS_NSW(hi)) {
-                gradf[1][hi] = (f[NNW(hi)] - f[NSW(hi)]) * oneover2v;
-            } else if (HAS_NNE(hi) && HAS_NSE(hi)) {
-                gradf[1][hi] = (f[NNE(hi)] - f[NSE(hi)]) * oneover2v;
-            } else {
-                // Leave grady at 0
-                gradf[1][hi] = 0.0;
             }
         }
     }
@@ -1176,17 +702,17 @@ public:
                 }
                 if (HAS_NNE(hi)) {
                     divg += /*cos (60)*/ 0.5 * (this->g[i][0][NNE(hi)] + this->g[i][0][hi])
-                        +  (/*sin (60)*/ R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]));
+                        +  (/*sin (60)*/ this->R3_OVER_2 * (this->g[i][1][NNE(hi)] + this->g[i][1][hi]));
                 } else {
                     //divg += /*cos (60)*/ (0.5 * (this->g[i][0][hi]))
-                    //    +  (/*sin (60)*/ R3_OVER_2 * (this->g[i][1][hi]));
+                    //    +  (/*sin (60)*/ this->R3_OVER_2 * (this->g[i][1][hi]));
                 }
                 if (HAS_NNW(hi)) {
                     divg += -(/*cos (120)*/ 0.5 * (this->g[i][0][NNW(hi)] + this->g[i][0][hi]))
-                        +    (/*sin (120)*/ R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]));
+                        +    (/*sin (120)*/ this->R3_OVER_2 * (this->g[i][1][NNW(hi)] + this->g[i][1][hi]));
                 } else {
                     //divg += -(/*cos (120)*/ 0.5 * (this->g[i][0][hi]))
-                    //    +    (/*sin (120)*/ R3_OVER_2 * (this->g[i][1][hi]));
+                    //    +    (/*sin (120)*/ this->R3_OVER_2 * (this->g[i][1][hi]));
                 }
                 if (HAS_NW(hi)) {
                     divg -= /*cos (180)*/ (this->g[i][0][NW(hi)] + this->g[i][0][hi]);
@@ -1195,17 +721,17 @@ public:
                 }
                 if (HAS_NSW(hi)) {
                     divg -= (/*cos (240)*/ 0.5 * (this->g[i][0][NSW(hi)] + this->g[i][0][hi])
-                             + ( /*sin (240)*/ R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi])));
+                             + ( /*sin (240)*/ this->R3_OVER_2 * (this->g[i][1][NSW(hi)] + this->g[i][1][hi])));
                 } else {
                     divg -= (/*cos (240)*/ 0.5 * (this->g[i][0][hi])
-                             + (/*sin (240)*/ R3_OVER_2 * (this->g[i][1][hi])));
+                             + (/*sin (240)*/ this->R3_OVER_2 * (this->g[i][1][hi])));
                 }
                 if (HAS_NSE(hi)) {
                     divg += /*cos (300)*/ 0.5 * (this->g[i][0][NSE(hi)] + this->g[i][0][hi])
-                        - ( /*sin (300)*/ R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
+                        - ( /*sin (300)*/ this->R3_OVER_2 * (this->g[i][1][NSE(hi)] + this->g[i][1][hi]));
                 } else {
                     divg += /*cos (300)*/ 0.5 * (this->g[i][0][hi])
-                        - ( /*sin (300)*/ R3_OVER_2 * (this->g[i][1][hi]));
+                        - ( /*sin (300)*/ this->R3_OVER_2 * (this->g[i][1][hi]));
                 }
 
                 this->divg_over3d[i][hi] = divg * this->oneover3d;
@@ -1294,182 +820,4 @@ public:
         }
     }
 
-#ifdef GAUSSIAN_CODE_NEEDED
-    /*!
-     * Create a symmetric, 1D Gaussian hill centred at coordinate (x) with
-     * width sigma and height gain. Place result into @a result.
-     */
-    void createGaussian1D (Flt x, Flt phi, Flt gain, Flt sigma, vector<Flt>& result) {
-
-        // Once-only parts of the calculation of the Gaussian.
-        Flt root_2_pi = 2.506628275;
-        Flt one_over_sigma_root_2_pi = 1 / sigma * root_2_pi;
-        Flt two_sigma_sq = 2 * sigma * sigma;
-
-        // Gaussian dist. result, and a running sum of the results:
-        Flt gauss = 0.0;
-
-        Flt cosphi = (Flt) cos (phi);
-        Flt sinphi = (Flt) sin (phi);
-
-        // x and y components of the vector from (x,y) to any given Hex.
-        Flt rx = 0.0f, ry = 0.0f;
-
-        // Calculate each element of the kernel:
-        for (auto h : this->hg->hexen) {
-            rx = x - h.x;
-            ry = 0 - h.y;
-            Flt x_ = (rx * cosphi) + (ry * sinphi);
-            gauss = gain * (one_over_sigma_root_2_pi
-                            * exp ( static_cast<Flt>(-(x_*x_))
-                                    / two_sigma_sq ));
-            result[h.vi] = gauss;
-            ++k;
-        }
-    }
-
-    /*!
-     * Create a symmetric, 2D Gaussian hill centred at coordinate (x,y) with
-     * width sigma and height gain. Place result into @a result.
-     */
-    void createGaussian (Flt x, Flt y, Flt gain, Flt sigma, vector<Flt>& result) {
-
-        // Once-only parts of the calculation of the Gaussian.
-        Flt root_2_pi = 2.506628275;
-        Flt one_over_sigma_root_2_pi = 1 / sigma * root_2_pi;
-        Flt two_sigma_sq = 2 * sigma * sigma;
-
-        // Gaussian dist. result, and a running sum of the results:
-        Flt gauss = 0.0;
-        Flt sum = 0.0;
-
-        // x and y components of the vector from (x,y) to any given Hex.
-        Flt rx = 0.0f, ry = 0.0f;
-        // distance from any Hex to (x,y)
-        Flt r = 0.0f;
-
-        // Calculate each element of the kernel:
-        for (auto h : this->hg->hexen) {
-            rx = x - h.x;
-            ry = y - h.y;
-            r = sqrt (rx*rx + ry*ry);
-            gauss = gain * (one_over_sigma_root_2_pi
-                            * exp ( static_cast<Flt>(-(r*r))
-                                    / two_sigma_sq ));
-            result[h.vi] = gauss;
-            sum += gauss;
-            ++k;
-        }
-
-        // Normalise the kernel to 1 by dividing by the sum:
-        unsigned int j = this->nhex;
-        while (j > 0) {
-            --j;
-            result[j] = result[j] / sum;
-        }
-    }
-#endif
-
 }; // RD_James
-
-/*!
- * A helper class, containing (at time of writing) get_contours()
- */
-template <class Flt>
-class RD_Help
-{
-public:
-    /*!
-     * Obtain the contours (as a vector of list<Hex>) in the scalar
-     * fields f, where threshold is crossed.
-     */
-    static vector<list<Hex> > get_contours (HexGrid* hg,
-                                            vector<vector<Flt> >& f,
-                                            Flt threshold) {
-
-        unsigned int nhex = hg->num();
-        unsigned int N = f.size();
-
-        vector<list<Hex> > rtn;
-        // Initialise
-        for (unsigned int li = 0; li < N; ++li) {
-            list<Hex> lh;
-            rtn.push_back (lh);
-        }
-
-        Flt maxf = -1e7;
-        Flt minf = +1e7;
-        for (auto h : hg->hexen) {
-            if (h.onBoundary() == false) {
-                for (unsigned int i = 0; i<N; ++i) {
-                    if (f[i][h.vi] > maxf) { maxf = f[i][h.vi]; }
-                    if (f[i][h.vi] < minf) { minf = f[i][h.vi]; }
-                }
-            }
-        }
-        Flt scalef = 1.0 / (maxf-minf);
-
-        // Re-normalize
-        vector<vector<Flt> > norm_f;
-        norm_f.resize (N);
-        for (unsigned int i=0; i<N; ++i) {
-            norm_f[i].resize (nhex, 0.0);
-        }
-
-        for (unsigned int i = 0; i<N; ++i) {
-            for (unsigned int h=0; h<nhex; h++) {
-                norm_f[i][h] = (f[i][h] - minf) * scalef;
-            }
-        }
-
-        // Collate
-        for (unsigned int i = 0; i<N; ++i) {
-
-            for (auto h : hg->hexen) {
-                if (h.onBoundary() == false) {
-#ifdef DEBUG__
-                    if (!i) {
-                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " OFF boundary with value: " << norm_f[i][h.vi]);
-                    }
-#endif
-                    if (norm_f[i][h.vi] > threshold) {
-#ifdef DEBUG__
-                        if (!i) {
-                            DBG("Value over threshold...");
-                        }
-#endif
-                        if ( (h.has_ne && norm_f[i][h.ne->vi] < threshold)
-                             || (h.has_nne && norm_f[i][h.nne->vi] < threshold)
-                             || (h.has_nnw && norm_f[i][h.nnw->vi] < threshold)
-                             || (h.has_nw && norm_f[i][h.nw->vi] < threshold)
-                             || (h.has_nsw && norm_f[i][h.nsw->vi] < threshold)
-                             || (h.has_nse && norm_f[i][h.nse->vi] < threshold) ) {
-#ifdef DEBUG__
-                            if (!i) {
-                                DBG("...with neighbour under threshold (push_back)");
-                            }
-#endif
-                            rtn[i].push_back (h);
-                        }
-                    }
-                } else { // h.onBoundary() is true
-#ifdef DEBUG__
-                    if (!i) {
-                        DBG("Hex r,g: "<< h.ri << "," << h.gi << " ON boundary with value: " << norm_f[i][h.vi]);
-                    }
-#endif
-                    if (norm_f[i][h.vi] > threshold) {
-#ifdef DEBUG__
-                        if (!i) {
-                            DBG("...Value over threshold (push_back)");
-                        }
-#endif
-                        rtn[i].push_back (h);
-                    }
-                }
-            }
-        }
-
-        return rtn;
-    }
-}; // RD_Helper

@@ -265,8 +265,8 @@ int main (int argc, char **argv)
             //DBG("Plot at step " << RD.stepCount);
             plt.scalarfields (displays[0], RD.hg, RD.A);
             plt.scalarfields (displays[1], RD.hg, RD.B);
-            displays[0].redrawDisplay();
-            displays[1].redrawDisplay();
+            //displays[0].redrawDisplay();
+            //displays[1].redrawDisplay();
 
             if (saveplots) {
                 if (vidframes) {

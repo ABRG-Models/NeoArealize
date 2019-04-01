@@ -192,60 +192,97 @@ public:
     }
 
     /*!
-     * A utility function to resize vector-vectors that hold N
+     * Utility functions to resize/zero vector-vectors that hold N
      * different RD variables.
      */
+    //@{
     void resize_vector_vector (vector<vector<Flt> >& vv, unsigned int N) {
         vv.resize (N);
         for (unsigned int i=0; i<N; ++i) {
             vv[i].resize (this->nhex, 0.0);
         }
     }
+    void zero_vector_vector (vector<vector<Flt> >& vv, unsigned int N) {
+        for (unsigned int i=0; i<N; ++i) {
+            vv[i].assign (this->nhex, 0.0);
+        }
+    }
+    //@}
 
     /*!
-     * Resize a variable that'll be nhex elements long
+     * Resize/zero a variable that'll be nhex elements long
      */
+    //@{
     void resize_vector_variable (vector<Flt>& v) {
         v.resize (this->nhex, 0.0);
     }
+    void zero_vector_variable (vector<Flt>& v) {
+        v.assign (this->nhex, 0.0);
+    }
+    //@}
 
     /*!
-     * Resize a parameter that'll be N elements long
+     * Resize/zero a parameter that'll be N elements long
      */
+    //@{
     void resize_vector_param (vector<Flt>& p, unsigned int N) {
         p.resize (N, 0.0);
     }
+    void zero_vector_param (vector<Flt>& p, unsigned int N) {
+        p.assign (N, 0.0);
+    }
+    //@}
 
     /*!
-     * Resize a vector of M vectors of parameters that'll each be N
+     * Resize/zero a vector of M vectors of parameters that'll each be N
      * elements long
      */
+    //@{
     void resize_vector_vector_param (vector<vector<Flt> >& vp, unsigned int N, unsigned int M) {
         vp.resize (M);
         for (unsigned int m = 0; m<M; ++m) {
             vp[m].resize (N, 0.0);
         }
     }
+    void zero_vector_vector_param (vector<vector<Flt> >& vp, unsigned int N, unsigned int M) {
+        for (unsigned int m = 0; m<M; ++m) {
+            vp[m].assign (N, 0.0);
+        }
+    }
+    //@}
 
     /*!
-     * Resize a gradient field
+     * Resize/zero a gradient field
      */
+    //@{
     void resize_gradient_field (array<vector<Flt>, 2>& g) {
         g[0].resize (this->nhex, 0.0);
         g[1].resize (this->nhex, 0.0);
     }
+    void zero_gradient_field (array<vector<Flt>, 2>& g) {
+        g[0].assign (this->nhex, 0.0);
+        g[1].assign (this->nhex, 0.0);
+    }
+    //@}
 
     /*!
-     * Resize a vector size N containing arrays of two vector<Flt>s
+     * Resize/zero a vector size N containing arrays of two vector<Flt>s
      * which are the x and y components of a (mathematical) vector
      * field.
      */
+    //@{
     void resize_vector_array_vector (vector<array<vector<Flt>, 2> >& vav, unsigned int N) {
         vav.resize (N);
         for (unsigned int n = 0; n<N; ++n) {
             this->resize_gradient_field (vav[n]);
         }
     }
+    void zero_vector_array_vector (vector<array<vector<Flt>, 2> >& vav, unsigned int N) {
+        for (unsigned int i = 0; i<N; ++i) {
+            this->zero_gradient_field (vav[i]);
+        }
+    }
+    //@}
 
     /*!
      * Initialise a vector with noise, but with sigmoidal roll-off to

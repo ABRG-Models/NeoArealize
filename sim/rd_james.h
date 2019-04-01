@@ -555,11 +555,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 #pragma omp parallel for shared(i,k)
             for (unsigned int h=0; h<this->nhex; ++h) {
-                // Fixme: I think the beta_n_a term needs to come OUT
-                // of this, as it's the dependent variable in the RK
-                // integration for A.
-                //this->alpha_c_beta_na[i][h] = alpha[i] * c[i][h] - beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
-                this->alpha_c[i][h] = alpha[i] * c[i][h];// -beta[i] * n[h] * static_cast<Flt>(pow (a[i][h], k));
+                this->alpha_c[i][h] = alpha[i] * c[i][h];
             }
         }
 

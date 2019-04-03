@@ -102,7 +102,7 @@ public:
      */
     alignas(Flt) Flt k = 3.0;
 
-private:
+protected:
     /*!
      * The diffusion parameter.
      */
@@ -124,13 +124,7 @@ public:
     alignas(alignof(vector<Flt>))
     vector<Flt> beta;
 
-    /*!
-     * epsilon_i parameters. axon competition parameter
-     */
-    alignas(alignof(vector<Flt>))
-    vector<Flt> epsilon;
-
-private: // We have a setter for gamma.
+protected: // We have a setter for gamma.
     /*!
      * gamma_A/B/C_i (etc) parameters from Eq 4. There are M vectors
      * of Flts in here.
@@ -262,7 +256,7 @@ public:
     /*!
      * Perform memory allocations, vector resizes and so on.
      */
-    void allocate (void) {
+    virtual void allocate (void) {
 
         RD_Base<Flt>::allocate();
 
@@ -279,7 +273,6 @@ public:
 
         this->resize_vector_param (this->alpha, this->N);
         this->resize_vector_param (this->beta, this->N);
-        this->resize_vector_param (this->epsilon, this->N);
         this->resize_vector_vector_param (this->gamma, this->N, this->M);
 
         this->resize_vector_array_vector (this->grad_rho, this->M);
@@ -296,11 +289,10 @@ public:
             this->rhoMethod[j] = GuidanceMoleculeMethod::Sigmoid1D;
         }
 
-        // Initialise alpha, beta and epsilon
+        // Initialise alpha, beta
         for (unsigned int i=0; i<this->N; ++i) {
             this->alpha[i] = 3;
             this->beta[i] = 3;
-            this->epsilon[i] = 3;
         }
     }
 
@@ -310,7 +302,7 @@ public:
      * re-initialise a finished simulation as well as initialise the
      * first time.
      */
-    void init (void) {
+    virtual void init (void) {
 
         this->stepCount = 0;
 
@@ -401,7 +393,7 @@ public:
         this->compute_divg_over3d();
     }
 
-private:
+protected:
     /*!
      * Require private setter for d. Slightly different from the base class version.
      */
@@ -427,7 +419,7 @@ public:
     }
     //@}
 
-private:
+protected:
     /*!
      * Compute 2D/3d^2
      */
@@ -524,7 +516,7 @@ public:
     /*!
      * Do a single step through the model.
      */
-    void step (void) {
+    virtual void step (void) {
 
         this->stepCount++;
 
@@ -738,7 +730,7 @@ public:
      *
      * Stable with dt = 0.0001;
      */
-    void compute_divJ (vector<Flt>& fa, unsigned int i) {
+    virtual void compute_divJ (vector<Flt>& fa, unsigned int i) {
 
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);

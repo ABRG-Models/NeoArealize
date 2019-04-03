@@ -64,3 +64,13 @@ target_link_libraries(ps_2N0M ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 add_executable(schnak schnak.cpp)
 target_compile_definitions(schnak PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
 target_link_libraries(schnak ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+
+# Competition scheme 1
+add_executable(james1_c1 james1.cpp)
+target_compile_definitions(james1_c1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP1)
+target_link_libraries(james1_c1 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+
+# Competition scheme 2
+add_executable(james1_c2 james1.cpp)
+target_compile_definitions(james1_c2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP2)
+target_link_libraries(james1_c2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

@@ -587,24 +587,14 @@ with the flux current as given by Eq.~\ref{eq:Karb2D_J} and Neumann
 boundary conditions as usual. This adds two parameter sets; $\epsilon$
 and $l$.
 
+See the binary \code{james1_c1} for the implementation. Possibly
+unstable; one TC type gets an initial advantage and this plays out
+slowly (over fairly long timescale (10's of thousands of timesteps)
+until one side wins.
+
 The additional term could result from some sort of axon-axon repulsion
 as the axons grow into the cortex, or an effect that occurs only once
 they are growing within the cortical layer.
-
-One issue with this model is that it starts with an initial condition
-which is that
-
-It may be helpful to create a more realistic axon model, where axons
-grow in a tree manner, with guidance and interactions, from physically
-plausible locations in a virtual thalamus.
-
-Initial reading of the literature suggests that axons grow towards
-cortex in a `guideposted manner' and then start branching once within
-the cortex. This would suggest that initial conditions should be more
-targeted than in the Karbowski model, with axons of type $i$ arriving
-in a region expected to be region $i$, but with the possibility of
-modifying the model to simulate a denucleated animal by reducing the
-density of incident visual TC axons, or reducing their branching rate.
 
 \subsection{Use \emph{all} the TC axon branching densities to contribute to flux current of axonal branching}
 
@@ -618,17 +608,37 @@ Change the flux current from:
 to
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp}
-\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - D' \nabla \sum_{p=1,p\ne i}^N a_p(\mb{x},t) - a_i
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
+- D' \nabla \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
 or
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp2}
-\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \sum_{p=1,p\ne i}^N a_p(\mb{x},t) \big) - a_i
+\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
+%
+which should be another way to add competition to the system. The idea
+here is that branching density should flow away from regions where
+there is a high level of branching of other TC axon types.
 
+\subsection{Initial conditions}
+
+Initial reading of the literature suggests that axons grow towards
+cortex in a `guideposted manner' and then start branching once within
+the cortex. This would suggest that initial conditions should be more
+targeted than in the Karbowski model, with axons of type $i$ arriving
+in a region expected to be region $i$, but with the possibility of
+modifying the model to simulate a denucleated animal by reducing the
+density of incident visual TC axons, or reducing their branching rate.
+
+\subsection{Agent based model}
+
+It may be helpful to create a more realistic axon model, where axons
+grow in a tree manner, with guidance and interactions, from physically
+plausible locations in a virtual thalamus.
 
 %
 % BIBLIOGRAPHY

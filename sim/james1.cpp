@@ -27,7 +27,13 @@
 /*!
  * Include the reaction diffusion class
  */
+#if defined COMP1
+#include "rd_james_comp1.h"
+#elif defined COMP2
+#include "rd_james_comp2.h"
+#else
 #include "rd_james.h"
+#endif
 
 #ifdef COMPILE_PLOTTING
 /*!
@@ -271,7 +277,13 @@ int main (int argc, char **argv)
     /*
      * Instantiate and set up the model object
      */
+#if defined COMP1
+    RD_James_comp1<FLOATTYPE> RD;
+#elif defined COMP2
+    RD_James_comp2<FLOATTYPE> RD;
+#else
     RD_James<FLOATTYPE> RD;
+#endif
 
     RD.svgpath = svgpath;
     RD.logpath = logpath;

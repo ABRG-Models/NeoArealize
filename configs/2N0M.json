@@ -1,7 +1,8 @@
 {
     // Global simulation parameters
-    "steps" : 5000,                // Number of steps to simulate for
+    "steps" : 500000,                // Number of steps to simulate for
     "logevery": 1000,
+    "plotevery": 20,
     "overwrite_logs": true,
     "logpath" : "./logs/2N0M",
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes

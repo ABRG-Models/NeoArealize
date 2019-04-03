@@ -606,6 +606,30 @@ in a region expected to be region $i$, but with the possibility of
 modifying the model to simulate a denucleated animal by reducing the
 density of incident visual TC axons, or reducing their branching rate.
 
+\subsection{Use \emph{all} the TC axon branching densities to contribute to flux current of axonal branching}
+
+Change the flux current from:
+%
+\begin{equation} \label{eq:Karb2D_J_NM_again}
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+%
+to
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp}
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - D' \nabla \sum_{p=1,p\ne i}^N a_p(\mb{x},t) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+%
+or
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp2}
+\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \sum_{p=1,p\ne i}^N a_p(\mb{x},t) \big) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+
+
 %
 % BIBLIOGRAPHY
 %

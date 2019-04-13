@@ -248,6 +248,7 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
 
+# ifdef PLOT_EXTRAS
     winTitle = worldName + ": Guidance gradient (x)";//5
     displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
                                          rhoInit, thetaInit, phiInit, displays[0].win));
@@ -271,7 +272,7 @@ int main (int argc, char **argv)
                                          rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
-
+# endif
 #endif
 
     /*
@@ -426,6 +427,7 @@ int main (int argc, char **argv)
     cout << "min g = " << ming << " and max g = " << maxg << endl;
     cout << "min div(g) = " << mindivg << " and max div(g) = " << maxdivg << endl;
 
+# ifdef PLOT_EXTRAS
     // Now plot fields and redraw display
     plt.scalarfields (displays[5], RD.hg, gx, ming, maxg);
     displays[5].redrawDisplay();
@@ -435,6 +437,7 @@ int main (int argc, char **argv)
     displays[7].redrawDisplay();
     plt.scalarfields (displays[8], RD.hg, RD.divJ);
     displays[8].redrawDisplay();
+# endif
 
     // Save images in log folder
     if (RD.M > 0) { plt.savePngs (logpath, "guidance", 0, displays[0]); }
@@ -458,10 +461,12 @@ int main (int argc, char **argv)
             plt.scalarfields (displays[1], RD.hg, RD.a);
             plt.scalarfields (displays[2], RD.hg, RD.c);
             plt.scalarfields (displays[4], RD.hg, RD.n);
+# ifdef PLOT_EXTRAS
             plt.scalarfields (displays[8], RD.hg, RD.divJ);
             displays[5].redrawDisplay();
             displays[6].redrawDisplay();
             displays[7].redrawDisplay();
+# endif
 
             if (vidframes) {
                 plt.savePngs (logpath, "connections", framecount, displays[2]);

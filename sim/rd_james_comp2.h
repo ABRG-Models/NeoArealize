@@ -1,5 +1,7 @@
 /*
- * Like RD_James, but derives from RD_Base
+ * Like RD_James, but derives from RD_Base. Competition method 2,
+ * which implements Eq. 34 in the lab notes (rd_karbowski.pdf; label
+ * eq:Karb2D_J_NM_with_comp2_impl)
  */
 
 #include "rd_james.h"
@@ -13,10 +15,39 @@ class RD_James_comp2 : public RD_James<Flt>
 {
 public:
     /*!
+     * Parameter which controls the strength of diffusion away from
+     * axon branching of other TC types.
+     */
+    alignas(Flt) Flt Dprime = 0.2;
+
+    /*!
      * Simple constructor; no arguments. Just calls base constructor
      */
     RD_James_comp2 (void)
         : RD_James<Flt>() {
+    }
+
+    /*!
+     * Additional init code
+     */
+    void init (void) {
+        RD_James<Flt>::init();
+
+        // Initialise a with Gaussians. Have to take parameters from config for this.
+        GaussParams<Flt> g1;
+        g1.sigma = 0.2;
+        g1.x = 0.05;
+        g1.y = 0.0;
+        GaussParams<Flt> g2;
+        g2.sigma = 0.2;
+        g2.x = -0.05;
+        g2.y = 0.0;
+
+        vector<GaussParams<Flt> > gp;
+        gp.push_back (g1);
+        gp.push_back (g2);
+
+        this->mask_a (this->a, gp);
     }
 
     /*!
@@ -164,7 +195,7 @@ public:
 
         // First subtract fa_others from fa:
         vector<Flt> fa_sum(this->nhex, 0.0);
-        Flt m = 0.2 / this->N;
+        Flt m = this->Dprime / this->N;
 #pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             fa_sum[hi] = fa[hi] - m * fa_others[hi];

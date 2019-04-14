@@ -16,6 +16,17 @@ enum class GuidanceMoleculeMethod {
 };
 
 /*!
+ * A small collection of parameters to define width and location of a
+ * symmetric (i.e. circular) 2D Gaussian.
+ */
+template <class Flt>
+struct GaussParams {
+    Flt sigma;
+    Flt x;
+    Flt y;
+};
+
+/*!
  * Reaction diffusion system. Based on Karbowski 2004, but with a
  * removal of the Fgf8, Pax6, Emx2 system, and instead an option to
  * define several guidance molecules and
@@ -249,6 +260,38 @@ public:
                     Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
                     vv[i][h.vi] = vv[i][h.vi] * bSig;
                 }
+            }
+        }
+    }
+
+    /*!
+     * Apply a mask to the noise in a vector of vectors. This masks
+     * with a 2D Gaussian for each a (there are N TC type, so for each
+     * i in N, apply a different Gaussian mask, probably with the same
+     * width, but different centre).
+     *
+     * This allows me to initialise the system in a more biologically
+     * realistic manner.
+     */
+    void mask_a (vector<vector<Flt> >& vv, vector<GaussParams<Flt> > gp) {
+
+        // Once-only parts of the calculation of the Gaussian.
+        Flt root_2_pi = 2.506628275;
+
+        for (unsigned int i = 0; i<this->N; ++i) {
+
+            Flt one_over_sigma_root_2_pi = 1 / gp[i].sigma * root_2_pi;
+            Flt two_sigma_sq = 2 * gp[i].sigma * gp[i].sigma;
+
+            for (auto h : this->hg->hexen) {
+
+                Flt rx = gp[i].x - h.x;
+                Flt ry = gp[i].y - h.y;
+                Flt r = sqrt (rx*rx + ry*ry);
+                Flt gauss = /* gain * */ (one_over_sigma_root_2_pi
+                                          * exp ( static_cast<Flt>(-(r*r))
+                                                  / two_sigma_sq ));
+                vv[i][h.vi] *= gauss;
             }
         }
     }

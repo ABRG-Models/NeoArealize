@@ -587,7 +587,7 @@ with the flux current as given by Eq.~\ref{eq:Karb2D_J} and Neumann
 boundary conditions as usual. This adds two parameter sets; $\epsilon$
 and $l$.
 
-See the binary \code{james1_c1} for the implementation. Possibly
+See the binary \code{james1\_c1} for the implementation. Possibly
 unstable; one TC type gets an initial advantage and this plays out
 slowly (over fairly long timescale (10's of thousands of timesteps)
 until one side wins.
@@ -595,6 +595,10 @@ until one side wins.
 The additional term could result from some sort of axon-axon repulsion
 as the axons grow into the cortex, or an effect that occurs only once
 they are growing within the cortical layer.
+
+An implementation of this mechanism in \code{rd\_james\_comp1.cpp}
+does not produce strong competition compared with the following
+mechanism.
 
 \subsection{Use \emph{all} the TC axon branching densities to contribute to flux current of axonal branching}
 
@@ -623,6 +627,20 @@ or
 which should be another way to add competition to the system. The idea
 here is that branching density should flow away from regions where
 there is a high level of branching of other TC axon types.
+
+I settled on this implementation of
+Eq.~\ref{eq:Karb2D_J_NM_with_comp2} in \code{rd\_james\_comp2.cpp}:
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp2_impl}
+\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \frac{D'}{N} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+%
+which provides $D'$ as a parameter to define the strength of the
+contribution of the non-self axon branching densities to the flux
+current. This successfully produced competition between 2 TC types
+branching in the absence of any guidance molecules with $D'$ set to a
+value of 0.2.
 
 \subsection{Initial conditions}
 

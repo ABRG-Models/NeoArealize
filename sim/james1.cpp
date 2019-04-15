@@ -173,6 +173,9 @@ int main (int argc, char **argv)
     }
 
     const double D = root.get ("D", 0.1).asDouble();
+#if defined COMP2
+    const double Dprime = root.get ("Dprime", 0.1).asDouble();
+#endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
 
@@ -266,13 +269,13 @@ int main (int argc, char **argv)
                                          rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
+# endif
 
-    winTitle = worldName + ": div(J)";//8
+    winTitle = worldName + ": div(J)";//8 or 5
     displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
                                          rhoInit, thetaInit, phiInit, displays[0].win));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
-# endif
 #endif
 
     /*
@@ -304,6 +307,9 @@ int main (int argc, char **argv)
 
     // After allocate(), we can set up parameters:
     RD.set_D (D);
+#if defined COMP2
+    RD.Dprime = Dprime;
+#endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;
 
@@ -312,6 +318,14 @@ int main (int argc, char **argv)
         Json::Value v = tcs[i];
         RD.alpha[i] = v.get("alpha", 0.0).asDouble();
         RD.beta[i] = v.get("beta", 0.0).asDouble();
+
+        // Sets up mask for initial branching density
+        GaussParams<FLOATTYPE> gp;
+        gp.gain = v.get("gaininit", 1.0).asDouble();
+        gp.sigma = v.get("sigmainit", 0.0).asDouble();
+        gp.x = v.get("xinit", 0.0).asDouble();
+        gp.y = v.get("yinit", 0.0).asDouble();
+        RD.initmasks.push_back (gp);
     }
 
     // Index through guidance molecule parameters:
@@ -437,6 +451,9 @@ int main (int argc, char **argv)
     displays[7].redrawDisplay();
     plt.scalarfields (displays[8], RD.hg, RD.divJ);
     displays[8].redrawDisplay();
+# else
+    plt.scalarfields (displays[5], RD.hg, RD.divJ);
+    displays[5].redrawDisplay();
 # endif
 
     // Save images in log folder
@@ -462,10 +479,12 @@ int main (int argc, char **argv)
             plt.scalarfields (displays[2], RD.hg, RD.c);
             plt.scalarfields (displays[4], RD.hg, RD.n);
 # ifdef PLOT_EXTRAS
-            plt.scalarfields (displays[8], RD.hg, RD.divJ);
             displays[5].redrawDisplay();
             displays[6].redrawDisplay();
             displays[7].redrawDisplay();
+            plt.scalarfields (displays[8], RD.hg, RD.divJ);
+# else
+            plt.scalarfields (displays[5], RD.hg, RD.divJ);
 # endif
 
             if (vidframes) {

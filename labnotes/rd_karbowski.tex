@@ -632,15 +632,16 @@ I settled on this implementation of
 Eq.~\ref{eq:Karb2D_J_NM_with_comp2} in \code{rd\_james\_comp2.cpp}:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp2_impl}
-\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \frac{D'}{N} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
+\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \frac{D'}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
 which provides $D'$ as a parameter to define the strength of the
 contribution of the non-self axon branching densities to the flux
-current. This successfully produced competition between 2 TC types
-branching in the absence of any guidance molecules with $D'$ set to a
-value of 0.2.
+current. The `positive' diffusion is $D$, and the `negative' diffusion
+is $\frac{D D'}{N-1}$. This successfully produced competition between
+$N$=2 TC types in the absence of any guidance molecules with $D$=0.1
+and $D'$ set to a value of 0.01.
 
 \subsection{Initial conditions}
 
@@ -651,6 +652,10 @@ targeted than in the Karbowski model, with axons of type $i$ arriving
 in a region expected to be region $i$, but with the possibility of
 modifying the model to simulate a denucleated animal by reducing the
 density of incident visual TC axons, or reducing their branching rate.
+
+I've implemented a scheme, using 2D Gaussians of varying (symmetrical)
+width, gain and location, to make masks for the initial branching
+densities for the different thalamocortical axon types.
 
 \subsection{Agent based model}
 

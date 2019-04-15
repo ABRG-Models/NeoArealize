@@ -21,6 +21,7 @@ enum class GuidanceMoleculeMethod {
  */
 template <class Flt>
 struct GaussParams {
+    Flt gain;
     Flt sigma;
     Flt x;
     Flt y;
@@ -134,6 +135,13 @@ public:
      */
     alignas(alignof(vector<Flt>))
     vector<Flt> beta;
+
+    /*!
+     * Parameters for initial 2D Gaussian masks over the initial
+     * branching levels.
+     */
+    alignas(alignof(vector<GaussParams<Flt> >))
+    vector<GaussParams<Flt> > initmasks;
 
 protected: // We have a setter for gamma.
     /*!
@@ -273,12 +281,16 @@ public:
      * This allows me to initialise the system in a more biologically
      * realistic manner.
      */
-    void mask_a (vector<vector<Flt> >& vv, vector<GaussParams<Flt> > gp) {
+    void mask_a (vector<vector<Flt> >& vv, vector<GaussParams<Flt> >& gp) {
 
         // Once-only parts of the calculation of the Gaussian.
         Flt root_2_pi = 2.506628275;
 
-        for (unsigned int i = 0; i<this->N; ++i) {
+        for (unsigned int i = 0; i<this->N && i < gp.size(); ++i) {
+
+            if (!(gp[i].sigma > 0.0)) {
+                continue;
+            }
 
             Flt one_over_sigma_root_2_pi = 1 / gp[i].sigma * root_2_pi;
             Flt two_sigma_sq = 2 * gp[i].sigma * gp[i].sigma;
@@ -288,7 +300,7 @@ public:
                 Flt rx = gp[i].x - h.x;
                 Flt ry = gp[i].y - h.y;
                 Flt r = sqrt (rx*rx + ry*ry);
-                Flt gauss = /* gain * */ (one_over_sigma_root_2_pi
+                Flt gauss = gp[i].gain * (one_over_sigma_root_2_pi
                                           * exp ( static_cast<Flt>(-(r*r))
                                                   / two_sigma_sq ));
                 vv[i][h.vi] *= gauss;
@@ -369,6 +381,9 @@ public:
 
         // Initialise a with noise
         this->noiseify_vector_vector (this->a);
+
+        // Mask the noise off (set sigmas to 0 to ignore the masking)
+        this->mask_a (this->a, this->initmasks);
 
         // If client code didn't initialise the guidance molecules, then do so
         if (this->guidance_phi.empty()) {
@@ -517,11 +532,11 @@ public:
             path.clear();
             path << "/a" << i;
             data.add_contained_vals (path.str().c_str(), this->a[i]);
-            // An intermediate variable, for debugging.
+            // divJ
             path.str("");
             path.clear();
-            path << "/A" << i;
-            data.add_contained_vals (path.str().c_str(), this->alpha_c[i]);
+            path << "/j" << i;
+            data.add_contained_vals (path.str().c_str(), this->divJ[i]);
         }
         data.add_contained_vals ("/n", this->n);
     }

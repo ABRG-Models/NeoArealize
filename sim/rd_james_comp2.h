@@ -27,28 +27,14 @@ public:
         : RD_James<Flt>() {
     }
 
+#if 0
     /*!
      * Additional init code
      */
     void init (void) {
         RD_James<Flt>::init();
-
-        // Initialise a with Gaussians. Have to take parameters from config for this.
-        GaussParams<Flt> g1;
-        g1.sigma = 0.2;
-        g1.x = 0.05;
-        g1.y = 0.0;
-        GaussParams<Flt> g2;
-        g2.sigma = 0.2;
-        g2.x = -0.05;
-        g2.y = 0.0;
-
-        vector<GaussParams<Flt> > gp;
-        gp.push_back (g1);
-        gp.push_back (g2);
-
-        this->mask_a (this->a, gp);
     }
+#endif
 
     /*!
      * Computation methods
@@ -195,7 +181,10 @@ public:
 
         // First subtract fa_others from fa:
         vector<Flt> fa_sum(this->nhex, 0.0);
-        Flt m = this->Dprime / this->N;
+        Flt m = 0.0;
+        if (this->N > 1) {
+            m = this->Dprime / (this->N - 1);
+        }
 #pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             fa_sum[hi] = fa[hi] - m * fa_others[hi];

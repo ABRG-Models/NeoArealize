@@ -1,13 +1,14 @@
 {
     // Global simulation parameters
-    "steps" : 5000,               // Number of steps to simulate for
+    "steps" : 500000,               // Number of steps to simulate for
     "logevery" : 5000,
-    "plotevery" : 2,
+    "plotevery" : 200,
     "vidframes" : false,
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.1,                     // Global diffusion constant
+    "Dprime" : 0.0,
     "contour_threshold" : 0.55,
     "k" : 3,
     "logpath" : "logs/2N1M",
@@ -18,12 +19,20 @@
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [-1.0] // Array of interactions of this TC popn and guidance mols
+            "gamma" : [-1.0], // Array of interactions of this TC popn and guidance mols
+            "xinit" : -0.2,
+            "yinit" : 0.0,
+            "sigmainit" : 0.05,
+            "gaininit" : 0.5
         },
         {
             "alpha" : 3,
             "beta"  : 3,
-            "gamma" : [1.0]
+            "gamma" : [1.0],
+            "xinit" : 0.2,
+            "yinit" : 0.0,
+            "sigmainit" : 0.05,
+            "gaininit" : 0.5
         }
     ], // end tc
 

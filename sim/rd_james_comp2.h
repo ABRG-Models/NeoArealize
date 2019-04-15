@@ -27,15 +27,6 @@ public:
         : RD_James<Flt>() {
     }
 
-#if 0
-    /*!
-     * Additional init code
-     */
-    void init (void) {
-        RD_James<Flt>::init();
-    }
-#endif
-
     /*!
      * Computation methods
      */

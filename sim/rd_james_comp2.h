@@ -193,7 +193,7 @@ public:
             // 1. The D Del^2 a_i term. Eq. 18.
             // 1a. Or D Del^2 Sum(a_i) (new)
             // Compute the sum around the neighbours
-            Flt thesum = -6 * fa[hi];
+            Flt thesum = -6 * fa_sum[hi];
 
             thesum += fa_sum[(HAS_NE(hi)  ? NE(hi)  : hi)];
             thesum += fa_sum[(HAS_NNE(hi) ? NNE(hi) : hi)];

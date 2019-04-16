@@ -734,6 +734,30 @@ Expanding the brackets we have:
 which gives us 5 terms to compute in \code{compute\_divJ()} in place
 of the original 3 terms in Eq.~\ref{eq:divJExpanded}.
 
+\subsection{Add an interaction with $\nabla \hat{a}_i$}
+
+There could be an additional term to interact with the other branching
+densities, to prevent the \emph{branching} overlapping (rather than
+just relying on the competition between connections implied by the
+definition of $n(\mb{x},t)$ in Eq.~\ref{eq:Karb2D_conserve_NM}.
+
+Let $\hat{a}_i$ be the sum of the branching densities of all axon
+types except $i$.
+%
+\begin{equation}
+\hat{a}_i(\mb{x},t) = \sum_{p\ne i}^N a_p(\mb{x},t)
+\end{equation}
+%
+Now implement this:
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp4}
+\mb{J}_i = D \nabla a_i
+-a_i D^n \nabla n
++a_i D^a \nabla \hat{a}_i
+ - a_i \mb{g}_i
+\end{equation}
+%
+
 \subsection{Initial conditions}
 
 Initial reading of the literature suggests that axons grow towards

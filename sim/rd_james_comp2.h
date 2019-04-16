@@ -174,7 +174,9 @@ public:
         vector<Flt> fa_sum(this->nhex, 0.0);
         Flt m = 0.0;
         if (this->N > 1) {
-            m = this->Dprime / (this->N - 1);
+            // Note appearance of 1/D here, because later we multiply
+            // everything by D when term1 is computed.
+            m = this->Dprime / (this->D * (this->N - 1));
         }
 #pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {

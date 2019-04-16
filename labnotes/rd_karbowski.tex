@@ -86,6 +86,7 @@
 \newcommand{\e}{\emph}
 \newcommand{\mycite}[1]{\cite{#1}}
 \newcommand{\code}[1]{\textsf{#1}}
+\newcommand{\dvrg}{\nabla\vcdot\nabla}
 %% END aliases
 
 % Custom font defs
@@ -343,7 +344,7 @@ identity to $\nabla\vcdot\big(a_i \mb{g}(\mb{x})\big)$:
 \begin{equation}
 %
 \nabla\vcdot\mb{J}_i(\mb{x}) =
-D \nabla\vcdot\nabla a_i(\mb{x},t)
+D \dvrg a_i(\mb{x},t)
 -
 \big(
 a_i(\mb{x},t)\nabla\vcdot\mb{g}(\mb{x})
@@ -353,7 +354,7 @@ a_i(\mb{x},t)\nabla\vcdot\mb{g}(\mb{x})
 %
 \end{equation}
 %
-(to prove $\nabla\vcdot D\nabla a = D \nabla\vcdot\nabla a$, apply the
+(to prove $\nabla\vcdot D\nabla a = D \dvrg a$, apply the
 product rule and note that $\nabla D = 0$ for constant $D$). Expanding
 the brackets we have:
 %
@@ -362,7 +363,7 @@ the brackets we have:
 \boxed{
 \nabla\vcdot\mb{J}_i(\mb{x}) =
 %
-D \nabla\vcdot\nabla a_i(\mb{x},t) % term1
+D \dvrg a_i(\mb{x},t) % term1
 -
 a_i(\mb{x},t)\nabla\vcdot\mb{g}(\mb{x}) % term2
 -
@@ -383,13 +384,13 @@ Each of the divergences can be simplified by means of Gauss's Theorem.
 Reference \cite{lee_hexagonal_2014} presents an application of Gauss's
 Theorem to the solution of Poisson's equation, which contains a
 Laplacian term, on an hexagonal grid. The computation of the mean
-value of our Laplacian, $D \nabla\vcdot\nabla a_i(\mb{x},t)$, across
+value of our Laplacian, $D \dvrg a_i(\mb{x},t)$, across
 the area of one hexagon located at position $\mb{p}_0$, with
 neighbours at positions $\mb{p}_1$--$\mb{p}_6$ is:
 %
 \begin{equation} \label{eq:computeDivJTerm1}
 \boxed{
-D \nabla\vcdot\nabla a_i(\mb{p}_0,t) = D\frac{2}{3d^2} \sum_{j=1}^{6}\big(a_i(\mb{p}_j) - a_i(\mb{p}_0)\big)
+D \dvrg a_i(\mb{p}_0,t) = D\frac{2}{3d^2} \sum_{j=1}^{6}\big(a_i(\mb{p}_j) - a_i(\mb{p}_0)\big)
 }
 \end{equation}
 %
@@ -402,7 +403,7 @@ $\frac{\sqrt{3}}{2}d^2$.
 
 \begin{equation}
 \begin{split}
-\frac{1}{\Omega} \iint_A \nabla\vcdot\nabla a_i(\mb{x}) dxdy & = \frac{1}{\Omega} \oint_c \frac{\partial a_i}{\partial \hat{\mb{n}}} d\gamma \\
+\frac{1}{\Omega} \iint_A \dvrg a_i(\mb{x}) dxdy & = \frac{1}{\Omega} \oint_c \frac{\partial a_i}{\partial \hat{\mb{n}}} d\gamma \\
 & \approx \frac{1}{\Omega} \sum_{j=1}^6 \frac{\partial a_i(\mb{p}_j)}{\partial \hat{\mb{n}}} \bigg\rvert_{mid} v \\
 & = \frac{2}{\sqrt{3} d^2} \sum_{j=1}^6 \frac{a_i(\mb{p}_j) - a_i(\mb{p}_0)}{d} \frac{d}{\sqrt{3}} \\
 & = \frac{2}{3 d^2} \sum_{j=1}^6 \big(a_i(\mb{p}_j) - a_i(\mb{p}_0)\big)
@@ -632,16 +633,152 @@ I settled on this implementation of
 Eq.~\ref{eq:Karb2D_J_NM_with_comp2} in \code{rd\_james\_comp2.cpp}:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp2_impl}
-\mb{J}_i(\mb{x},t) = D \nabla \big(a_i(\mb{x},t) - \frac{D'}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
+\mb{J}_i(\mb{x},t) = \nabla \big(D a_i(\mb{x},t) - \frac{D'}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
 which provides $D'$ as a parameter to define the strength of the
 contribution of the non-self axon branching densities to the flux
-current. The `positive' diffusion is $D$, and the `negative' diffusion
-is $\frac{D D'}{N-1}$. This successfully produced competition between
-$N$=2 TC types in the absence of any guidance molecules with $D$=0.1
-and $D'$ set to a value of 0.01.
+current. The `positive' diffusion constant is $D$ (being positive,
+this is kind of an \emph{infusion} constant), and the `negative'
+diffusion is $\frac{D'}{N-1}$. This successfully produced competition
+between $N$=2 TC types in the absence of any guidance molecules with
+$D$=0.1 and $D'$ set to a value of 0.001.
+
+\subsection{Add an interaction with $\nabla n$}
+
+Imagine that as connections are made to the cortical dendrites, a
+molecule is expressed. Axon branching should diffuse into areas with
+low connections, so follow the gradient of this `connectivity
+molecule' from high $n$ to low $n$:
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp3}
+\mb{J}_i(\mb{x},t) = \nabla \big(D a_i(\mb{x},t)
+- \frac{D'}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) - D^n n(\mb{x}, t) \big) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+%
+With the new term, it's probably worth going back to look at the
+method for computing $\nabla\vcdot\mb{J}_i$. Let's first take the case
+for which $D'$=0, and also write down that
+%
+\begin{equation} \label{eq:g_i}
+\mb{g}_i(\mb{x}) = \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+%
+giving this (less gnarly) expression for $\mb{J}_i$, in which I've dropped
+references to the arguments ($\mb{g}_i(\mb{x})$ becomes $\mb{g}_i$,
+$n(\mb{x}, t)$ becomes $n$, and so on):
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp3_Dprime0}
+\mb{J}_i = \nabla \big(D a_i - D^n n \big) - a_i \mb{g}_i
+\end{equation}
+%
+and the divergence of $\mb{J}_i$ is
+%%%%
+\begin{equation}
+\nabla\vcdot\mb{J}_i = \nabla\vcdot \big[ \nabla \big(D a_i - D^n n \big) - a_i \mb{g}_i \big]
+\end{equation}
+%
+Because the divergence operator is distributive
+%
+\begin{equation}
+\nabla\vcdot\mb{J}_i = D \dvrg a_i - D^n \dvrg n
+- \nabla\vcdot a_i \mb{g}_i
+\end{equation}
+%
+$D$ is a constant and applying the vector calculus product rule
+identity to $\nabla\vcdot\big(a_i \mb{g}_i\big)$:
+%
+\begin{equation}
+%
+\nabla\vcdot\mb{J}_i = D \dvrg a_i - D^n \dvrg n - \big(
+a_i\nabla\vcdot\mb{g}_i
++
+\mb{g}_i\vcdot\nabla a_i
+\big)
+%
+\end{equation}
+%
+Expanding the brackets we have:
+%
+\begin{equation} \label{eq:divJExpanded2}
+%
+\nabla\vcdot\mb{J}_i =
+%
+D \dvrg a_i % term1
+-
+D^n \dvrg n % term 1.5
+-
+a_i\nabla\vcdot\mb{g}_i % term2
+-
+\mb{g}_i\vcdot\nabla a_i % term3
+%
+\end{equation}
+%
+Finally, let the sum of the branching of all the \emph{other} thalamocortical
+axon types be
+%
+\begin{equation}
+\hat{a}_i(\mb{x},t) = \sum_{p\ne i}^N a_p(\mb{x},t)
+\end{equation}
+%
+and consider the case that $D'$>0.
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp3_2}
+\mb{J}_i = \nabla \big(D a_i - \frac{D'}{N-1} \hat{a}_i - D^n n \big) - a_i \mb{g}_i
+\end{equation}
+%
+\begin{equation}
+\begin{split}
+\nabla\vcdot\mb{J}_i & = \nabla\vcdot \big[ \nabla \big(D a_i
+- \frac{D'}{N-1} \hat{a}_i - D^n n \big) - a_i \mb{g}_i \big] \\
+%
+& = D \dvrg a_i - \frac{D'}{N-1} \dvrg \hat{a}_i - D^n \dvrg n
+- \nabla\vcdot a_i \mb{g}_i \\
+%
+& = D \dvrg a_i - \frac{D'}{N-1} \dvrg \hat{a}_i - D^n \dvrg n
+- \big(
+a_i\nabla\vcdot\mb{g}_i
++
+\mb{g}_i\vcdot\nabla a_i
+\big) \\
+%
+& =
+D \dvrg a_i % term1
+-
+\frac{D'}{N-1} \dvrg \hat{a}_i % term 1.2
+-
+D^n \dvrg n % term 1.5
+-
+a_i\nabla\vcdot\mb{g}_i % term2
+-
+\mb{g}_i\vcdot\nabla a_i % term3
+%
+\end{split}
+\end{equation}
+%
+Because the divergence is distributive, we can equally write this as
+%
+\begin{equation}
+\nabla\vcdot\mb{J}_i  =
+\dvrg \big[
+D a_i % term1
+-
+\frac{D'}{N-1} \hat{a}_i % term 1.2
+-
+D^n n % term 1.5
+\big]
+-
+a_i\nabla\vcdot\mb{g}_i % term2
+-
+\mb{g}_i\vcdot\nabla a_i % term3
+%
+\end{equation}
+%
+summing $D a_i$, $\frac{D'}{N-1}\hat{a}_i$ and $D^n n$ before
+computing the divergence using the relation in
+Eq.~\ref{eq:computeDivJTerm1}.
 
 \subsection{Initial conditions}
 

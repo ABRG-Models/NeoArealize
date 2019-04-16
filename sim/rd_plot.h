@@ -58,10 +58,12 @@ public:
      */
     void scalarfields (Gdisplay& disp,
                        HexGrid* hg,
-                       vector<Flt>& f) {
+                       vector<Flt>& f,
+                       Flt mina = +1e7,
+                       Flt maxa = -1e7) {
         vector<vector<Flt> > vf;
         vf.push_back (f);
-        this->scalarfields (disp, hg, vf);
+        this->scalarfields (disp, hg, vf, mina, maxa);
     }
 
     /*!

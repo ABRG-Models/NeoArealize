@@ -31,6 +31,8 @@
 #include "rd_james_comp1.h"
 #elif defined COMP2
 #include "rd_james_comp2.h"
+#elif defined COMP3
+#include "rd_james_comp3.h"
 #else
 #include "rd_james.h"
 #endif
@@ -175,6 +177,9 @@ int main (int argc, char **argv)
     const double D = root.get ("D", 0.1).asDouble();
 #if defined COMP2
     const double Dprime = root.get ("Dprime", 0.1).asDouble();
+#elif defined COMP3
+    const double Dprime = root.get ("Dprime", 0.1).asDouble();
+    const double Dn = root.get ("Dn", 0.1).asDouble();
 #endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
@@ -285,6 +290,8 @@ int main (int argc, char **argv)
     RD_James_comp1<FLOATTYPE> RD;
 #elif defined COMP2
     RD_James_comp2<FLOATTYPE> RD;
+#elif defined COMP3
+    RD_James_comp3<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -309,6 +316,9 @@ int main (int argc, char **argv)
     RD.set_D (D);
 #if defined COMP2
     RD.Dprime = Dprime;
+#elif defined COMP3
+    RD.Dprime = Dprime;
+    RD.Dn = Dn;
 #endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;
@@ -476,8 +486,8 @@ int main (int argc, char **argv)
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             plt.plot_contour (displays[3], RD.hg, ctrs);
             plt.scalarfields (displays[1], RD.hg, RD.a);
-            plt.scalarfields (displays[2], RD.hg, RD.c);
-            plt.scalarfields (displays[4], RD.hg, RD.n);
+            plt.scalarfields (displays[2], RD.hg, RD.c, 0.0, 1.0);
+            plt.scalarfields (displays[4], RD.hg, RD.n, 0.0, 1.0);
 # ifdef PLOT_EXTRAS
             displays[5].redrawDisplay();
             displays[6].redrawDisplay();

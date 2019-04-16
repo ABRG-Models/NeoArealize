@@ -130,6 +130,8 @@ protected:
     alignas(Flt) Flt oneoverd = 1.0/this->d;
     alignas(Flt) Flt oneover2d = 1.0/(this->d+this->d);
     alignas(Flt) Flt oneover3d = 1.0/(3*this->d);
+    alignas(Flt) Flt oneover3dd = 1.0 / 3*this->d*this->d;
+    alignas(Flt) Flt twoover3dd = 2.0 / 3*this->d*this->d;
 
     alignas(Flt) Flt oneoverv = 1.0/this->v;
     alignas(Flt) Flt twov = this->v+this->v;
@@ -345,6 +347,8 @@ protected:
         this->oneoverd = 1.0/this->d;
         this->oneover2d = 1.0/(2*this->d);
         this->oneover3d = 1.0/(3*this->d);
+        this->oneover3dd = 1.0 / (3*this->d*this->d);
+        this->twoover3dd = 2.0 / (3*this->d*this->d);
     }
 
     virtual void set_v (Flt v_) {

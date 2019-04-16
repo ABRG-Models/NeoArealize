@@ -230,7 +230,7 @@ variable names as in the paper~\cite{karbowski_model_2004}.
 \section{Two dimensional system}
 
 Extending the system above to two spatial dimensions changes $x$ into
-a two-dimensional $\mb{x}$ and changes the flux term, $J_i(x)$ as follows:
+a two-dimensional $\mb{x}$ and changes the flux term, $J_i(x,t)$ as follows:
 %
 \begin{equation} \label{eq:Karb2D_dc}
 \frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t) + \beta_i n(\mb{x},t)
@@ -610,7 +610,7 @@ Change the flux current from:
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
-to
+(which is a re-write of Eq.~\ref{eq:Karb2D_J_NM}) to:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
@@ -645,54 +645,69 @@ diffusion is $\frac{D'}{N-1}$. This successfully produced competition
 between $N$=2 TC types in the absence of any guidance molecules with
 $D$=0.1 and $D'$ set to a value of 0.001.
 
+\textbf{Stop press} Actually, no, this doesn't do anything interesting
+at all, now that I've fixed the bugs. If $D=D'$ for a
+\code{2N0M} system, then the system is static. If $D'$>$D$, then the
+system is numerically unstable.
+
 \subsection{Add an interaction with $\nabla n$}
 
 Imagine that as connections are made to the cortical dendrites, a
-molecule is expressed. Axon branching should diffuse into areas with
-low connections, so follow the gradient of this `connectivity
-molecule' from high $n$ to low $n$:
+molecule is expressed. Axon branching should expand into areas with
+low connections, so the `flux of branching' should follow the gradient
+of this `connectivity molecule' from high $n$ to low $n$. I've
+expressed this by adding a new term to Eq.~\ref{eq:Karb2D_J_NM}:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp3}
-\mb{J}_i(\mb{x},t) = \nabla \big(D a_i(\mb{x},t)
-- \frac{D'}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) - D^n n(\mb{x}, t) \big) - a_i
-\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
+\boxed{-a_i(\mb{x}, t) D^n \nabla n(\mb{x}, t)}
+ - a_i(\mb{x},t) \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
-With the new term, it's probably worth going back to look at the
-method for computing $\nabla\vcdot\mb{J}_i$. Let's first take the case
-for which $D'$=0, and also write down that
+With the new term (boxed), it's probably worth going back to look at the
+method for computing $\nabla\vcdot\mb{J}_i$. Let's first write down that
 %
 \begin{equation} \label{eq:g_i}
 \mb{g}_i(\mb{x}) = \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
-giving this (less gnarly) expression for $\mb{J}_i$, in which I've dropped
-references to the arguments ($\mb{g}_i(\mb{x})$ becomes $\mb{g}_i$,
-$n(\mb{x}, t)$ becomes $n$, and so on):
+and then drop references to the space and time arguments ($\mb{g}_i(\mb{x})$
+becomes $\mb{g}_i$; $n(\mb{x}, t)$ becomes $n$; and so on). This
+allows a tidier version of Eq.~\ref{eq:Karb2D_J_NM_with_comp3} to be
+written down:
 %
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp3_Dprime0}
-\mb{J}_i = \nabla \big(D a_i - D^n n \big) - a_i \mb{g}_i
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp3_simpler}
+\mb{J}_i = D \nabla a_i - a_i D^n \nabla n - a_i \mb{g}_i
 \end{equation}
 %
-and the divergence of $\mb{J}_i$ is
+The divergence of $\mb{J}_i$ is
 %%%%
 \begin{equation}
-\nabla\vcdot\mb{J}_i = \nabla\vcdot \big[ \nabla \big(D a_i - D^n n \big) - a_i \mb{g}_i \big]
-\end{equation}
+\begin{split}
+\nabla\vcdot\mb{J}_i & = \nabla\vcdot \big[ D \nabla a_i - a_i
+D^n \nabla n - a_i \mb{g}_i \big] \\
 %
-Because the divergence operator is distributive
-%
-\begin{equation}
-\nabla\vcdot\mb{J}_i = D \dvrg a_i - D^n \dvrg n
+& =
+D \dvrg a_i
+- D^n \nabla\vcdot a_i \nabla n
 - \nabla\vcdot a_i \mb{g}_i
+\end{split}
 \end{equation}
 %
-$D$ is a constant and applying the vector calculus product rule
-identity to $\nabla\vcdot\big(a_i \mb{g}_i\big)$:
+because the divergence operator is distributive (and $D$ \& $D^n$ are
+scalar constants).  Applying the vector calculus product rule identity to
+$\nabla\vcdot\big(a_i\nabla n\big)$ and
+$\nabla\vcdot\big(a_i \mb{g}_i\big)$:
 %
 \begin{equation}
 %
-\nabla\vcdot\mb{J}_i = D \dvrg a_i - D^n \dvrg n - \big(
+\nabla\vcdot\mb{J}_i = D \dvrg a_i
+%
+- D^n \big(
+a_i \dvrg n + \nabla n \vcdot \nabla a_i
+\big)
+%
+- \big(
 a_i\nabla\vcdot\mb{g}_i
 +
 \mb{g}_i\vcdot\nabla a_i
@@ -703,82 +718,21 @@ a_i\nabla\vcdot\mb{g}_i
 Expanding the brackets we have:
 %
 \begin{equation} \label{eq:divJExpanded2}
+\boxed{
 %
-\nabla\vcdot\mb{J}_i =
+\nabla\vcdot\mb{J}_i = D \dvrg a_i
 %
-D \dvrg a_i % term1
--
-D^n \dvrg n % term 1.5
--
-a_i\nabla\vcdot\mb{g}_i % term2
--
-\mb{g}_i\vcdot\nabla a_i % term3
+- D^n a_i \dvrg n
+- D^n \nabla n \vcdot \nabla a_i
 %
-\end{equation}
-%
-Finally, let the sum of the branching of all the \emph{other} thalamocortical
-axon types be
-%
-\begin{equation}
-\hat{a}_i(\mb{x},t) = \sum_{p\ne i}^N a_p(\mb{x},t)
-\end{equation}
-%
-and consider the case that $D'$>0.
-%
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp3_2}
-\mb{J}_i = \nabla \big(D a_i - \frac{D'}{N-1} \hat{a}_i - D^n n \big) - a_i \mb{g}_i
-\end{equation}
-%
-\begin{equation}
-\begin{split}
-\nabla\vcdot\mb{J}_i & = \nabla\vcdot \big[ \nabla \big(D a_i
-- \frac{D'}{N-1} \hat{a}_i - D^n n \big) - a_i \mb{g}_i \big] \\
-%
-& = D \dvrg a_i - \frac{D'}{N-1} \dvrg \hat{a}_i - D^n \dvrg n
-- \nabla\vcdot a_i \mb{g}_i \\
-%
-& = D \dvrg a_i - \frac{D'}{N-1} \dvrg \hat{a}_i - D^n \dvrg n
-- \big(
-a_i\nabla\vcdot\mb{g}_i
-+
-\mb{g}_i\vcdot\nabla a_i
-\big) \\
-%
-& =
-D \dvrg a_i % term1
--
-\frac{D'}{N-1} \dvrg \hat{a}_i % term 1.2
--
-D^n \dvrg n % term 1.5
--
-a_i\nabla\vcdot\mb{g}_i % term2
--
-\mb{g}_i\vcdot\nabla a_i % term3
-%
-\end{split}
-\end{equation}
-%
-Because the divergence is distributive, we can equally write this as
-%
-\begin{equation}
-\nabla\vcdot\mb{J}_i  =
-\dvrg \big[
-D a_i % term1
--
-\frac{D'}{N-1} \hat{a}_i % term 1.2
--
-D^n n % term 1.5
-\big]
--
-a_i\nabla\vcdot\mb{g}_i % term2
--
-\mb{g}_i\vcdot\nabla a_i % term3
+- a_i\nabla\vcdot\mb{g}_i
+- \mb{g}_i\vcdot\nabla a_i
+}
 %
 \end{equation}
 %
-summing $D a_i$, $\frac{D'}{N-1}\hat{a}_i$ and $D^n n$ before
-computing the divergence using the relation in
-Eq.~\ref{eq:computeDivJTerm1}.
+which gives us 5 terms to compute in \code{compute\_divJ()} in place
+of the original 3 terms in Eq.~\ref{eq:divJExpanded}.
 
 \subsection{Initial conditions}
 

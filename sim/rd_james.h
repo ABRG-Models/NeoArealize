@@ -121,6 +121,7 @@ protected:
     alignas(Flt) Flt D = 0.1;
 
     alignas(Flt) Flt twoDover3dd = this->D+this->D / 3*this->d*this->d;
+    alignas(Flt) Flt oneover3dd = 1.0 / 3*this->d*this->d;
 
 public:
 
@@ -479,10 +480,11 @@ public:
 
 protected:
     /*!
-     * Compute 2D/3d^2
+     * Compute 2D/3d^2 (and 1/3d^2 too)
      */
     void updateTwoDover3dd (void) {
         this->twoDover3dd = (this->D+this->D) / (3*this->d*this->d);
+        this->oneover3dd = 1.0 / (3*this->d*this->d);
     }
 
 public:

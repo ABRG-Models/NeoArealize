@@ -184,7 +184,7 @@ public:
         }
 
         // Compute gradient of a_i(x), for use computing the third term, below.
-        this->spacegrad2D (fa_sum, this->grad_a[i]);
+        this->spacegrad2D (fa, this->grad_a[i]);
 
         // Three terms to compute; see Eq. 17 in methods_notes.pdf
 #pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).

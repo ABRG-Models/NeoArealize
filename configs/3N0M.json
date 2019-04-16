@@ -9,8 +9,8 @@
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.1,                     // Global 'infusion' constant for branch intensification (+ve D)
-    "Dprime" : 0.005,                // Diffusion constant for branching (-ve D)
-
+    "Dprime" : 0.095,                // Diffusion constant for branching (-ve D)
+    "Dn" : 1.0,
     // Array of parameters for N thalamocortical populations:
     "tc": [
         { "alpha" : 3, "beta" : 3, "xinit" : -0.3, "yinit" : 0.1, "sigmainit" : 0.05, "gaininit" : 0.5 },

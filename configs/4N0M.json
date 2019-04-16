@@ -1,17 +1,21 @@
 {
     // Global simulation parameters
-    "steps" : 25000,                // Number of steps to simulate for
+    "steps" : 100000,                // Number of steps to simulate for
+    "logevery": 5000,
+    "plotevery": 500,
+    "overwrite_logs": true,
+    "logpath" : "./logs/3N0M",
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.31,                     // Global diffusion constant
-
+    "D" : 0.1,                     // Global 'infusion' constant for branch intensification (+ve D)
+    "Dn" : 0.1,
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        {"alpha" : 15,"beta" : 5},
-        {"alpha" : 15,"beta" : 5},
-        {"alpha" : 15,"beta" : 5},
-        {"alpha" : 15,"beta" : 5}
+        { "alpha" : 3, "beta" : 3, "xinit" : -0.3, "yinit" : 0.1, "sigmainit" : 0.05, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 4, "xinit" :  0.02, "yinit" : -0.19, "sigmainit" : 0.05, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 5, "xinit" :  -0.02, "yinit" : -0.21, "sigmainit" : 0.05, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3, "xinit" :  0.3, "yinit" : 0.1, "sigmainit" : 0.05, "gaininit" : 0.5  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

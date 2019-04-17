@@ -217,7 +217,7 @@ public:
      * Compute divergence of n
      */
     void compute_divn (void) {
-#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
+#pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             Flt thesum = -6 * this->n[hi];
             thesum += this->n[(HAS_NE(hi)  ? NE(hi)  : hi)];
@@ -245,7 +245,7 @@ public:
         this->spacegrad2D (fa, this->grad_a[i]);
 
         // Three terms to compute; see Eq. 17 in methods_notes.pdf
-#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
+#pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term. Eq. 18.

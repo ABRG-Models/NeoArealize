@@ -1,0 +1,45 @@
+{
+    // Global simulation parameters
+    "steps" : 100000,                // Number of steps to simulate for
+    "logevery": 5000,
+    "plotevery": 100,
+    "overwrite_logs": true,
+    "logpath" : "./logs/4N0M",
+    "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./ellipse.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.1,                     // Global 'infusion' constant for branch intensification (+ve D)
+    "Dprime" : 0.01,
+    "Dn" : 0.8,
+    "l" : 2,
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        { "alpha" : 3, "beta" : 3,
+          "gamma" : [0.4],
+          "epsilon" : 1,
+          "xinit" : -0.1,   "yinit" : 0.1, "sigmainit" : 0.11, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3,
+          "gamma" : [0.4],
+          "epsilon" : 1,
+          "xinit" :  0.25,  "yinit" : -0.1, "sigmainit" : 0.12, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3,
+          "gamma" : [0.4],
+          "epsilon" : 1,
+          "xinit" :  -0.1, "yinit" : -0.1, "sigmainit" : 0.13, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3,
+          "gamma" : [0.4],
+          "epsilon" : 1,
+          "xinit" :  0.25,   "yinit" : 0.1, "sigmainit" : 0.1, "gaininit" : 0.5  }
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 1.0,
+            "phi"    : 0.7,
+            "width"  : 0.1,
+            "offset" : 0.0
+        }
+    ] // end guidance
+}

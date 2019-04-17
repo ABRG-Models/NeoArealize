@@ -14,10 +14,10 @@
     "l" : 2,
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.1,   "yinit" : 0.1, "sigmainit" : 0.11, "gaininit" : 0.5 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,  "yinit" : -0.1, "sigmainit" : 0.12, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1, "xinit" :  -0.1, "yinit" : -0.1, "sigmainit" : 0.13, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,   "yinit" : 0.1, "sigmainit" : 0.1, "gaininit" : 0.5  }
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  -0.1,  "yinit" : 0, "sigmainit" : 0.12, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1, "xinit" :  0.1, "yinit" : 0, "sigmainit" : 0.13, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,   "yinit" : 0, "sigmainit" : 0.02, "gaininit" : 0.2  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

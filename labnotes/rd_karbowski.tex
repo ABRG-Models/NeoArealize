@@ -233,7 +233,7 @@ Extending the system above to two spatial dimensions changes $x$ into
 a two-dimensional $\mb{x}$ and changes the flux term, $J_i(x,t)$ as follows:
 %
 \begin{equation} \label{eq:Karb2D_dc}
-\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t) + \beta_i n(\mb{x},t)
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t) + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
@@ -473,7 +473,7 @@ We're modifying the system above so that we have N TC populations and
 M curated gradients.
 %
 \begin{equation} \label{eq:Karb2D_dc_NM}
-\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t) + \beta_i n(\mb{x},t)
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t) + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
@@ -567,9 +567,10 @@ Here are some modifications to the equations to enable competition
 between regions dreamed up in just such a flagrant, un-principled way:
 
 \subsection{Allow the branching rate of all other TC axon types to change $\dot{a}_i$}
+\label{sec:comp1}
 %
 \begin{equation} \label{eq:Karb2D_dc_compo_1}
-\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i((\mb{x},t)
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t)
 + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
@@ -602,6 +603,7 @@ does not produce strong competition compared with the following
 mechanism.
 
 \subsection{Use \emph{all} the TC axon branching densities to contribute to flux current of axonal branching}
+\label{sec:comp2}
 
 Change the flux current from:
 %
@@ -651,6 +653,7 @@ at all, now that I've fixed the bugs. If $D=D'$ for a
 system is numerically unstable.
 
 \subsection{Add an interaction with $\nabla n$}
+\label{sec:comp3}
 
 Imagine that as connections are made to the cortical dendrites, a
 molecule is expressed. Axon branching should expand into areas with
@@ -717,7 +720,7 @@ a_i\nabla\vcdot\mb{g}_i
 %
 Expanding the brackets we have:
 %
-\begin{equation} \label{eq:divJExpanded2}
+\begin{equation} \label{eq:divJExpanded_comp3}
 \boxed{
 %
 \nabla\vcdot\mb{J}_i = D \dvrg a_i
@@ -735,6 +738,7 @@ which gives us 5 terms to compute in \code{compute\_divJ()} in place
 of the original 3 terms in Eq.~\ref{eq:divJExpanded}.
 
 \subsection{Add an interaction with $\nabla \hat{a}_i$}
+\label{sec:comp4}
 
 There could be an additional term to interact with the other branching
 densities, to prevent the \emph{branching} overlapping (rather than
@@ -753,10 +757,72 @@ Now implement this:
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp4}
 \mb{J}_i = D \nabla a_i
 -a_i D^n \nabla n
-+a_i D^a \nabla \hat{a}_i
++a_i D' \nabla \hat{a}_i
  - a_i \mb{g}_i
 \end{equation}
 %
+which should result in the following for the divergence of $\mb{J}_i$:
+%
+\begin{equation} \label{eq:divJExpanded_comp4}
+\begin{split}
+%
+\nabla\vcdot\mb{J}_i & = D \dvrg a_i \\
+%
+& \quad - D^n a_i \dvrg n - D^n \nabla n \vcdot \nabla a_i
+%
+- D' a_i \dvrg \hat{a}_i - D' \nabla \hat{a}_i \vcdot \nabla a_i \\
+%
+& \quad - a_i\nabla\vcdot\mb{g}_i - \mb{g}_i\vcdot\nabla a_i
+\end{split}
+\end{equation}
+
+Values for $D'$ between 0.01 and -0.006 make small differences to the
+result, but outside this range, the simulation becomes unstable.
+
+\subsection{Interaction with $\nabla{n}$ and $\hat{a}_i$ inhibits $\dot{a_i}$}
+\label{sec:comp5}
+
+Combines sections~\ref{sec:comp1} and \ref{sec:comp3}. Descending the
+gradient $a_i\nabla{n}$ expands axon branching into new regions;
+competition between $a_i$ and $\hat{a}_i$ should prevent excessive
+branching into neighbouring regions.
+
+%
+\begin{equation} \label{eq:Karb2D_dc_comp5}
+\frac{\partial c_i}{\partial t} = -\alpha_i c_i
++ \beta_i n
+[a_i]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_da_comp5}
+\frac{\partial a_i}{\partial t}
+= \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n
+[a_i]^k - \frac{\epsilon_i}{N-1} a_i \sum_{p \ne i}^{N} a_p^l
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_conserve_NM_comp5}
+n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
+\end{equation}
+%
+\begin{equation} \label{eq:divJExpanded_comp5}
+%
+\nabla\vcdot\mb{J}_i = D \dvrg a_i
+%
+- D^n a_i \dvrg n
+- D^n \nabla n \vcdot \nabla a_i
+%
+- a_i\nabla\vcdot\mb{g}_i
+- \mb{g}_i\vcdot\nabla a_i
+%
+\end{equation}
+
+Note that
+Eqs.~\ref{eq:Karb2D_dc_comp5}--\ref{eq:Karb2D_conserve_NM_comp5} are
+not identical those in section~\ref{sec:comp1}.
+
+This is very promising! Initial branching conditions produce reliable
+regions. Initial conditions can be modified to simulate denucleated
+animal; region becomes smaller, but not non-existent.
 
 \subsection{Initial conditions}
 

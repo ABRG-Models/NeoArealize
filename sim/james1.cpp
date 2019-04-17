@@ -33,6 +33,10 @@
 #include "rd_james_comp2.h"
 #elif defined COMP3
 #include "rd_james_comp3.h"
+#elif defined COMP4
+#include "rd_james_comp4.h"
+#elif defined COMP5
+#include "rd_james_comp5.h"
 #else
 #include "rd_james.h"
 #endif
@@ -178,8 +182,13 @@ int main (int argc, char **argv)
 #if defined COMP2
     const double Dprime = root.get ("Dprime", 0.1).asDouble();
 #elif defined COMP3
+    const double Dn = root.get ("Dn", 0.1).asDouble();
+#elif defined COMP4
     const double Dprime = root.get ("Dprime", 0.1).asDouble();
     const double Dn = root.get ("Dn", 0.1).asDouble();
+#elif defined COMP5
+    const double Dn = root.get ("Dn", 0.1).asDouble();
+    const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
@@ -292,6 +301,10 @@ int main (int argc, char **argv)
     RD_James_comp2<FLOATTYPE> RD;
 #elif defined COMP3
     RD_James_comp3<FLOATTYPE> RD;
+#elif defined COMP4
+    RD_James_comp4<FLOATTYPE> RD;
+#elif defined COMP5
+    RD_James_comp5<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -317,8 +330,13 @@ int main (int argc, char **argv)
 #if defined COMP2
     RD.Dprime = Dprime;
 #elif defined COMP3
+    RD.Dn = Dn;
+#elif defined COMP4
     RD.Dprime = Dprime;
     RD.Dn = Dn;
+#elif defined COMP5
+    RD.Dn = Dn;
+    RD.l = l;
 #endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;
@@ -336,6 +354,10 @@ int main (int argc, char **argv)
         gp.x = v.get("xinit", 0.0).asDouble();
         gp.y = v.get("yinit", 0.0).asDouble();
         RD.initmasks.push_back (gp);
+
+#if defined COMP5
+        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
+#endif
     }
 
     // Index through guidance molecule parameters:

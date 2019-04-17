@@ -1,7 +1,6 @@
 /*
- * Like RD_James, but derives from RD_Base. Competition method 2,
- * which implements Eq. 34 in the lab notes (rd_karbowski.pdf; label
- * eq:Karb2D_J_NM_with_comp2_impl)
+ * Competition method 2, which implements Eq. 34 in the lab notes
+ * (rd_karbowski.pdf; label eq:Karb2D_J_NM_with_comp2_impl)
  */
 
 #include "rd_james.h"

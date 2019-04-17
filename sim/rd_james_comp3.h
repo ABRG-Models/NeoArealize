@@ -1,7 +1,6 @@
 /*
- * Like RD_James, but derives from RD_Base. Competition method 3,
- * which implements Eq. 35 in the lab notes (rd_karbowski.pdf; label
- * eq:Karb2D_J_NM_with_comp3)
+ * Competition method 3, which implements Eq. 35 in the lab notes
+ * (rd_karbowski.pdf; label eq:Karb2D_J_NM_with_comp3)
  */
 
 #include "rd_james.h"
@@ -14,12 +13,6 @@ template <class Flt>
 class RD_James_comp3 : public RD_James<Flt>
 {
 public:
-    /*!
-     * Parameter which controls the strength of diffusion away from
-     * axon branching of other TC types.
-     */
-    alignas(Flt) Flt Dprime = 0.1;
-
     /*!
      * Parameter which controls the strength of the contribution from
      * the gradient of n(x,t) to the flux current of axonal branching.
@@ -90,8 +83,9 @@ public:
             nsum += this->n[hi];
         }
 
-        // 1.1 Compute divergence of n
+        // 1.1 Compute divergence and gradient of n
         this->compute_divn();
+        this->spacegrad2D (this->n, this->grad_n);
 
 #ifdef DEBUG__
         if (this->stepCount % 100 == 0) {

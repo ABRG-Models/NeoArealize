@@ -235,10 +235,18 @@ public:
      */
 
     /*!
-     * Sets the function of the guidance molecule method (FIXME: Make
-     * this a vector)
+     * Sets the function of the guidance molecule method
      */
     vector<GuidanceMoleculeMethod> rhoMethod;
+
+    /*!
+     * Modify initial conditions as if FGF had been mis-expressed
+     * posteriorly as well as anteriorly and assume that this has the
+     * effect of causing axonal ingrowth in a mirrored fashion. Bunch
+     * up the locations of the Gaussians used to set inital conditions
+     * (along the x axis) and then duplicate.
+     */
+    bool doFgfDuplication = false;
 
     /*!
      * Simple constructor; no arguments. Just calls RD_Base constructor
@@ -286,10 +294,41 @@ public:
         // Once-only parts of the calculation of the Gaussian.
         Flt root_2_pi = 2.506628275;
 
+        Flt min_x = 1e7;
+        Flt max_x = -1e7;
+        Flt scale_m = 1.0;
+        Flt scale_c = 0.0;
+        if (this->doFgfDuplication == true) {
+            // First compute min and max x, for scaling
+            for (unsigned int i = 0; i<this->N && i < gp.size(); ++i) {
+                if (!(gp[i].sigma > 0.0)) {
+                    continue;
+                }
+                if (gp[i].x > max_x) {
+                    max_x = gp[i].x;
+                }
+                if (gp[i].x < min_x) {
+                    min_x = gp[i].x;
+                }
+            }
+            scale_m = max_x / (max_x - min_x);
+            scale_c = -min_x * scale_m;
+        }
+
         for (unsigned int i = 0; i<this->N && i < gp.size(); ++i) {
 
             if (!(gp[i].sigma > 0.0)) {
                 continue;
+            }
+            vector<Flt> vv_cpy(vv[i].size());
+            if (this->doFgfDuplication == true) {
+                gp[i].x = scale_c + scale_m * gp[i].x;
+                // In this case, narrow sigma:
+                gp[i].sigma /= 2.0;
+
+                // Also copy vv[i] so that we can do the mirrored contribution to the initial state
+                vv_cpy.assign(vv[i].begin(), vv[i].end());
+                cout << "Copied. vv_cpy[0] = " << vv_cpy[0] << " vv[i][0] = " << vv[i][0] << endl;
             }
 
             Flt one_over_sigma_root_2_pi = 1 / gp[i].sigma * root_2_pi;
@@ -304,6 +343,22 @@ public:
                                           * exp ( static_cast<Flt>(-(r*r))
                                                   / two_sigma_sq ));
                 vv[i][h.vi] *= gauss;
+            }
+
+            if (this->doFgfDuplication == true) {
+                cout << "-1 * gp[i].x = " << (-1 * gp[i].x) << endl;
+                // Do mirror contribution
+                for (auto h : this->hg->hexen) {
+                    Flt rx = (-1 * gp[i].x) - h.x;
+                    Flt ry = gp[i].y - h.y;
+                    Flt r = sqrt (rx*rx + ry*ry);
+                    Flt gauss = gp[i].gain * (one_over_sigma_root_2_pi
+                                              * exp ( static_cast<Flt>(-(r*r))
+                                                      / two_sigma_sq ));
+
+                    vv[i][h.vi] += vv_cpy[h.vi] * gauss;
+
+                }
             }
         }
     }

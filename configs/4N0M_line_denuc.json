@@ -4,7 +4,7 @@
     "logevery": 5000,
     "plotevery": 100,
     "overwrite_logs": true,
-    "logpath" : "./logs/4N0M_line",
+    "logpath" : "./logs/4N0M_line_denuc",
     "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
@@ -17,7 +17,7 @@
         { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.5 },
         { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  -0.1,  "yinit" : 0, "sigmainit" : 0.12, "gaininit" : 0.5  },
         { "alpha" : 3, "beta" : 3, "epsilon" : 1, "xinit" :  0.1, "yinit" : 0, "sigmainit" : 0.13, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.48  }
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,   "yinit" : 0, "sigmainit" : 0.02, "gaininit" : 0.2  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

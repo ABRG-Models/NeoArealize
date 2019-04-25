@@ -193,6 +193,8 @@ int main (int argc, char **argv)
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
 
+    bool do_fgf_duplication = root.get ("do_fgf_duplication", false).asBool();
+
     cout << "steps to simulate: " << steps << endl;
 
     // Thalamocortical populations array of parameters:
@@ -340,6 +342,7 @@ int main (int argc, char **argv)
 #endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;
+    RD.doFgfDuplication = do_fgf_duplication;
 
     // Index through thalamocortical fields, setting params:
     for (unsigned int i = 0; i < tcs.size(); ++i) {

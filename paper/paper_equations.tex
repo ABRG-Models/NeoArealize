@@ -190,20 +190,20 @@
 n(x, t)[a_i(x, t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb1D_da}
-\frac{\partial a_i(x, t)}{\partial t} = \frac{\partial J_i(x, t)}{\partial
-x} + \alpha c_i(x, t) - \beta n(x, t)[a_i(x, t)]^k
+\begin{equation} \label{eq:Karb1D_conserve}
+n(x, t) = 1 - \sum_{i=1}^{N} c_i(x, t)
 \end{equation}
 %
-\begin{equation} \label{eq:Karb1D_conserve}
-n(x, t) + \sum_{i=1}^{N} c_i(x, t) = 1
+\begin{equation} \label{eq:Karb1D_da}
+\frac{\partial a_i(x, t)}{\partial t} = \frac{\partial J_i(x, t)}{\partial
+x} - \frac{\partial c_i(x, t)}{\partial t}
 \end{equation}
 %
 with the flux current
 %
 \begin{equation} \label{eq:Karb1D_J}
 J_i(x, t) = D \frac{\partial a_i(x, t)}{\partial x} - a_i
-\bigg(\gamma_{Ai} \frac{\partial \rho_A(x)}{\partial x} +\gamma_{Bi} \frac{\partial \rho_B(x)}{\partial x} + \gamma_{Ci} \frac{\partial \rho_C(x)}{\partial x} \bigg)
+\sum_{j=1}^M \big(\gamma_{i,j} \frac{\partial \rho_j(x)}{\partial x} \big)
 \end{equation}
 
 \section{Two dimensional Karbowski system with N TCs and M gradients}
@@ -215,17 +215,17 @@ neurons equal $N$, and the number of guidance molecules equal $M$.
 
 %
 \begin{equation} \label{eq:Karb2D_dc_NM}
-\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t) + \beta_i n(\mb{x},t)
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha c_i(\mb{x},t) + \beta n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_NM}
-\frac{\partial a_i(\mb{x},t)}{\partial t} = \nabla\vcdot\mb{J}_i(\mb{x},t) + \alpha_i c_i(\mb{x},t) - \beta_i n(\mb{x},t)
-[a_i(\mb{x}, t)]^k
+\begin{equation} \label{eq:Karb2D_conserve_NM}
+n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM}
-n(\mb{x},t) + \sum_{i=1}^{N} c_i(\mb{x}, t) = 1
+\begin{equation} \label{eq:Karb2D_da_NM}
+\frac{\partial a_i(\mb{x},t)}{\partial t}
+= \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial c_i(\mb{x},t)}{\partial t}
 \end{equation}
 %
 with the flux current
@@ -240,5 +240,6 @@ The boundary condition applied to these equations is:
 \begin{equation}
 \mb{J}_i(\mb{x},t) \bigg\rvert_{boundary} = 0
 \end{equation}
+
 
 \end{document}

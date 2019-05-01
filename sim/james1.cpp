@@ -180,14 +180,14 @@ int main (int argc, char **argv)
 
     const double D = root.get ("D", 0.1).asDouble();
 #if defined COMP2
-    const double Dprime = root.get ("Dprime", 0.1).asDouble();
+    const double F = root.get ("F", 0.1).asDouble();
 #elif defined COMP3
-    const double Dn = root.get ("Dn", 0.1).asDouble();
+    const double E = root.get ("E", 0.1).asDouble();
 #elif defined COMP4
-    const double Dprime = root.get ("Dprime", 0.1).asDouble();
-    const double Dn = root.get ("Dn", 0.1).asDouble();
+    const double F = root.get ("F", 0.1).asDouble();
+    const double E = root.get ("E", 0.1).asDouble();
 #elif defined COMP5
-    const double Dn = root.get ("Dn", 0.1).asDouble();
+    const double E = root.get ("E", 0.1).asDouble();
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
@@ -330,14 +330,14 @@ int main (int argc, char **argv)
     // After allocate(), we can set up parameters:
     RD.set_D (D);
 #if defined COMP2
-    RD.Dprime = Dprime;
+    RD.F = F;
 #elif defined COMP3
-    RD.Dn = Dn;
+    RD.E = E;
 #elif defined COMP4
-    RD.Dprime = Dprime;
-    RD.Dn = Dn;
+    RD.F = F;
+    RD.E = E;
 #elif defined COMP5
-    RD.Dn = Dn;
+    RD.E = E;
     RD.l = l;
 #endif
     RD.contour_threshold = contour_threshold;

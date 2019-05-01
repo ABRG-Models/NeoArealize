@@ -227,6 +227,73 @@ when reading the sums in the maths below. Note finally that I've not
 defined all the terms in this working document, but I've used the same
 variable names as in the paper~\cite{karbowski_model_2004}.
 
+\subsection{Boundary condition}
+
+Karbowski and Ermentrout apply the `sealed-end' boundary condition (a
+term that I've found used in cable theory):
+%
+$J(0,t) = J(L,t) = 0$. $x$ is in the range $[0,L]$.
+
+\begin{equation}
+J_i(x, t) \bigg\rvert_{boundary} = D \frac{\partial a_i(x, t)}{\partial x} - a_i
+\bigg(\gamma_{Ai} \frac{\partial \rho_A(x)}{\partial x}
++\gamma_{Bi} \frac{\partial \rho_B(x)}{\partial x}
++ \gamma_{Ci} \frac{\partial \rho_C(x)}{\partial x} \bigg) \bigg\rvert_{boundary} = 0
+\end{equation}
+%
+which is a `Robin boundary condition'; a linear combination of the
+derivative of $a_i$ and the value $a_i$. More specifically, it's an
+`insulating boundary condition' (because it is set to 0) (from the
+diffusion-convection equation world).
+
+K \& E claim
+that requiring $J(0)=J(L)=0$ ``implies that the total number of axonal
+branches and connections of any given type in the system is
+constant'' and that this statement is equivalent to saying that
+%
+\begin{equation}
+\int_{0}^{L} [a_i(x,t) + c_i(x,t)] dx
+\end{equation}
+%
+is not a function of time. To show this, start by adding
+Eqs.~\ref{eq:Karb1D_dc} and \ref{eq:Karb1D_da} to give
+%
+\begin{equation}
+\frac{\partial a_i}{\partial t} = \frac{\partial J_i}{\partial
+x} - \frac{\partial c_i}{\partial t}
+\end{equation}
+%
+\begin{equation}
+\begin{split}
+\implies \frac{\partial J_i}{\partial x} & =
+\frac{\partial a_i}{\partial t}
++ \frac{\partial c_i}{\partial t} \\
+& = \frac{\partial}{\partial t}(a_i + c_i)
+\end{split}
+\end{equation}
+%
+(because differentiation is linear). So, integrate this system
+spatially from $0$ to $L$:
+%
+\begin{equation}
+\begin{split}
+\int_0^L \frac{\partial J_i}{\partial x} dx & =
+\int_0^L  \frac{\partial}{\partial t}(a_i + c_i) dx \\
+\implies \int_0^L \partial J_i & = \int_0^L  \frac{\partial}{\partial
+t}(a_i + c_i) dx \\
+\implies J(L) - J(0) & = \frac{\partial}{\partial t} \int_0^L (a_i + c_i) dx
+\end{split}
+\end{equation}
+%
+because $\int_0^L \partial J_i $ is just the sum of the changes in the
+value of $J$, which is equal to the difference between the final value
+and the initial value. Finally, because our no-flux boundary
+conditions state that $J(0) = J(L) = 0$, then
+%
+\begin{equation}
+ \frac{\partial}{\partial t} \int_0^L (a_i + c_i) dx = 0
+\end{equation}
+
 \section{Two dimensional system}
 
 Extending the system above to two spatial dimensions changes $x$ into
@@ -616,7 +683,7 @@ Change the flux current from:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
-- D' \nabla \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) - a_i
+- F \nabla \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
@@ -635,21 +702,20 @@ I settled on this implementation of
 Eq.~\ref{eq:Karb2D_J_NM_with_comp2} in \code{rd\_james\_comp2.cpp}:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp2_impl}
-\mb{J}_i(\mb{x},t) = \nabla \big(D a_i(\mb{x},t) - \frac{D'}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
+\mb{J}_i(\mb{x},t) = \nabla \big(D a_i(\mb{x},t) - \frac{F}{N-1} \textstyle \sum_{p\ne i}^N a_p(\mb{x},t) \big) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
-which provides $D'$ as a parameter to define the strength of the
+which provides $F$ as a parameter to define the strength of the
 contribution of the non-self axon branching densities to the flux
-current. The `positive' diffusion constant is $D$ (being positive,
-this is kind of an \emph{infusion} constant), and the `negative'
-diffusion is $\frac{D'}{N-1}$. This successfully produced competition
+current. The diffusion constant is $D$, and the `negative'
+diffusion is $\frac{F}{N-1}$. This successfully produced competition
 between $N$=2 TC types in the absence of any guidance molecules with
-$D$=0.1 and $D'$ set to a value of 0.001.
+$D$=0.1 and $F$ set to a value of 0.001.
 
 \textbf{Stop press} Actually, no, this doesn't do anything interesting
-at all, now that I've fixed the bugs. If $D=D'$ for a
-\code{2N0M} system, then the system is static. If $D'$>$D$, then the
+at all, now that I've fixed the bugs. If $D=F$ for a
+\code{2N0M} system, then the system is static. If $F$>$D$, then the
 system is numerically unstable.
 
 \subsection{Add an interaction with $\nabla n$}
@@ -663,7 +729,7 @@ expressed this by adding a new term to Eq.~\ref{eq:Karb2D_J_NM}:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp3}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
-\boxed{-a_i(\mb{x}, t) D^n \nabla n(\mb{x}, t)}
+\boxed{-a_i(\mb{x}, t) E \nabla n(\mb{x}, t)}
  - a_i(\mb{x},t) \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
 %
@@ -680,7 +746,7 @@ allows a tidier version of Eq.~\ref{eq:Karb2D_J_NM_with_comp3} to be
 written down:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp3_simpler}
-\mb{J}_i = D \nabla a_i - a_i D^n \nabla n - a_i \mb{g}_i
+\mb{J}_i = D \nabla a_i - a_i E \nabla n - a_i \mb{g}_i
 \end{equation}
 %
 The divergence of $\mb{J}_i$ is
@@ -688,16 +754,16 @@ The divergence of $\mb{J}_i$ is
 \begin{equation}
 \begin{split}
 \nabla\vcdot\mb{J}_i & = \nabla\vcdot \big[ D \nabla a_i - a_i
-D^n \nabla n - a_i \mb{g}_i \big] \\
+E \nabla n - a_i \mb{g}_i \big] \\
 %
 & =
 D \dvrg a_i
-- D^n \nabla\vcdot a_i \nabla n
+- E \nabla\vcdot a_i \nabla n
 - \nabla\vcdot a_i \mb{g}_i
 \end{split}
 \end{equation}
 %
-because the divergence operator is distributive (and $D$ \& $D^n$ are
+because the divergence operator is distributive (and $D$ \& $E$ are
 scalar constants).  Applying the vector calculus product rule identity to
 $\nabla\vcdot\big(a_i\nabla n\big)$ and
 $\nabla\vcdot\big(a_i \mb{g}_i\big)$:
@@ -706,7 +772,7 @@ $\nabla\vcdot\big(a_i \mb{g}_i\big)$:
 %
 \nabla\vcdot\mb{J}_i = D \dvrg a_i
 %
-- D^n \big(
+- E \big(
 a_i \dvrg n + \nabla n \vcdot \nabla a_i
 \big)
 %
@@ -725,8 +791,8 @@ Expanding the brackets we have:
 %
 \nabla\vcdot\mb{J}_i = D \dvrg a_i
 %
-- D^n a_i \dvrg n
-- D^n \nabla n \vcdot \nabla a_i
+- E a_i \dvrg n
+- E \nabla n \vcdot \nabla a_i
 %
 - a_i\nabla\vcdot\mb{g}_i
 - \mb{g}_i\vcdot\nabla a_i
@@ -743,7 +809,7 @@ of the original 3 terms in Eq.~\ref{eq:divJExpanded}.
 There could be an additional term to interact with the other branching
 densities, to prevent the \emph{branching} overlapping (rather than
 just relying on the competition between connections implied by the
-definition of $n(\mb{x},t)$ in Eq.~\ref{eq:Karb2D_conserve_NM}.
+definition of $n(\mb{x},t)$ in Eq.~\ref{eq:Karb2D_conserve_NM}).
 
 Let $\hat{a}_i$ be the sum of the branching densities of all axon
 types except $i$.
@@ -756,8 +822,8 @@ Now implement this:
 %
 \begin{equation} \label{eq:Karb2D_J_NM_with_comp4}
 \mb{J}_i = D \nabla a_i
--a_i D^n \nabla n
-+a_i D' \nabla \hat{a}_i
+-a_i E \nabla n
++a_i F \nabla \hat{a}_i
  - a_i \mb{g}_i
 \end{equation}
 %
@@ -768,15 +834,15 @@ which should result in the following for the divergence of $\mb{J}_i$:
 %
 \nabla\vcdot\mb{J}_i & = D \dvrg a_i \\
 %
-& \quad - D^n a_i \dvrg n - D^n \nabla n \vcdot \nabla a_i
+& \quad - E a_i \dvrg n - E \nabla n \vcdot \nabla a_i
 %
-- D' a_i \dvrg \hat{a}_i - D' \nabla \hat{a}_i \vcdot \nabla a_i \\
+- F a_i \dvrg \hat{a}_i - F \nabla \hat{a}_i \vcdot \nabla a_i \\
 %
 & \quad - a_i\nabla\vcdot\mb{g}_i - \mb{g}_i\vcdot\nabla a_i
 \end{split}
 \end{equation}
 
-Values for $D'$ between 0.01 and -0.006 make small differences to the
+Values for $F$ between 0.01 and -0.006 make small differences to the
 result, but outside this range, the simulation becomes unstable.
 
 \subsection{Interaction with $\nabla{n}$ and $\hat{a}_i$ inhibits $\dot{a_i}$}
@@ -808,8 +874,8 @@ n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 %
 \nabla\vcdot\mb{J}_i = D \dvrg a_i
 %
-- D^n a_i \dvrg n
-- D^n \nabla n \vcdot \nabla a_i
+- E a_i \dvrg n
+- E \nabla n \vcdot \nabla a_i
 %
 - a_i\nabla\vcdot\mb{g}_i
 - \mb{g}_i\vcdot\nabla a_i

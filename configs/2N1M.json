@@ -7,9 +7,9 @@
     "hextohex_d" : 0.005,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.2,                     // Global diffusion constant
-    "Dprime" : 0.0,              // Diffusion constant for branching away from other-axons (-ve D)
-    "Dn" : 0.5,                  // Diffusion constant for branching into empty regions (-ve D)
+    "D" : 0.2,
+    "E" : 0.5,
+    "F" : 0.0,
     "l" : 2,
     "k" : 3,
     "contour_threshold" : 0.55,

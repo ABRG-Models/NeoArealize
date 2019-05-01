@@ -8,9 +8,9 @@
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.1,                     // Global 'infusion' constant for branch intensification (+ve D)
-    "Dprime" : 0.095,                // Diffusion constant for branching (-ve D)
-    "Dn" : 1.0,
+    "D" : 0.1,
+    "E" : 1.0,
+    "F" : 0.095,
     "l" : 2,
     // Array of parameters for N thalamocortical populations:
     "tc": [

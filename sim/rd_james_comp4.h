@@ -17,14 +17,14 @@ public:
      * Parameter which controls the strength of diffusion away from
      * axon branching of other TC types.
      */
-    alignas(Flt) Flt Dprime = 0.1;
-    alignas(Flt) Flt DprimeOverNm1 = 0.0;
+    alignas(Flt) Flt F = 0.1;
+    alignas(Flt) Flt FOverNm1 = 0.0;
 
     /*!
      * Parameter which controls the strength of the contribution from
      * the gradient of n(x,t) to the flux current of axonal branching.
      */
-    alignas(Flt) Flt Dn = 0.1;
+    alignas(Flt) Flt E = 0.1;
 
     /*!
      * This holds the two components of the gradient field of the
@@ -269,9 +269,9 @@ public:
         this->spacegrad2D (fa, this->grad_a[i]);
 
         if (this->N > 0) {
-            this->DprimeOverNm1 = this->Dprime/(this->N-1);
+            this->FOverNm1 = this->F/(this->N-1);
         } else {
-            this->DprimeOverNm1 = 0.0;
+            this->FOverNm1 = 0.0;
         }
 
         // Three terms to compute; see Eq. 17 in methods_notes.pdf
@@ -293,19 +293,19 @@ public:
             // Multiply sum by 2D/3d^2 to give term1
             Flt term1 = this->twoDover3dd * thesum;
 
-            // Term 1.1 is Dn a div(n)
-            Flt term1_1 = this->Dn * fa[hi] * this->div_n[hi];
+            // Term 1.1 is E a div(n)
+            Flt term1_1 = this->E * fa[hi] * this->div_n[hi];
 
-            // Term 1.2 is Dn grad(n) . grad(a)
-            Flt term1_2 = this->Dn * (this->grad_n[0][hi] * this->grad_a[i][0][hi]
-                                      + this->grad_n[1][hi] * this->grad_a[i][1][hi]);
+            // Term 1.2 is E grad(n) . grad(a)
+            Flt term1_2 = this->E * (this->grad_n[0][hi] * this->grad_a[i][0][hi]
+                                     + this->grad_n[1][hi] * this->grad_a[i][1][hi]);
 
             // Term 1.3 is D' a div(a_hat)
-            Flt term1_3 = this->DprimeOverNm1 * fa[hi] * this->div_ahat[hi];
+            Flt term1_3 = this->FOverNm1 * fa[hi] * this->div_ahat[hi];
 
             // Term 1.4 is D' grad(a_hat) . grad(a)
-            Flt term1_4 = this->DprimeOverNm1 * (this->grad_ahat[0][hi] * this->grad_a[i][0][hi]
-                                                 + this->grad_ahat[1][hi] * this->grad_a[i][1][hi]);
+            Flt term1_4 = this->FOverNm1 * (this->grad_ahat[0][hi] * this->grad_a[i][0][hi]
+                                            + this->grad_ahat[1][hi] * this->grad_a[i][1][hi]);
 
             // 2. The (a div(g)) term.
             Flt term2 = fa[hi] * this->divg_over3d[i][hi];

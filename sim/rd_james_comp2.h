@@ -17,7 +17,7 @@ public:
      * Parameter which controls the strength of diffusion away from
      * axon branching of other TC types.
      */
-    alignas(Flt) Flt Dprime = 0.2;
+    alignas(Flt) Flt F = 0.2;
 
     /*!
      * Simple constructor; no arguments. Just calls base constructor
@@ -175,7 +175,7 @@ public:
         if (this->N > 1) {
             // Note appearance of 1/D here, because later we multiply
             // everything by D when term1 is computed.
-            m = this->Dprime / (this->D * (this->N - 1));
+            m = this->F / (this->D * (this->N - 1));
         }
 #pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {

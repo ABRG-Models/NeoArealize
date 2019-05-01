@@ -16,7 +16,7 @@ public:
      * Parameter which controls the strength of the contribution from
      * the gradient of n(x,t) to the flux current of axonal branching.
      */
-    alignas(Flt) Flt Dn = 0.1;
+    alignas(Flt) Flt E = 0.1;
 
     /*!
      * The power to which a_j is raised for the inter-TC axon
@@ -263,12 +263,12 @@ public:
             // Multiply sum by 2D/3d^2 to give term1
             Flt term1 = this->twoDover3dd * thesum;
 
-            // Term 1.1 is Dn a div(n)
-            Flt term1_1 = this->Dn * fa[hi] * this->div_n[hi];
+            // Term 1.1 is E a div(n)
+            Flt term1_1 = this->E * fa[hi] * this->div_n[hi];
 
-            // Term 1.2 is Dn grad(n) . grad(a)
-            Flt term1_2 = this->Dn * (this->grad_n[0][hi] * this->grad_a[i][0][hi]
-                                      + this->grad_n[1][hi] * this->grad_a[i][1][hi]);
+            // Term 1.2 is E grad(n) . grad(a)
+            Flt term1_2 = this->E * (this->grad_n[0][hi] * this->grad_a[i][0][hi]
+                                     + this->grad_n[1][hi] * this->grad_a[i][1][hi]);
 
             // 2. The (a div(g)) term.
             Flt term2 = fa[hi] * this->divg_over3d[i][hi];

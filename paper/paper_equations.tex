@@ -183,35 +183,7 @@
 \vspace{-1.8cm} % HACK bring the introduction up towards the title. It
                 % would be better to do this with titling in \maketitle
 
-\section{One dimensional Karbowski system}
-
-\begin{equation} \label{eq:Karb1D_dc}
-\frac{\partial c_i(x, t)}{\partial t} = -\alpha c_i(x, t) + \beta
-n(x, t)[a_i(x, t)]^k
-\end{equation}
-%
-\begin{equation} \label{eq:Karb1D_conserve}
-n(x, t) = 1 - \sum_{i=1}^{N} c_i(x, t)
-\end{equation}
-%
-\begin{equation} \label{eq:Karb1D_da}
-\frac{\partial a_i(x, t)}{\partial t} = \frac{\partial J_i(x, t)}{\partial
-x} - \frac{\partial c_i(x, t)}{\partial t}
-\end{equation}
-%
-with the flux current
-%
-\begin{equation} \label{eq:Karb1D_J}
-J_i(x, t) = D \frac{\partial a_i(x, t)}{\partial x} - a_i
-\sum_{j=1}^M \big(\gamma_{i,j} \frac{\partial \rho_j(x)}{\partial x} \big)
-\end{equation}
-
-\section{Two dimensional Karbowski system with N TCs and M gradients}
-
-Extending the system above to two spatial dimensions changes $x$ into
-a two-dimensional $\mb{x}$ and changes the flux term, $J_i(x,t)$. We
-also generalise the system, letting the number of thalamocortical
-neurons equal $N$, and the number of guidance molecules equal $M$.
+\section{Existing Karbowski system with N TCs and M gradients}
 
 %
 \begin{equation} \label{eq:Karb2D_dc_NM}

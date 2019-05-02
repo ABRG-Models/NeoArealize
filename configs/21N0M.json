@@ -1,0 +1,59 @@
+{
+    // Global simulation parameters
+    "steps" : 30000,                // Number of steps to simulate for
+    "logevery": 5000,
+    "overwrite_logs": true,
+    "logpath" : "./logs/21N0M",
+    "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./ellipse.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.1,
+    "E" : 0.8,
+    "F" : 0.01,
+    "l" : 2,
+
+    // Visualization parameters (ignored by computation-only binaries)
+    "plotevery": 100,
+    "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
+    //
+    "plot_guide" : false, // Default true
+    //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_a" : false, // Default true
+    "plot_c" : false, // Default true
+    //
+    "plot_guidegrad" : false, // Default false
+    "plot_divg" : false, // Default false
+    "plot_divJ" : false, // Default false
+
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : 0.0,   "yinit" : -0.2, "sigmainit" : 0.2, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : 0.0,   "yinit" : 0.2, "sigmainit" : 0.2, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.35,   "yinit" : -0.05, "sigmainit" : 0.2, "gaininit" : 0.5 },
+
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.3,   "yinit" : 0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.25,   "yinit" : 0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : 0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.15,   "yinit" : 0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.1,   "yinit" : 0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.05,   "yinit" : 0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.325,   "yinit" : -0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.275,   "yinit" : -0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.225,   "yinit" : -0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.175,   "yinit" : -0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.125,   "yinit" : -0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.075,   "yinit" : -0.05, "sigmainit" : 0.03, "gaininit" : 0.5 },
+
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.3,   "yinit" : -0.1, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.25,   "yinit" : -0.1, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : -0.1, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.15,   "yinit" : -0.1, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.1,   "yinit" : -0.1, "sigmainit" : 0.03, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.05,   "yinit" : -0.1, "sigmainit" : 0.03, "gaininit" : 0.5 }
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+    ] // end guidance
+}

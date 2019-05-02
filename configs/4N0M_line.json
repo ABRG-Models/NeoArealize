@@ -2,7 +2,6 @@
     // Global simulation parameters
     "steps" : 10000,                // Number of steps to simulate for
     "logevery": 5000,
-    "plotevery": 100,
     "overwrite_logs": true,
     "logpath" : "./logs/4N0M_line",
     "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
@@ -12,6 +11,20 @@
     "E" : 0.8,
     "F" : 0.01,
     "l" : 2,
+
+    // Visualization parameters (ignored by computation-only binaries)
+    "plotevery": 100,
+    "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
+    //
+    "plot_guide" : true, // Default true
+    //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_a" : false, // Default true
+    "plot_c" : false, // Default true
+    //
+    "plot_guidegrad" : false, // Default false
+    "plot_divg" : false, // Default false
+    "plot_divJ" : false, // Default false
+
     // Array of parameters for N thalamocortical populations:
     "tc": [
         { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.5 },

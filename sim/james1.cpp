@@ -220,6 +220,24 @@ int main (int argc, char **argv)
     const bool vidframes = root.get ("vidframes", false).asBool();
     unsigned int framecount = 0;
 
+    // Which windows to plot?
+    const bool plot_guide = root.get ("plot_guide", true).asBool();
+    //const bool plot_contours = root.get ("plot_contours", true).asBool();
+    const bool plot_contours = true;
+    const bool plot_a = root.get ("plot_a", true).asBool();
+    const bool plot_c = root.get ("plot_c", true).asBool();
+    const bool plot_n = root.get ("plot_n", true).asBool();
+    // Window IDs
+    unsigned int guide_id = 0xffff, contours_id = 0xffff, a_id = 0xffff, c_id = 0xffff, n_id = 0xffff;
+
+    const bool plot_guidegrad = root.get ("plot_guidegrad", false).asBool();
+    const bool plot_divg = root.get ("plot_divg", false).asBool();
+    const bool plot_divJ = root.get ("plot_divJ", false).asBool();
+    unsigned int guidegrad_x_id = 0xffff;
+    unsigned int guidegrad_y_id = 0xffff;
+    unsigned int divg_id = 0xffff;
+    unsigned int divJ_id = 0xffff;
+
     // Create some displays
     vector<morph::Gdisplay> displays;
     vector<double> fix(3, 0.0);
@@ -235,63 +253,86 @@ int main (int argc, char **argv)
     double phiInit = 0.0;
 
     string worldName("j");
+    unsigned int windowId = 0;
+    string winTitle = "";
 
-    string winTitle = worldName + ": Guidance molecules"; // 0
-    displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300,
-                                         winTitle.c_str(), rhoInit, thetaInit, phiInit));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-
-    winTitle = worldName + ": a[0] to a[N]"; // 1
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-
-    winTitle = worldName + ": c[0] to c[N]"; // 2
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-
-    // SW - Contours
+    // SW - Contours. Always plot
     winTitle = worldName + ": contours (from c)"; //3
     displays.push_back (morph::Gdisplay (360, 300, 100, 1500, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
+                                         rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
+    contours_id = windowId++;
 
-    winTitle = worldName + ": n"; //4
-    displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
+    if (plot_guide) {
+        winTitle = worldName + ": Guidance molecules"; // 0
+        displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300,
+                                             winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        guide_id = windowId++;
+    }
 
-# ifdef PLOT_EXTRAS
-    winTitle = worldName + ": Guidance gradient (x)";//5
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
+    if (plot_a) {
+        winTitle = worldName + ": a[0] to a[N]"; // 1
+        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        a_id = windowId++;
+    }
 
-    winTitle = worldName + ": Guidance gradient (y)";//6
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
+    if (plot_c) {
+        winTitle = worldName + ": c[0] to c[N]"; // 2
+        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        c_id = windowId++;
+    }
 
-    winTitle = worldName + ": div(g)/3d";//7
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
-# endif
+    if (plot_n) {
+        winTitle = worldName + ": n"; //4
+        displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        n_id = windowId++;
+    }
 
-    winTitle = worldName + ": div(J)";//8 or 5
-    displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit, displays[0].win));
-    displays.back().resetDisplay (fix, eye, rot);
-    displays.back().redrawDisplay();
+    if (plot_guidegrad) {
+        winTitle = worldName + ": Guidance gradient (x)";//5
+        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        guidegrad_x_id = windowId++;
+
+        winTitle = worldName + ": Guidance gradient (y)";//6
+        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        guidegrad_x_id = windowId++;
+    }
+
+    if (plot_divg) {
+        winTitle = worldName + ": div(g)/3d";//7
+        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        divg_id = windowId++;
+    }
+
+    if (plot_divJ) {
+        winTitle = worldName + ": div(J)";//8 or 5
+        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit, displays[0].win));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        divJ_id = windowId++;
+    }
 #endif
 
     /*
@@ -443,58 +484,68 @@ int main (int argc, char **argv)
     RD.saveGuidance();
 
 #ifdef COMPILE_PLOTTING
-    // Plot gradients of the guidance effect g.
-    plt.scalarfields (displays[0], RD.hg, RD.rho);
+
     vector<vector<FLOATTYPE> > gx = plt.separateVectorField (RD.g, 0);
     vector<vector<FLOATTYPE> > gy = plt.separateVectorField (RD.g, 1);
-    // Determine scale of gx and gy so that a common scale can be
-    // applied to both gradient_x and gradient_y.
     FLOATTYPE ming = 1e7;
     FLOATTYPE maxg = -1e7;
-    for (unsigned int hi=0; hi<RD.nhex; ++hi) {
-        Hex* h = RD.hg->vhexen[hi];
-        if (h->onBoundary() == false) {
-            for (unsigned int i = 0; i<RD.N; ++i) {
-                if (gx[i][h->vi]>maxg) { maxg = gx[i][h->vi]; }
-                if (gx[i][h->vi]<ming) { ming = gx[i][h->vi]; }
-                if (gy[i][h->vi]>maxg) { maxg = gy[i][h->vi]; }
-                if (gy[i][h->vi]<ming) { ming = gy[i][h->vi]; }
+    if (plot_guidegrad) {
+        // Plot gradients of the guidance effect g.
+        plt.scalarfields (displays[0], RD.hg, RD.rho);
+        // Determine scale of gx and gy so that a common scale can be
+        // applied to both gradient_x and gradient_y.
+        for (unsigned int hi=0; hi<RD.nhex; ++hi) {
+            Hex* h = RD.hg->vhexen[hi];
+            if (h->onBoundary() == false) {
+                for (unsigned int i = 0; i<RD.N; ++i) {
+                    if (gx[i][h->vi]>maxg) { maxg = gx[i][h->vi]; }
+                    if (gx[i][h->vi]<ming) { ming = gx[i][h->vi]; }
+                    if (gy[i][h->vi]>maxg) { maxg = gy[i][h->vi]; }
+                    if (gy[i][h->vi]<ming) { ming = gy[i][h->vi]; }
+                }
             }
         }
+        cout << "min g = " << ming << " and max g = " << maxg << endl;
     }
+
     FLOATTYPE mindivg = 1e7;
     FLOATTYPE maxdivg = -1e7;
-    for (unsigned int hi=0; hi<RD.nhex; ++hi) {
-        Hex* h = RD.hg->vhexen[hi];
-        if (h->onBoundary() == false) {
-            for (unsigned int i = 0; i<RD.N; ++i) {
-                if (RD.divg_over3d[i][h->vi]>maxdivg) { maxdivg = RD.divg_over3d[i][h->vi]; }
-                if (RD.divg_over3d[i][h->vi]<mindivg) { mindivg = RD.divg_over3d[i][h->vi]; }
+    if (plot_divg) {
+        for (unsigned int hi=0; hi<RD.nhex; ++hi) {
+            Hex* h = RD.hg->vhexen[hi];
+            if (h->onBoundary() == false) {
+                for (unsigned int i = 0; i<RD.N; ++i) {
+                    if (RD.divg_over3d[i][h->vi]>maxdivg) { maxdivg = RD.divg_over3d[i][h->vi]; }
+                    if (RD.divg_over3d[i][h->vi]<mindivg) { mindivg = RD.divg_over3d[i][h->vi]; }
+                }
             }
         }
+        cout << "min div(g) = " << mindivg << " and max div(g) = " << maxdivg << endl;
     }
-    cout << "min g = " << ming << " and max g = " << maxg << endl;
-    cout << "min div(g) = " << mindivg << " and max div(g) = " << maxdivg << endl;
 
-# ifdef PLOT_EXTRAS
     // Now plot fields and redraw display
-    plt.scalarfields (displays[5], RD.hg, gx, ming, maxg);
-    displays[5].redrawDisplay();
-    plt.scalarfields (displays[6], RD.hg, gy, ming, maxg);
-    displays[6].redrawDisplay();
-    plt.scalarfields (displays[7], RD.hg, RD.divg_over3d, mindivg, maxdivg);
-    displays[7].redrawDisplay();
-    plt.scalarfields (displays[8], RD.hg, RD.divJ);
-    displays[8].redrawDisplay();
-# else
-    plt.scalarfields (displays[5], RD.hg, RD.divJ);
-    displays[5].redrawDisplay();
-# endif
-
+    if (plot_guidegrad) {
+        plt.scalarfields (displays[guidegrad_x_id], RD.hg, gx, ming, maxg);
+        displays[guidegrad_x_id].redrawDisplay();
+        plt.scalarfields (displays[guidegrad_y_id], RD.hg, gy, ming, maxg);
+        displays[guidegrad_y_id].redrawDisplay();
+    }
+    if (plot_divg) {
+        plt.scalarfields (displays[divg_id], RD.hg, RD.divg_over3d, mindivg, maxdivg);
+        displays[divg_id].redrawDisplay();
+    }
+    if (plot_divJ) {
+        plt.scalarfields (displays[divJ_id], RD.hg, RD.divJ);
+        displays[divJ_id].redrawDisplay();
+    }
     // Save images in log folder
-    if (RD.M > 0) { plt.savePngs (logpath, "guidance", 0, displays[0]); }
-    plt.savePngs (logpath, "connections", 0, displays[2]);
-    plt.savePngs (logpath, "contours", 0, displays[3]);
+    if (RD.M > 0 && plot_guide) { plt.savePngs (logpath, "guidance", 0, displays[guide_id]); }
+    if (plot_c) {
+        plt.savePngs (logpath, "connections", 0, displays[c_id]);
+    }
+    if (plot_contours) {
+        plt.savePngs (logpath, "contours", 0, displays[contours_id]);
+    }
 
 #endif
 
@@ -509,26 +560,44 @@ int main (int argc, char **argv)
             DBG("Plot at step " << RD.stepCount);
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
-            plt.plot_contour (displays[3], RD.hg, ctrs);
-            plt.scalarfields (displays[1], RD.hg, RD.a);
-            plt.scalarfields (displays[2], RD.hg, RD.c, 0.0, 1.0);
-            plt.scalarfields (displays[4], RD.hg, RD.n, 0.0, 1.0);
-# ifdef PLOT_EXTRAS
-            displays[5].redrawDisplay();
-            displays[6].redrawDisplay();
-            displays[7].redrawDisplay();
-            plt.scalarfields (displays[8], RD.hg, RD.divJ);
-# else
-            plt.scalarfields (displays[5], RD.hg, RD.divJ);
-# endif
+            if (plot_contours) {
+                plt.plot_contour (displays[contours_id], RD.hg, ctrs);
+            }
+            if (plot_a) {
+                plt.scalarfields (displays[a_id], RD.hg, RD.a);
+            }
+            if (plot_c) {
+                plt.scalarfields (displays[c_id], RD.hg, RD.c, 0.0, 1.0);
+            }
+            if (plot_n) {
+                plt.scalarfields (displays[n_id], RD.hg, RD.n, 0.0, 1.0);
+            }
+            if (plot_guidegrad) {
+                displays[guidegrad_x_id].redrawDisplay();
+                displays[guidegrad_y_id].redrawDisplay();
+            }
+            if (plot_divg) {
+                displays[divg_id].redrawDisplay();
+            }
+            if (plot_divJ) {
+                plt.scalarfields (displays[divJ_id], RD.hg, RD.divJ);
+            }
 
             if (vidframes) {
-                plt.savePngs (logpath, "connections", framecount, displays[2]);
-                plt.savePngs (logpath, "contours", framecount, displays[3]);
+                if (plot_c) {
+                    plt.savePngs (logpath, "connections", framecount, displays[c_id]);
+                }
+                if (plot_contours) {
+                    plt.savePngs (logpath, "contours", framecount, displays[contours_id]);
+                }
                 ++framecount;
             } else {
-                plt.savePngs (logpath, "connections", RD.stepCount, displays[2]);
-                plt.savePngs (logpath, "contours", RD.stepCount, displays[3]);
+                if (plot_c) {
+                    plt.savePngs (logpath, "connections", RD.stepCount, displays[c_id]);
+                }
+                if (plot_contours) {
+                    plt.savePngs (logpath, "contours", RD.stepCount, displays[contours_id]);
+                }
             }
         }
 #endif
@@ -612,8 +681,12 @@ int main (int argc, char **argv)
 
 #ifdef COMPILE_PLOTTING
     // Save final images
-    plt.savePngs (logpath, "connections", RD.stepCount, displays[2]);
-    plt.savePngs (logpath, "contours", RD.stepCount, displays[3]);
+    if (plot_c) {
+        plt.savePngs (logpath, "connections", RD.stepCount, displays[c_id]);
+    }
+    if (plot_contours) {
+        plt.savePngs (logpath, "contours", RD.stepCount, displays[contours_id]);
+    }
 
     // Ask for a keypress before exiting so that the final images can be studied
     int a;

@@ -16,7 +16,7 @@
     "plotevery": 100,
     "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
     //
-    "plot_guide" : true, // Default true
+    "plot_guide" : false, // Default true
     //"plot_contours" : true, // IGNORED FOR NOW
     "plot_a" : false, // Default true
     "plot_c" : false, // Default true

@@ -43,6 +43,8 @@ public:
     alignas(alignof(vector<Flt>))
     vector<Flt> div_n;
 
+    bool overSaturateMsg = false;
+
     /*!
      * Simple constructor; no arguments. Just calls base constructor
      */
@@ -209,6 +211,14 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Avoid over-saturating
+                if (this->c[i][h] > 1.0) {
+                    if (!this->overSaturateMsg) {
+                        cout << "Note: c has exceeded 1.0; setting equal to 1.0 (message appears once only)" << endl;
+                        this->overSaturateMsg = true;
+                    }
+                    this->c[i][h] = 1.0;
+                }
             }
         }
     }

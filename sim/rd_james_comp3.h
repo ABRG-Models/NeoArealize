@@ -78,6 +78,8 @@ public:
             for (unsigned int i=0; i<this->N; ++i) {
                 this->n[hi] += this->c[i][hi];
             }
+            // Prevent sum of c being too large:
+            this->n[hi] = (this->n[hi] > 1.0) ? 1.0 : this->n[hi];
             csum += this->c[0][hi];
             this->n[hi] = 1. - this->n[hi];
             nsum += this->n[hi];
@@ -154,6 +156,8 @@ public:
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Prevent a from becoming negative:
+                this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
             }
         }
 
@@ -190,6 +194,8 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Avoid over-saturating c_i:
+                this->c[i][h] = (this->c[i][h] > 1.0) ? 1.0 : this->c[i][h];
             }
         }
     }

@@ -1,23 +1,30 @@
 {
     // Global simulation parameters
-    "steps" : 10000,                // Number of steps to simulate for
+    "steps" : 5000,                // Number of steps to simulate for
     "logevery": 5000,
-    "plotevery": 50,
+    "plotevery": 100,
     "overwrite_logs": true,
     "logpath" : "./logs/2N0M",
-    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
+    "hextohex_d" : 0.02,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "dt" : 0.0001,
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.1,                // Diffusion constant for branch intensification
-    "E" : 1,                  // Diffusion constant for branching into empty regions
-    "F" : 0.0,                // Diffusion constant for branching away from other-axons
-    "l" : 2,
+    "D" : 0.5,  // Diffusion constant for branching of a
+    "E" : 0.5,  // Diffusion constant for branching into empty regions
+    "F" : 0.0,  // Diffusion constant for branching away from other-axons
+    "l" : 3,
     "k" : 3,
+    "plot_guide" : false,
+    "aNoiseGain": 0.0,  // The noise gain applied in
+                        // noiseify_vector_vector, which sets initial
+                        // values of a variable.
+    "aInitialOffset": 0.8, // The initial value applied across the
+                           // field for the a variable.
+
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 16, "xinit" :  0.00, "epsilon" : 1.0, "yinit" : -0.05, "sigmainit" : 0.1, "gaininit" : 0.7 },
-        { "alpha" : 3, "beta" : 16, "xinit" :  0.15, "epsilon" : 1.0, "yinit" : -0.0, "sigmainit" : 0.1, "gaininit" : 0.5  }
+        { "alpha" : 3, "beta" : 3, "epsilon" : 5, "xinit" : -0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 5, "xinit" :  0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 }
     ], // end tc
 
     // Array of parameters for the guidance molecules

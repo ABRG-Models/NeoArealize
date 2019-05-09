@@ -7,12 +7,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Read the data
-(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles ('../logs/2N1M')
+(x, y, t, cmatrix, amatrix, jmatrix, nmatrix) = ld.readFiles ('../logs/2N0M')
 
 tcount = 0
 for fi in range(0,len(t)):
     print ('t[fi]: {0}'.format(t[fi]))
-    pt.surfaces (cmatrix[:,:,fi], amatrix[:,:,fi], nmatrix[:,fi], x, y, 'All variables')
+    pt.surfaces (cmatrix[:,:,fi], amatrix[:,:,fi], jmatrix[:,:,fi], nmatrix[:,fi], x, y, 'All variables')
     #path = './surfaces/surfaces{:05d}.jpg'.format(t[fi])
     # or
     path = './surfaces/surfaces{:05d}.jpg'.format(tcount)

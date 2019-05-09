@@ -228,6 +228,9 @@ public:
      */
     alignas(Flt) Flt contour_threshold = 0.5;
 
+    alignas(Flt) Flt aNoiseGain = 0.1;
+    alignas(Flt) Flt aInitialOffset = 0.8;
+
     /*!
      * ALIGNAS REGION ENDS.
      *
@@ -263,15 +266,13 @@ public:
      * drops away towards the edge of the domain.
      */
     void noiseify_vector_vector (vector<vector<Flt> >& vv) {
-        Flt randNoiseOffset = 0.8;
-        Flt randNoiseGain = 0.1;
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
                 // sharper) over length scale 0.05 to 1. So if
                 // distance from boundary > 0.05, noise has normal
                 // value. Close to boundary, noise is less.
-                vv[i][h.vi] = morph::Tools::randF<Flt>() * randNoiseGain + randNoiseOffset;
+                vv[i][h.vi] = morph::Tools::randF<Flt>() * this->aNoiseGain + this->aInitialOffset;
                 if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
                     Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
                     vv[i][h.vi] = vv[i][h.vi] * bSig;

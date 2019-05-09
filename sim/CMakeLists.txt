@@ -80,17 +80,12 @@ add_executable(james1_c3 james1.cpp)
 target_compile_definitions(james1_c3 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP3)
 target_link_libraries(james1_c3 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
-# Competition scheme 4
+# Competition scheme 4 (comp1 + comp3)
 add_executable(james1_c4 james1.cpp)
 target_compile_definitions(james1_c4 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP4)
 target_link_libraries(james1_c4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
-# Competition scheme 5
-add_executable(james1_c5 james1.cpp)
-target_compile_definitions(james1_c5 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP5)
-target_link_libraries(james1_c5 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
-
-# Competition scheme 5, no graphics
-add_executable(james1c_c5 james1.cpp)
-target_compile_definitions(james1c_c5 PUBLIC FLOATTYPE=float COMP5)
-target_link_libraries(james1c_c5 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+# Competition scheme 4, no graphics
+add_executable(james1c_c4 james1.cpp)
+target_compile_definitions(james1c_c4 PUBLIC FLOATTYPE=float COMP4)
+target_link_libraries(james1c_c4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

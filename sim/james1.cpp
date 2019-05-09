@@ -35,8 +35,6 @@
 #include "rd_james_comp3.h"
 #elif defined COMP4
 #include "rd_james_comp4.h"
-#elif defined COMP5
-#include "rd_james_comp5.h"
 #else
 #include "rd_james.h"
 #endif
@@ -178,15 +176,16 @@ int main (int argc, char **argv)
         }
     }
 
+    // Used to initialise a
+    const double aNoiseGain = root.get ("aNoiseGain", 0.1).asDouble();
+    const double aInitialOffset = root.get ("aInitialOffset", 0.1).asDouble();
+
     const double D = root.get ("D", 0.1).asDouble();
 #if defined COMP2
     const double F = root.get ("F", 0.1).asDouble();
 #elif defined COMP3
     const double E = root.get ("E", 0.1).asDouble();
 #elif defined COMP4
-    const double F = root.get ("F", 0.1).asDouble();
-    const double E = root.get ("E", 0.1).asDouble();
-#elif defined COMP5
     const double E = root.get ("E", 0.1).asDouble();
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
@@ -346,8 +345,6 @@ int main (int argc, char **argv)
     RD_James_comp3<FLOATTYPE> RD;
 #elif defined COMP4
     RD_James_comp4<FLOATTYPE> RD;
-#elif defined COMP5
-    RD_James_comp5<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -365,6 +362,9 @@ int main (int argc, char **argv)
     // Boundary fall-off distance
     RD.boundaryFalloffDist = boundaryFalloffDist;
 
+    RD.aNoiseGain = aNoiseGain;
+    RD.aInitialOffset = aInitialOffset;
+
     // After setting N and M, we can set up all the vectors in RD:
     RD.allocate();
 
@@ -375,9 +375,6 @@ int main (int argc, char **argv)
 #elif defined COMP3
     RD.E = E;
 #elif defined COMP4
-    RD.F = F;
-    RD.E = E;
-#elif defined COMP5
     RD.E = E;
     RD.l = l;
 #endif
@@ -396,11 +393,14 @@ int main (int argc, char **argv)
         gp.gain = v.get("gaininit", 1.0).asDouble();
         gp.sigma = v.get("sigmainit", 0.0).asDouble();
         gp.x = v.get("xinit", 0.0).asDouble();
+        cout << "Set xinit["<<i<<"] to " << gp.x << endl;
         gp.y = v.get("yinit", 0.0).asDouble();
         RD.initmasks.push_back (gp);
-
-#if defined COMP5
+#if defined COMP1
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
+#elif defined COMP4
+        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
+        cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #endif
     }
 
@@ -564,7 +564,7 @@ int main (int argc, char **argv)
                 plt.plot_contour (displays[contours_id], RD.hg, ctrs);
             }
             if (plot_a) {
-                plt.scalarfields (displays[a_id], RD.hg, RD.a);
+                plt.scalarfields (displays[a_id], RD.hg, RD.a, 0.0, 1.0);
             }
             if (plot_c) {
                 plt.scalarfields (displays[c_id], RD.hg, RD.c, 0.0, 1.0);
@@ -610,6 +610,10 @@ int main (int argc, char **argv)
             finished = true;
         }
     }
+
+#ifdef COMP4
+    cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
+#endif
 
     // Before saving the json, we'll place any additional useful info
     // in there, such as the FLOATTYPE. If float_width is 4, then

@@ -77,8 +77,8 @@ def surface2 (dmatrix, x, y, ix, title):
     f1.scatter (x, y, dmatrix, c=dmatrix, marker='h', cmap=plt.cm.plasma)
     #f1.scatter (x[ix], y[ix], s=32, marker='o', color='k')
 
-# Plot all the surfaces (c, a and n) in a subplot. Save a jpeg so that we can make a movie.
-def surfaces (cmatrix, amatrix, nmatrix, x, y, title):
+# Plot all the surfaces (c, a, j and n) in a subplot. Save a jpeg so that we can make a movie.
+def surfaces (cmatrix, amatrix, jmatrix, nmatrix, x, y, title):
     fs = 12
     fnt = {'family' : 'DejaVu Sans',
            'weight' : 'regular',
@@ -88,8 +88,8 @@ def surfaces (cmatrix, amatrix, nmatrix, x, y, title):
     F1 = plt.figure (figsize=(12,N*8))
     for i in range(0,N):
         f1 = F1.add_subplot(3,N,1+i, projection='3d')
-        f1.scatter (x, y, cmatrix[i,:], c=cmatrix[i,:], marker='h', cmap=plt.cm.plasma)
-        f1.set_title('c{0}'.format(i))
+        f1.scatter (x, y, cmatrix[i,:], c=jmatrix[i,:], marker='h', cmap=plt.cm.plasma)
+        f1.set_title('j{0}'.format(i))
         f1.set_zlim(0,1)
         f2 = F1.add_subplot(3,N,N+1+i, projection='3d')
         f2.scatter (x, y, amatrix[i,:], c=amatrix[i,:], marker='h', cmap=plt.cm.plasma)

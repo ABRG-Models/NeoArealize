@@ -1,6 +1,5 @@
 /*
- * Competition method 4, Grad n AND Grad a_hat contribute to J.
- * (rd_karbowski.pdf; label eq:Karb2D_J_NM_with_comp4)
+ * Competition method 4, which combines method 1 and method 3.
  */
 
 #include "rd_james.h"
@@ -14,17 +13,22 @@ class RD_James_comp4 : public RD_James<Flt>
 {
 public:
     /*!
-     * Parameter which controls the strength of diffusion away from
-     * axon branching of other TC types.
-     */
-    alignas(Flt) Flt F = 0.1;
-    alignas(Flt) Flt FOverNm1 = 0.0;
-
-    /*!
      * Parameter which controls the strength of the contribution from
      * the gradient of n(x,t) to the flux current of axonal branching.
      */
     alignas(Flt) Flt E = 0.1;
+
+    /*!
+     * The power to which a_j is raised for the inter-TC axon
+     * competition term.
+     */
+    alignas(Flt) Flt l = 3.0;
+
+    /*!
+     * epsilon_i parameters. axon competition parameter
+     */
+    alignas(alignof(vector<Flt>))
+    vector<Flt> epsilon;
 
     /*!
      * This holds the two components of the gradient field of the
@@ -38,21 +42,6 @@ public:
      */
     alignas(alignof(vector<Flt>))
     vector<Flt> div_n;
-
-    /*!
-     * This holds the two components of the gradient field of the
-     * scalar value \hat{a}_i(x,t), which is the sum of the branching
-     * densities of all axon types except i. See Eq 41. in
-     * rd_karbowski.pdf
-     */
-    alignas(alignof(array<vector<Flt>, 2>))
-    array<vector<Flt>, 2> grad_ahat;
-
-    /*!
-     * divergence of \hat{a}_i(x,t).
-     */
-    alignas(alignof(vector<Flt>))
-    vector<Flt> div_ahat;
 
     /*!
      * Simple constructor; no arguments. Just calls base constructor
@@ -71,15 +60,12 @@ public:
         // Plus:
         this->resize_gradient_field (this->grad_n);
         this->resize_vector_variable (this->div_n);
-        this->resize_gradient_field (this->grad_ahat);
-        this->resize_vector_variable (this->div_ahat);
+        this->resize_vector_param (this->epsilon, this->N);
     }
     virtual void init (void) {
         RD_James<Flt>::init();
         this->zero_gradient_field (this->grad_n);
         this->zero_vector_variable (this->div_n);
-        this->zero_gradient_field (this->grad_ahat);
-        this->zero_vector_variable (this->div_ahat);
     }
     //@}
 
@@ -104,6 +90,8 @@ public:
             for (unsigned int i=0; i<this->N; ++i) {
                 this->n[hi] += this->c[i][hi];
             }
+            // Prevent sum of c being too large:
+            this->n[hi] = (this->n[hi] > 1.0) ? 1.0 : this->n[hi];
             csum += this->c[0][hi];
             this->n[hi] = 1. - this->n[hi];
             nsum += this->n[hi];
@@ -136,53 +124,59 @@ public:
         // enough to load the threads up.
         for (unsigned int i=0; i<this->N; ++i) {
 
-            // Compute a_hat, which is "the sum of all a_j for which j!=i"
-            vector<Flt> a_hat(this->nhex, 0.0);
+            // Compute epsilon * a_hat^l. a_hat is "the sum of all a_j
+            // for which j!=i". Call the variable just 'eps'.
+            vector<Flt> eps(this->nhex, 0.0);
             for (unsigned int j=0; j<this->N; ++j) {
                 if (j==i) { continue; }
 #pragma omp parallel for
                 for (unsigned int h=0; h<this->nhex; ++h) {
-                    a_hat[h] += this->a[j][h];
+                    eps[h] += static_cast<Flt>(pow (this->a[j][h], this->l));
                 }
             }
-            // Compute divergence of a_hat
-            this->compute_divf (a_hat, this->div_ahat);
-            // And gradient of a_hat
-            this->spacegrad2D (a_hat, this->grad_ahat);
+
+            // Multiply it by epsilon[i]/(N-1). Now it's ready to subtract from the solutions
+            Flt eps_over_N = this->epsilon[i]/(this->N-1);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                eps[h] *= eps_over_N;
+            }
 
             // Runge-Kutta integration for A
             vector<Flt> q(this->nhex, 0.0);
-            this->compute_divJ (this->a[i], a_hat, i); // populates divJ[i]
+            this->compute_divJ (this->a[i], i); // populates divJ[i]
 
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k));
+                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - this->a[i][h] * eps[h];
                 q[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2(this->nhex, 0.0);
-            this->compute_divJ (q, a_hat, i);
+            this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
                 q[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
             vector<Flt> k3(this->nhex, 0.0);
-            this->compute_divJ (q, a_hat, i);
+            this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
                 q[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
             vector<Flt> k4(this->nhex, 0.0);
-            this->compute_divJ (q, a_hat, i);
+            this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Prevent a from becoming negative:
+                this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
             }
         }
 
@@ -219,6 +213,8 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Avoid over-saturating c_i:
+                this->c[i][h] = (this->c[i][h] > 1.0) ? 1.0 : this->c[i][h];
             }
         }
     }
@@ -227,7 +223,7 @@ public:
      * Compute divergence of n
      */
     void compute_divn (void) {
-#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
+#pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             Flt thesum = -6 * this->n[hi];
             thesum += this->n[(HAS_NE(hi)  ? NE(hi)  : hi)];
@@ -240,20 +236,6 @@ public:
         }
     }
 
-    void compute_divf (vector<Flt>& field, vector<Flt>& div_field) {
-#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
-        for (unsigned int hi=0; hi<this->nhex; ++hi) {
-            Flt thesum = -6 * field[hi];
-            thesum += field[(HAS_NE(hi)  ? NE(hi)  : hi)];
-            thesum += field[(HAS_NNE(hi) ? NNE(hi) : hi)];
-            thesum += field[(HAS_NNW(hi) ? NNW(hi) : hi)];
-            thesum += field[(HAS_NW(hi)  ? NW(hi)  : hi)];
-            thesum += field[(HAS_NSW(hi) ? NSW(hi) : hi)];
-            thesum += field[(HAS_NSE(hi) ? NSE(hi) : hi)];
-            div_field[hi] = this->twoover3dd * thesum;
-        }
-    }
-
     /*!
      * Computes the "flux of axonal branches" term, J_i(x) (Eq 4)
      *
@@ -263,19 +245,13 @@ public:
      *
      * Stable with dt = 0.0001;
      */
-    void compute_divJ (vector<Flt>& fa, vector<Flt>& fa_hat, unsigned int i) {
+    void compute_divJ (vector<Flt>& fa, unsigned int i) {
 
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
-        if (this->N > 0) {
-            this->FOverNm1 = this->F/(this->N-1);
-        } else {
-            this->FOverNm1 = 0.0;
-        }
-
         // Three terms to compute; see Eq. 17 in methods_notes.pdf
-#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
+#pragma omp parallel for
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term. Eq. 18.
@@ -300,20 +276,13 @@ public:
             Flt term1_2 = this->E * (this->grad_n[0][hi] * this->grad_a[i][0][hi]
                                      + this->grad_n[1][hi] * this->grad_a[i][1][hi]);
 
-            // Term 1.3 is D' a div(a_hat)
-            Flt term1_3 = this->FOverNm1 * fa[hi] * this->div_ahat[hi];
-
-            // Term 1.4 is D' grad(a_hat) . grad(a)
-            Flt term1_4 = this->FOverNm1 * (this->grad_ahat[0][hi] * this->grad_a[i][0][hi]
-                                            + this->grad_ahat[1][hi] * this->grad_a[i][1][hi]);
-
             // 2. The (a div(g)) term.
             Flt term2 = fa[hi] * this->divg_over3d[i][hi];
 
             // 3. Third term is this->g . grad a_i. Should not contribute to J, as g(x) decays towards boundary.
             Flt term3 = this->g[i][0][hi] * this->grad_a[i][0][hi] + (this->g[i][1][hi] * this->grad_a[i][1][hi]);
 
-            this->divJ[i][hi] = term1 - term1_1 - term1_2 - term1_3 - term1_4 - term2 - term3;
+            this->divJ[i][hi] = term1 - term1_1 - term1_2 - term2 - term3;
         }
     }
 

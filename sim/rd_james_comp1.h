@@ -14,16 +14,16 @@ class RD_James_comp1 : public RD_James<Flt>
 public:
 
     /*!
+     * The power to which a_j is raised for the inter-TC axon
+     * competition term.
+     */
+    alignas(Flt) Flt l = 3.0;
+
+    /*!
      * epsilon_i parameters. axon competition parameter
      */
     alignas(alignof(vector<Flt>))
     vector<Flt> epsilon;
-
-    /*!
-     * The power to which a_j is raised for the inter-TC axon
-     * competition term.
-     */
-    Flt l = 3.0;
 
     /*!
      * Simple constructor; no arguments. Just calls base constructor
@@ -45,10 +45,6 @@ public:
      */
     void init (void) {
         RD_James<Flt>::init();
-        // Initialise epsilon
-        for (unsigned int i=0; i<this->N; ++i) {
-            this->epsilon[i] = 100.0;
-        }
     }
 
     /*!
@@ -69,10 +65,14 @@ public:
 #pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             this->n[hi] = 0;
+            // First, use n[hi] so sum c over all i:
             for (unsigned int i=0; i<this->N; ++i) {
                 this->n[hi] += this->c[i][hi];
             }
+            // Prevent sum of c being too large:
+            this->n[hi] = (this->n[hi] > 1.0) ? 1.0 : this->n[hi];
             csum += this->c[0][hi];
+            // Now compute n for real:
             this->n[hi] = 1. - this->n[hi];
             nsum += this->n[hi];
         }
@@ -100,20 +100,22 @@ public:
         // enough to load the threads up.
         for (unsigned int i=0; i<this->N; ++i) {
 
-            // Compute "the sum of all a_j^l for which j!=i"
-            vector<Flt> sum_a_ne_i(this->nhex, 0.0);
+            // Compute epsilon * a_hat^l. a_hat is "the sum of all a_j
+            // for which j!=i". Call the variable just 'eps'.
+            vector<Flt> eps(this->nhex, 0.0);
             for (unsigned int j=0; j<this->N; ++j) {
                 if (j==i) { continue; }
 #pragma omp parallel for
                 for (unsigned int h=0; h<this->nhex; ++h) {
-                    sum_a_ne_i[h] += static_cast<Flt>(pow (this->a[j][h], this->l));
+                    eps[h] += static_cast<Flt>(pow (this->a[j][h], this->l));
                 }
             }
 
-            // Multiply it by epsilon[i]. Now it's ready to subtract from the solutions
+            // Multiply it by epsilon[i]/(N-1). Now it's ready to subtract from the solutions
+            Flt eps_over_N = this->epsilon[i]/(this->N-1);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                sum_a_ne_i[h] *= this->epsilon[i];
+                eps[h] *= eps_over_N;
             }
 
             // Runge-Kutta integration for A
@@ -123,7 +125,7 @@ public:
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - sum_a_ne_i[h];
+                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - this->a[i][h] * eps[h];
                 q[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
@@ -131,7 +133,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - sum_a_ne_i[h];
+                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
                 q[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
@@ -139,7 +141,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - sum_a_ne_i[h];
+                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
                 q[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
@@ -147,8 +149,10 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - sum_a_ne_i[h];
+                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Prevent a from becoming negative:
+                this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
             }
         }
 
@@ -185,6 +189,8 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+                // Avoid over-saturating c_i:
+                this->c[i][h] = (this->c[i][h] > 1.0) ? 1.0 : this->c[i][h];
             }
         }
     }

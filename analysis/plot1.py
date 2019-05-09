@@ -26,7 +26,7 @@ trgy = float(sys.argv[3])
 trgt = int(sys.argv[4])
 
 # Read the data
-(x, y, t, cmatrix, amatrix, nmatrix) = ld.readFiles (logdirname)
+(x, y, t, cmatrix, amatrix, jmatrix, nmatrix) = ld.readFiles (logdirname)
 
 # Select an index nearest to a target
 ix = ld.selectIndex (x, y, (trgx,trgy))
@@ -55,10 +55,10 @@ if plot_timedepstuff:
     f1.set_title ('sums');
 
 cnum = int(0)
-pt.surface (cmatrix[cnum,:,trgt], x, y, ix, 'c{0}'.format(cnum))
+pt.surface2 (jmatrix[cnum,:,trgt], x, y, ix, 'j{0}'.format(cnum))
 cnum = int(1)
-pt.surface (cmatrix[cnum,:,trgt], x, y, ix, 'c{0}'.format(cnum))
-pt.surface (nmatrix[:,trgt], x, y, ix, 'n')
+pt.surface2 (jmatrix[cnum,:,trgt], x, y, ix, 'j{0}'.format(cnum))
+pt.surface2 (nmatrix[:,trgt], x, y, ix, 'n')
 #pt.surface2 (nmatrix[:,trgt], x, y, ix, 'n 2')
 
 #pt.surfaces (cmatrix[:,:,trgt], amatrix[:,:,trgt], nmatrix[:,trgt], x, y, 'All variables')

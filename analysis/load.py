@@ -54,6 +54,7 @@ def readFiles (logdir):
     cmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
     # There are as many 'a's as 'c's:
     amatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
+    jmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
     nmatrix = np.empty([numhexes, numtimes], dtype=float)
 
     fileidx = 0
@@ -78,12 +79,15 @@ def readFiles (logdir):
             elif k[0] == 'a':
                 anum = int(k[1:])
                 amatrix[anum,:,fileidx] = np.array(f[k])
+            elif k[0] == 'j':
+                jnum = int(k[1:])
+                jmatrix[jnum,:,fileidx] = np.array(f[k])
             elif k[0] == 'n':
                 nmatrix[:,fileidx] = np.array(f[k])
 
         fileidx = fileidx + 1
 
-    return (x, y, t, cmatrix, amatrix, nmatrix)
+    return (x, y, t, cmatrix, amatrix, jmatrix, nmatrix)
 
 #
 # targ is a container of a target x,y coordinate. x and y are the

@@ -1,23 +1,27 @@
 {
     // Global simulation parameters
-    "steps" : 10000,                // Number of steps to simulate for
-    "logevery": 5000,
-    "plotevery": 100,
-    "overwrite_logs": true,
-    "logpath" : "./logs/4N0M",
-    "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
+    "steps" : 50000,               // Number of steps to simulate for
+    "logevery" : 5000,
+    "plotevery" : 100,
+    "vidframes" : true,
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.1,
-    "E" : 0.8,
-    "F" : 0.01,
+    "D" : 0.2,                     // Global diffusion constant
+    "E" : 0.5,
+    "contour_threshold" : 0.55,
+    "k" : 3,
     "l" : 2,
+    "logpath" : "logs/4N0M",
+    "overwrite_logs" : true,
+    "plot_guide" : false,
+
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.1,   "yinit" : 0.1, "sigmainit" : 0.11, "gaininit" : 0.5 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,  "yinit" : -0.1, "sigmainit" : 0.12, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1, "xinit" :  -0.1, "yinit" : -0.1, "sigmainit" : 0.13, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,   "yinit" : 0.1, "sigmainit" : 0.1, "gaininit" : 0.5  }
+        { "alpha" : 1, "beta" : 16, "epsilon" : 4,  "xinit" : -0.1,   "yinit" : 0.1, "sigmainit" : 0.11, "gaininit" : 0.5 },
+        { "alpha" : 1, "beta" : 16, "epsilon" : 4,  "xinit" :  0.25,  "yinit" : -0.1, "sigmainit" : 0.12, "gaininit" : 0.5  },
+        { "alpha" : 1, "beta" : 16, "epsilon" : 4, "xinit" :  -0.1, "yinit" : -0.1, "sigmainit" : 0.13, "gaininit" : 0.5  },
+        { "alpha" : 1, "beta" : 16, "epsilon" : 4,  "xinit" :  0.25,   "yinit" : 0.1, "sigmainit" : 0.1, "gaininit" : 0.5  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

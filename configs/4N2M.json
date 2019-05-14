@@ -1,40 +1,31 @@
 {
     // Global simulation parameters
-    "steps" : 5000,               // Number of steps to simulate for
-    "logevery" : 1000,
-    "plotevery" : 10,
+    "steps" : 50000,               // Number of steps to simulate for
+    "logevery" : 5000,
+    "plotevery" : 100,
     "vidframes" : true,
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.05,                     // Global diffusion constant
+    "D" : 0.1,                     // Global diffusion constant
+    "E" : 0.5,
     "contour_threshold" : 0.55,
     "k" : 3,
+    "l" : 2,
     "logpath" : "logs/4N2M",
     "overwrite_logs" : true,
+    "plot_guide" : true,
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        {
-            "alpha" : 3,
-            "beta"  : 3,
-            "gamma" : [1,1] // Array of interactions of this TC popn and guidance mols
-        },
-        {
-            "alpha" : 3,
-            "beta"  : 3,
-            "gamma" : [-1,1]
-        },
-        {
-            "alpha" : 3,
-            "beta"  : 3,
-            "gamma" : [1,-1]
-        },
-        {
-            "alpha" : 3,
-            "beta"  : 3,
-            "gamma" : [-1,-1]
-        }
+        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "gamma" : [-1,1]   },
+        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "gamma" : [1,-1]  },
+        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "gamma" : [-1,-1]  },
+        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "gamma" : [1,1] }
+//        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "xinit" : -0.25, "yinit" : 0.1, "sigmainit" : 0.11, "gaininit" : 0.5, "gamma" : [-1,1]   },
+//        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "xinit" : 0.25,  "yinit" :-0.1, "sigmainit" : 0.12, "gaininit" : 0.5, "gamma" : [1,-1]  },
+//        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "xinit" : -0.25, "yinit" :-0.1, "sigmainit" : 0.13, "gaininit" : 0.5, "gamma" : [-1,-1]  },
+//        { "alpha" : 3, "beta" : 16, "epsilon" : 4, "xinit" : 0.25,  "yinit" : 0.1, "sigmainit" : 0.1,  "gaininit" : 0.5, "gamma" : [1,1] }
     ], // end tc
 
     // Array of parameters for the guidance molecules
@@ -43,14 +34,14 @@
             "shape"  : "Sigmoid1D",
             "gain"   : 1,
             "phi"    : 0,
-            "width"  : 0.3,
+            "width"  : 0.01,
             "offset" : 0.0
         },
         {
             "shape"  : "Sigmoid1D",
             "gain"   : 1,
             "phi"    : 1.57,
-            "width"  : 0.3,
+            "width"  : 0.01,
             "offset" : 0.0
         }
     ] // end guidance

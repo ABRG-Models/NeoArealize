@@ -489,9 +489,11 @@ int main (int argc, char **argv)
     vector<vector<FLOATTYPE> > gy = plt.separateVectorField (RD.g, 1);
     FLOATTYPE ming = 1e7;
     FLOATTYPE maxg = -1e7;
-    if (plot_guidegrad) {
+    if (plot_guide) {
         // Plot gradients of the guidance effect g.
-        plt.scalarfields (displays[0], RD.hg, RD.rho);
+        plt.scalarfields (displays[guide_id], RD.hg, RD.rho);
+    }
+    if (plot_guidegrad) {
         // Determine scale of gx and gy so that a common scale can be
         // applied to both gradient_x and gradient_y.
         for (unsigned int hi=0; hi<RD.nhex; ++hi) {

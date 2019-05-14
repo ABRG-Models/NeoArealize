@@ -492,6 +492,7 @@ int main (int argc, char **argv)
     if (plot_guide) {
         // Plot gradients of the guidance effect g.
         plt.scalarfields (displays[guide_id], RD.hg, RD.rho);
+        displays[guide_id].redrawDisplay();
     }
     if (plot_guidegrad) {
         // Determine scale of gx and gy so that a common scale can be

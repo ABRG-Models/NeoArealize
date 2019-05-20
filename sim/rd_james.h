@@ -477,6 +477,10 @@ public:
                 // Construct 2 dimensional gradients
                 this->gaussian2D_guidance (m);
 
+            } else if (this->rhoMethod[m] == FieldShape::Exponential1D) {
+                // Construct an 'exponential wave'
+                this->exponential_guidance (m);
+
             } else if (this->rhoMethod[m] == FieldShape::Sigmoid1D) {
                 this->sigmoid_guidance (m);
 
@@ -882,24 +886,67 @@ public:
      *
      * Instead of using the Karbowski equations, just make some
      * gaussian 'waves'
+     *
+     * @m The molecule id
      */
     void gaussian1D_guidance (unsigned int m) {
         for (auto h : this->hg->hexen) {
-            Flt cosphi = (Flt) cos (guidance_phi[m]);
-            Flt sinphi = (Flt) sin (guidance_phi[m]);
-            DBG2 ("phi: " << guidance_phi[m]);
+            Flt cosphi = (Flt) cos (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            DBG2 ("phi: " << guidance_phi[m] << " degrees");
             Flt x_ = (h.x * cosphi) + (h.y * sinphi);
             this->rho[m][h.vi] = guidance_gain[m] * exp(-((x_-guidance_offset[m])*(x_-guidance_offset[m])) / guidance_width[m]);
         }
     }
 
+    /*!
+     * Circular symmetric 2D Gaussian
+     *
+     * @m The molecule id
+     */
     void gaussian2D_guidance (unsigned int m) {
+
+        /* Centre of the Gaussian is offset from 0 by guidance_offset,
+         * then rotated by guidance_phi */
+        Flt x_ = (Flt)this->guidance_offset[m];
+        Flt y_ = (Flt)0.0;
+
+        /* Rotate the initial location of the 2D Gaussian */
+        Flt cosphi = (Flt) cos (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+        Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+        Flt x_gCentre = (x_ * cosphi) + (y_ * sinphi);
+        Flt y_gCentre = - (x_ * sinphi) + (y_ * cosphi);
+
+        for (auto h : this->hg->hexen) {
+
+            Flt rx = x_gCentre - h.x;
+            Flt ry = y_gCentre - h.y;
+            Flt r = sqrt (rx*rx + ry*ry);
+            this->rho[m][h.vi] = guidance_gain[m] * exp (static_cast<Flt>( -(r*r) / (2.0 * guidance_width[m])) );
+        }
     }
 
+    /*!
+     * An exponential wave
+     *
+     * @m The molecule id
+     */
+    void exponential_guidance (unsigned int m) {
+        for (auto h : this->hg->hexen) {
+            Flt cosphi = (Flt) cos (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt x_ = (h.x * cosphi) + (h.y * sinphi);
+            this->rho[m][h.vi] = exp (this->guidance_gain[m] * (x_-guidance_offset[m]));
+        }
+    }
+
+    /*!
+     * @m The molecule id
+     */
     void sigmoid_guidance (unsigned int m) {
         for (auto h : this->hg->hexen) {
-            Flt cosphi = (Flt) cos (this->guidance_phi[m]);
-            Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+            Flt cosphi = (Flt) cos (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
             //DBG("phi= " << this->guidance_phi[m] << ". cosphi: " << cosphi << " sinphi: " << sinphi);
             Flt x_ = (h.x * cosphi) + (h.y * sinphi);
             //DBG ("x_[" << h.vi << "] = " << x_);
@@ -907,10 +954,13 @@ public:
         }
     }
 
+    /*!
+     * @m The molecule id
+     */
     void linear_guidance (unsigned int m) {
         for (auto h : this->hg->hexen) {
-            Flt cosphi = (Flt) cos (this->guidance_phi[m]);
-            Flt sinphi = (Flt) sin (this->guidance_phi[m]);
+            Flt cosphi = (Flt) cos (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
             Flt x_ = (h.x * cosphi) + (h.y * sinphi);
             this->rho[m][h.vi] = (x_-guidance_offset[m]) * this->guidance_gain[m];
         }

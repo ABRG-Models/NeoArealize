@@ -1,0 +1,82 @@
+{
+    // Global simulation parameters
+    "steps" : 30000,                // Number of steps to simulate for
+    "logevery": 5000,
+    "overwrite_logs": true,
+    "logpath" : "./logs/21N0M",
+    "hextohex_d" : 0.016,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./ellipse.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.1,
+    "E" : 0.8,
+    "F" : 0.01,
+    "l" : 2,
+
+    // Visualization parameters (ignored by computation-only binaries)
+    "plotevery": 100,
+    "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
+    //
+    "plot_guide" : true, // Default true
+    //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_a" : true, // Default true
+    "plot_c" : true, // Default true
+    //
+    "plot_guidegrad" : false, // Default false
+    "plot_divg" : false, // Default false
+    "plot_divJ" : false, // Default false
+
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [0,0,0,0,1]
+        },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,0,0,0,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [0,1,0,0,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [0,0,1,0,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [0,0,0,1,0] }
+
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+        {
+            "shape"  : "Gauss1D",
+            "gain"   : 0.5,
+            "phi"    : 20,
+            "width"  : 0.05,
+            "offset" : -0.2
+        },
+        {
+            "shape"  : "Gauss1D",
+            "gain"   : 0.5,
+            "phi"    : 20,
+            "width"  : 0.05,
+            "offset" : -0.1
+        },
+        {
+            "shape"  : "Gauss1D",
+            "gain"   : 0.5,
+            "phi"    : 20,
+            "width"  : 0.05,
+            "offset" : 0.0
+        },
+        {
+            "shape"  : "Gauss1D",
+            "gain"   : 0.5,
+            "phi"    : 20,
+            "width"  : 0.05,
+            "offset" : 0.1
+        },
+        {
+            "shape"  : "Gauss1D",
+            "gain"   : 0.5,
+            "phi"    : 20,
+            "width"  : 0.05,
+            "offset" : 0.2
+        }
+    ] // end guidance
+}

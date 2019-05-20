@@ -81,6 +81,8 @@ public:
     const Flt R3_OVER_2 = 0.866025403784439;
     //! Square root of 3
     const Flt ROOT3 = 1.73205080756888;
+    //! 2 pi divided by 360 - i.e. degrees to radians
+    const Flt TWOPI_OVER_360 = 0.01745329251994;
     //! Passed to HdfData constructor to say we want to read the data
     const bool READ_DATA = true;
     //@}

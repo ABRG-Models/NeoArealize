@@ -411,15 +411,15 @@ int main (int argc, char **argv)
         string rmeth = v.get ("shape", "Sigmoid1D").asString();
         DBG ("guidance modelecule shape: " << rmeth);
         if (rmeth == "Sigmoid1D") {
-            RD.rhoMethod[j] = GuidanceMoleculeMethod::Sigmoid1D;
+            RD.rhoMethod[j] = FieldShape::Sigmoid1D;
         } else if (rmeth == "Linear1D") {
-            RD.rhoMethod[j] = GuidanceMoleculeMethod::Linear1D;
+            RD.rhoMethod[j] = FieldShape::Linear1D;
         } else if (rmeth == "Exponential1D") {
-            RD.rhoMethod[j] = GuidanceMoleculeMethod::Exponential1D;
+            RD.rhoMethod[j] = FieldShape::Exponential1D;
         } else if (rmeth == "Gauss1D") {
-            RD.rhoMethod[j] = GuidanceMoleculeMethod::Gauss1D;
+            RD.rhoMethod[j] = FieldShape::Gauss1D;
         } else if (rmeth == "Gauss2D") {
-            RD.rhoMethod[j] = GuidanceMoleculeMethod::Gauss2D;
+            RD.rhoMethod[j] = FieldShape::Gauss2D;
         }
         // Set up guidance molecule method parameters
         RD.guidance_gain.push_back (v.get("gain", 1.0).asDouble());

@@ -7,7 +7,7 @@
 /*!
  * Enumerates the way that the guidance molecules are set up
  */
-enum class GuidanceMoleculeMethod {
+enum class FieldShape {
     Gauss1D,
     Gauss2D,
     Exponential1D,
@@ -240,7 +240,7 @@ public:
     /*!
      * Sets the function of the guidance molecule method
      */
-    vector<GuidanceMoleculeMethod> rhoMethod;
+    vector<FieldShape> rhoMethod;
 
     /*!
      * Modify initial conditions as if FGF had been mis-expressed
@@ -397,7 +397,7 @@ public:
         this->rhoMethod.resize (this->M);
         for (unsigned int j=0; j<this->M; ++j) {
             // Set up with Sigmoid1D as default
-            this->rhoMethod[j] = GuidanceMoleculeMethod::Sigmoid1D;
+            this->rhoMethod[j] = FieldShape::Sigmoid1D;
         }
 
         // Initialise alpha, beta
@@ -469,18 +469,18 @@ public:
         }
 
         for (unsigned int m=0; m<this->M; ++m) {
-            if (this->rhoMethod[m] == GuidanceMoleculeMethod::Gauss1D) {
+            if (this->rhoMethod[m] == FieldShape::Gauss1D) {
                 // Construct Gaussian-waves rather than doing the full-Karbowski shebang.
                 this->gaussian1D_guidance (m);
 
-            } else if (this->rhoMethod[m] == GuidanceMoleculeMethod::Gauss2D) {
+            } else if (this->rhoMethod[m] == FieldShape::Gauss2D) {
                 // Construct 2 dimensional gradients
                 this->gaussian2D_guidance (m);
 
-            } else if (this->rhoMethod[m] == GuidanceMoleculeMethod::Sigmoid1D) {
+            } else if (this->rhoMethod[m] == FieldShape::Sigmoid1D) {
                 this->sigmoid_guidance (m);
 
-            } else if (this->rhoMethod[m] == GuidanceMoleculeMethod::Linear1D) {
+            } else if (this->rhoMethod[m] == FieldShape::Linear1D) {
                 this->linear_guidance (m);
             }
         }

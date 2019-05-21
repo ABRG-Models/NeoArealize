@@ -4,7 +4,7 @@
  */
 {
     // Global simulation parameters
-    "steps" : 10000,                // Number of steps to simulate for
+    "steps" : 100000,                // Number of steps to simulate for
     "logevery": 100,
     "overwrite_logs": true,
     "logpath" : "./logs/5N1M_ordering",
@@ -16,7 +16,7 @@
 
     // Exponent parameters
     "k" : 3,
-    "l" : 3,
+    "l" : 1,
 
     // Visualization parameters (ignored by computation-only binaries)
     "plotevery": 100,
@@ -33,19 +33,19 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 10,
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100,
           "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [1] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 10,
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100,
           "xinit" : -0.14,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [2] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 10,
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100,
           "xinit" : -0.12,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [4] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 10,
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100,
           "xinit" : -0.1,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [8] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 10,
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100,
           "xinit" : -0.08,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [16] }
     ], // end tc

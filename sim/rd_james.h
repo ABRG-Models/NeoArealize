@@ -584,7 +584,7 @@ public:
     /*!
      * Save the c, a and n variables.
      */
-    void save (void) {
+    virtual void save (void) {
         stringstream fname;
         fname << this->logpath << "/c_";
         fname.width(5);

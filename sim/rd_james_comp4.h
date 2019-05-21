@@ -31,6 +31,12 @@ public:
     vector<Flt> epsilon;
 
     /*!
+     * Holds a copy of a[i] * epsilon / (1-N)
+     */
+    alignas(alignof(vector<vector<Flt> >))
+    vector<vector<Flt> > a_eps;
+
+    /*!
      * This holds the two components of the gradient field of the
      * scalar value n(x,t)
      */
@@ -61,6 +67,8 @@ public:
         this->resize_gradient_field (this->grad_n);
         this->resize_vector_variable (this->div_n);
         this->resize_vector_param (this->epsilon, this->N);
+        this->resize_vector_vector (this->a_eps, this->N);
+
     }
     virtual void init (void) {
         RD_James<Flt>::init();
@@ -110,7 +118,7 @@ public:
 #ifdef DEBUG_SUMS
         if (this->stepCount % 100 == 0) {
             //DBG ("System computed " << this->stepCount << " times so far...");
-            DBG ("nsum = " << nsum << ", csum = " << csum << ", n+c = " << nsum + csum  << ", asum = " << asum);
+            DBG (this->stepCount << ": nsum = " << nsum << ", csum = " << csum << ", n+c = " << nsum + csum  << ", asum = " << asum);
         }
 #endif
 
@@ -146,7 +154,10 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 eps[h] *= eps_over_N;
+                // Store a[i][h] * eps[h] for analysis (it's also used 4 times below)
+                this->a_eps[i][h] = this->a[i][h] * eps[h];
             }
+
 
             // Runge-Kutta integration for A
             vector<Flt> q(this->nhex, 0.0);
@@ -155,7 +166,8 @@ public:
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - this->a[i][h] * eps[h];
+                //cout << "k1 = " << this->divJ[i][h] << "(divJ) + " << this->alpha_c[i][h] << "(alphac) - " << this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) << "(beta) - " << this->a_eps[i][h] << "(a_eps)" << endl;
+                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - this->a_eps[i][h];
                 q[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
@@ -163,7 +175,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
+                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a_eps[i][h];
                 q[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
@@ -171,7 +183,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
+                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a_eps[i][h];
                 q[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
@@ -179,7 +191,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a[i][h] * eps[h];
+                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a_eps[i][h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
                 // Prevent a from becoming negative:
                 this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
@@ -223,6 +235,41 @@ public:
                 this->c[i][h] = (this->c[i][h] > 1.0) ? 1.0 : this->c[i][h];
             }
         }
+    }
+
+    /*!
+     * Override save to additionally save a_eps.
+     */
+    void save (void) {
+        stringstream fname;
+        fname << this->logpath << "/c_";
+        fname.width(5);
+        fname.fill('0');
+        fname << this->stepCount << ".h5";
+        HdfData data(fname.str());
+        for (unsigned int i = 0; i<this->N; ++i) {
+            stringstream path;
+            // The c variables
+            path << "/c" << i;
+            data.add_contained_vals (path.str().c_str(), this->c[i]);
+            // The a variable
+            path.str("");
+            path.clear();
+            path << "/a" << i;
+            data.add_contained_vals (path.str().c_str(), this->a[i]);
+            // divJ
+            path.str("");
+            path.clear();
+            path << "/j" << i;
+            data.add_contained_vals (path.str().c_str(), this->divJ[i]);
+            // The a_eps variable
+            path.str("");
+            path.clear();
+            path << "/a_eps_" << i;
+            data.add_contained_vals (path.str().c_str(), this->a_eps[i]);
+
+        }
+        data.add_contained_vals ("/n", this->n);
     }
 
     /*!

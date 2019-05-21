@@ -232,6 +232,15 @@ public:
     alignas(Flt) Flt aInitialOffset = 0.8;
 
     /*!
+     * Data containers for summed n, c and a.
+     */
+    //@{
+    alignas(vector<Flt>) vector<Flt> v_nsum;
+    alignas(vector<Flt>) vector<Flt> v_csum;
+    alignas(vector<Flt>) vector<Flt> v_asum;
+    //@}
+
+    /*!
      * ALIGNAS REGION ENDS.
      *
      * Below here, there's no need to worry about alignas keywords.
@@ -599,6 +608,18 @@ public:
             data.add_contained_vals (path.str().c_str(), this->divJ[i]);
         }
         data.add_contained_vals ("/n", this->n);
+    }
+
+    /*!
+     * Save asum, nsum and csum. Call once at end of simulation.
+     */
+    void savesums (void) {
+        stringstream fname;
+        fname << this->logpath << "/sums.h5";
+        HdfData data(fname.str());
+        data.add_contained_vals ("/csum", this->v_csum);
+        data.add_contained_vals ("/asum", this->v_asum);
+        data.add_contained_vals ("/nsum", this->v_nsum);
     }
 
     /*!

@@ -51,9 +51,9 @@ target_compile_definitions(james1c PUBLIC FLOATTYPE=float)
 target_link_libraries(james1c ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Compile with doubles:
-add_executable(james1cd james1.cpp)
-target_compile_definitions(james1cd PUBLIC FLOATTYPE=double)
-target_link_libraries(james1cd ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+#add_executable(james1cd james1.cpp)
+#target_compile_definitions(james1cd PUBLIC FLOATTYPE=double)
+#target_link_libraries(james1cd ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # A parameter search
 add_executable(ps_2N0M ps_2N0M.cpp)
@@ -89,3 +89,8 @@ target_link_libraries(james1_c4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 add_executable(james1c_c4 james1.cpp)
 target_compile_definitions(james1c_c4 PUBLIC FLOATTYPE=float COMP4)
 target_link_libraries(james1c_c4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+
+# Call it james2 (this is a copy of james1_c4)
+add_executable(james2 james1.cpp)
+target_compile_definitions(james2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP4)
+target_link_libraries(james2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

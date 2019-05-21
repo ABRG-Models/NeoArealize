@@ -83,28 +83,34 @@ public:
 
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         Flt nsum = 0.0;
+        Flt asum = 0.0;
         Flt csum = 0.0;
 #pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             this->n[hi] = 0;
             for (unsigned int i=0; i<this->N; ++i) {
                 this->n[hi] += this->c[i][hi];
+                asum += this->a[i][hi];
             }
             // Prevent sum of c being too large:
             this->n[hi] = (this->n[hi] > 1.0) ? 1.0 : this->n[hi];
-            csum += this->c[0][hi];
+            csum += this->n[hi];
             this->n[hi] = 1. - this->n[hi];
             nsum += this->n[hi];
         }
+        this->v_nsum.push_back(nsum);
+        this->v_csum.push_back(csum);
+        this->v_asum.push_back(asum);
 
         // 1.1 Compute divergence and gradient of n
         this->compute_divn();
         this->spacegrad2D (this->n, this->grad_n);
 
-#ifdef DEBUG__
+#define DEBUG_SUMS 1
+#ifdef DEBUG_SUMS
         if (this->stepCount % 100 == 0) {
-            DBG ("System computed " << this->stepCount << " times so far...");
-            DBG ("sum of n+c is " << nsum+csum);
+            //DBG ("System computed " << this->stepCount << " times so far...");
+            DBG ("nsum = " << nsum << ", csum = " << csum << ", n+c = " << nsum + csum  << ", asum = " << asum);
         }
 #endif
 

@@ -560,7 +560,7 @@ int main (int argc, char **argv)
 
 #ifdef COMPILE_PLOTTING
         if ((RD.stepCount % plotevery) == 0) {
-            DBG("Plot at step " << RD.stepCount);
+            DBG2("Plot at step " << RD.stepCount);
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
             if (plot_contours) {
@@ -617,6 +617,9 @@ int main (int argc, char **argv)
 #ifdef COMP4
     cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
 #endif
+
+    // Save out the sums.
+    RD.savesums();
 
     // Before saving the json, we'll place any additional useful info
     // in there, such as the FLOATTYPE. If float_width is 4, then

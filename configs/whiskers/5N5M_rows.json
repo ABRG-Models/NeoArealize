@@ -1,9 +1,12 @@
+/*
+ * 5 Gaussians produce 5 rows of connections.
+ */
 {
     // Global simulation parameters
     "steps" : 30000,                // Number of steps to simulate for
     "logevery": 5000,
     "overwrite_logs": true,
-    "logpath" : "./logs/21N0M",
+    "logpath" : "./logs/5N5M_rows",
     "hextohex_d" : 0.016,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
@@ -11,7 +14,7 @@
     "E" : 0.8,
     "F" : 0.01,
     "l" : 2,
-
+    "contour_threshold" : 0.3,
     // Visualization parameters (ignored by computation-only binaries)
     "plotevery": 100,
     "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
@@ -27,17 +30,17 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
-          "gamma" : [0,0,0,0,1]
+        { "alpha" : 3, "beta" : 13, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,0,0,0,0]
         },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
-          "gamma" : [1,0,0,0,0] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+        { "alpha" : 3, "beta" : 13, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [0,1,0,0,0] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+        { "alpha" : 3, "beta" : 13, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
           "gamma" : [0,0,1,0,0] },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
-          "gamma" : [0,0,0,1,0] }
+        { "alpha" : 3, "beta" : 13, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [0,0,0,1,0] },
+        { "alpha" : 3, "beta" : 13, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [0,0,0,0,1] }
 
     ], // end tc
 

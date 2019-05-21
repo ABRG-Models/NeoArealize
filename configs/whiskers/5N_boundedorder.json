@@ -1,0 +1,119 @@
+/*
+ * This configuration has 5 TC axon types and attempts to define 5
+ * rows using a single guidance gradient.
+ */
+{
+    // Global simulation parameters
+    "steps" : 30000,                // Number of steps to simulate for
+    "logevery": 100,
+    "overwrite_logs": true,
+    "logpath" : "./logs/5N_boundedorder",
+    "hextohex_d" : 0.016,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./ellipse.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.5,
+    "E" : 0.0,
+
+    // Exponent parameters
+    "k" : 3,
+    "l" : 3,
+
+    // Visualization parameters (ignored by computation-only binaries)
+    "plotevery": 100,
+    "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
+    //
+    "plot_guide" : true, // Default true
+    //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_a" : true, // Default true
+    "plot_c" : true, // Default true
+    //
+    "plot_guidegrad" : false, // Default false
+    "plot_divg" : false, // Default false
+    "plot_divJ" : false, // Default false
+
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,
+          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,-1,-1,-1, -1,0,0,0,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,
+          "xinit" : -0.14,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,-1,-1,-1, 0,-1,0,0,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,
+          "xinit" : -0.12,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,-1,-1,-1, 0,0,-1,0,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,
+          "xinit" : -0.1,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,-1,-1,-1, 0,0,0,-1,0] },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 0,
+          "xinit" : -0.08,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,-1,-1,-1, 0,0,0,0,-1] }
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+        { // General push to the right.
+            "shape"  : "Linear1D",
+            "gain"   : 1,
+            "phi"    : 0,
+            "width"  : 0.1,
+            "offset" : 0.0
+        },
+        { // left boundary
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 180,
+            "width"  : 0.01,
+            "offset" : 0.4
+        },
+        { // top boundary
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 90,
+            "width"  : 0.01,
+            "offset" : 0.25
+        },
+        { // bottom boundary
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 270,
+            "width"  : 0.01,
+            "offset" : 0.25
+        },
+        { // right boundary 1
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.01,
+            "offset" : -0.1
+        },
+        { // right boundary 2
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.01,
+            "offset" : 0.0
+        },
+        { // right boundary 3
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.01,
+            "offset" : 0.1
+        },
+        { // right boundary 4
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.01,
+            "offset" : 0.2
+        },
+        { // right boundary 5
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.01,
+            "offset" : 0.3
+        }
+    ] // end guidance
+}

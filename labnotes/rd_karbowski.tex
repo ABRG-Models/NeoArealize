@@ -903,7 +903,7 @@ space; the $D\nabla a_i$ term already provides diffusion of branching.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Interaction with $\nabla{n}$ and $\hat{a}_i$ inhibits $\dot{a_i}$}
-\label{sec:comp5}
+\label{sec:comp4}
 
 Combines sections~\ref{sec:comp1} and \ref{sec:comp3}. Descending the
 gradient $a_i\nabla{n}$ expands axon branching into new regions;
@@ -911,23 +911,23 @@ competition between $a_i$ and $\hat{a}_i$ should prevent excessive
 branching into neighbouring regions.
 
 %
-\begin{equation} \label{eq:Karb2D_dc_comp5}
+\begin{equation} \label{eq:Karb2D_dc_comp4}
 \frac{\partial c_i}{\partial t} = -\alpha_i c_i
 + \beta_i n
 [a_i]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_comp5}
+\begin{equation} \label{eq:Karb2D_da_comp4}
 \frac{\partial a_i}{\partial t}
 = \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n
 [a_i]^k - \frac{\epsilon_i}{N-1} a_i \sum_{p \ne i}^{N} a_p^l
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM_comp5}
+\begin{equation} \label{eq:Karb2D_conserve_NM_comp4}
 n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 %
-\begin{equation} \label{eq:divJExpanded_comp5}
+\begin{equation} \label{eq:divJExpanded_comp4}
 %
 \nabla\vcdot\mb{J}_i = D \dvrg a_i
 %
@@ -940,14 +940,24 @@ n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 
 Note that
-Eqs.~\ref{eq:Karb2D_dc_comp5}--\ref{eq:Karb2D_conserve_NM_comp5} are
+Eqs.~\ref{eq:Karb2D_dc_comp4}--\ref{eq:Karb2D_conserve_NM_comp4} are
 not quite identical those in section~\ref{sec:comp1}. The difference
 is the $\frac{1}{N-1}$ factor and the inclusion of $a_i$ in the third term of
-Eq.~\ref{eq:Karb2D_da_comp5}.
+Eq.~\ref{eq:Karb2D_da_comp4}.
 
 This is very promising! Initial branching conditions produce reliable
 regions. Initial conditions can be modified to simulate denucleated
 animal; region becomes smaller, but not non-existent.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\hat{a}_i$ inhibits $\dot{a_i}$ \bf{more}}
+\label{sec:comp5}
+
+In the config where I'm trying to make 5 barrel rows, the competition
+is less competitive than I imagine it could be. The initial condition
+is a blob of each of the 5 TC types of roughly the same size and I
+think the problem might be that the $\epsilon$ term is inhibiting all
+5 TC types more or less equally.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}
@@ -1006,11 +1016,34 @@ plausible locations in a virtual thalamus.
 Exploring how the model can speak to Whisker barrels.
 
 Axons on their way from ventrobasal thalamus (VB) to somatosensory
-cortex arrive in Layer VIb and form a 'mass' of axons, with axons
+cortex arrive in Layer VIb and form a `mass' of axons, with axons
 branching in every direction.
 
-I'm going to first try to model the formation of rows of axons
+I'm going to first try to model the formation of rows of axons within
+this mass. It's plausible that there is an ordering within this
+region, because from this region can come both the wildtype barrel
+cortex \emph{or} the reversed duplicate barrel field.
 
+\subsection{Barrel rows: $N$ 1D Gaussian waves}
+
+This mechanism makes nice
+rows. See \code{configs/whiskers/5N5M\_rows.json}. The problem is that
+it requires bands of expressed guidance molecules and banded
+expression isn't seen in barrel cortex by the experimentalists.
+
+\subsection{Barrel rows: 1 guidance molecule plus competition}
+
+With the competition described in section~\ref{sec:comp4}, it is
+difficult for separate, well delineated regions to form. I'm trying to
+think of an idea to make the competition between regions stronger.
+
+
+\subsection{Barrel rows; 1 guidance molecule pushes right, $N$ others
+push left, giving rows.}
+
+The mechanism works quite nicely, and has the advantage of using only
+graded guidance molecule expression.
+See \code{configs/whiskers/5N\_boundedorder.json}
 %
 % BIBLIOGRAPHY
 %

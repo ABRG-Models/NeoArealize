@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 # Read the data
-(x, y, t, cmatrix, amatrix, jmatrix, nmatrix) = ld.readFiles ('../logs/2N0M')
+(x, y, t, cmatrix, amatrix, jmatrix, nmatrix) = ld.readFiles ('../logs/5N1M_ordering')
 
 tcount = 0
 for fi in range(0,len(t)):

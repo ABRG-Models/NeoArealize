@@ -85,11 +85,12 @@ def surfaces (cmatrix, amatrix, jmatrix, nmatrix, x, y, title):
            'size'   : fs}
     matplotlib.rc('font', **fnt)
     N = np.size(cmatrix, 0)
-    F1 = plt.figure (figsize=(12,N*8))
+    print ('N={0}'.format(N))
+    F1 = plt.figure (figsize=(N*6,N*8))
     for i in range(0,N):
         f1 = F1.add_subplot(3,N,1+i, projection='3d')
-        f1.scatter (x, y, cmatrix[i,:], c=jmatrix[i,:], marker='h', cmap=plt.cm.plasma)
-        f1.set_title('j{0}'.format(i))
+        f1.scatter (x, y, cmatrix[i,:], c=cmatrix[i,:], marker='h', cmap=plt.cm.plasma)
+        f1.set_title('c{0}'.format(i))
         f1.set_zlim(0,1)
         f2 = F1.add_subplot(3,N,N+1+i, projection='3d')
         f2.scatter (x, y, amatrix[i,:], c=amatrix[i,:], marker='h', cmap=plt.cm.plasma)

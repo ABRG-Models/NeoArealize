@@ -54,13 +54,15 @@ if plot_timedepstuff:
     f1.legend (('sum c','sum n','sum (n+c)'))
     f1.set_title ('sums');
 
-cnum = int(0)
-pt.surface2 (jmatrix[cnum,:,trgt], x, y, ix, 'j{0}'.format(cnum))
-cnum = int(1)
-pt.surface2 (jmatrix[cnum,:,trgt], x, y, ix, 'j{0}'.format(cnum))
-pt.surface2 (nmatrix[:,trgt], x, y, ix, 'n')
-#pt.surface2 (nmatrix[:,trgt], x, y, ix, 'n 2')
+cnum = int(2)
+pt.surface2 (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
+pt.surface2 (cmatrix[cnum,:,trgt], x, y, ix, 'c{0}'.format(cnum))
+cnum = int(4)
+pt.surface2 (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
+pt.surface2 (cmatrix[cnum,:,trgt], x, y, ix, 'c{0}'.format(cnum))
 
-#pt.surfaces (cmatrix[:,:,trgt], amatrix[:,:,trgt], nmatrix[:,trgt], x, y, 'All variables')
+pt.surface2 (nmatrix[:,trgt], x, y, ix, 'n')
+
+#pt.surfaces (cmatrix[:,:,trgt], amatrix[:,:,trgt], jmatrix[:,:,trgt], nmatrix[:,trgt], x, y, 'All variables')
 
 plt.show()

@@ -959,6 +959,75 @@ is a blob of each of the 5 TC types of roughly the same size and I
 think the problem might be that the $\epsilon$ term is inhibiting all
 5 TC types more or less equally.
 
+\subsection{Add interactions with $\nabla {a}_{{p}\ne{i}}$}
+\label{sec:comp6}
+
+A scheme similar to comp2 (section \ref{sec:comp2}). However, rather
+than using the gradient $\nabla \hat{a}_i$, use all the gradients of
+the other TC types, with a $\zeta$ matrix to set the strengths of
+interaction.
+
+Change the flux current to:
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp6}
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
++ \bar{a}_i(\mb{x}, t)  \sum_{p \ne i}  \zeta_{i,p} \nabla {a}_p(\mb{x}, t) -
+a_i(\mb{x}, t) \, \mb{g}(\mb{x})
+\end{equation}
+%
+where $\bar{a}_i$ is a sigmoid of height $h$, offset $o$ and
+sharpness, $s$:
+\begin{equation}
+\bar{a}_i = \frac{h}{1 + e^{(o - s \, a_i)}}
+\end{equation}
+%
+used for the same reason as in section \ref{sec:comp2}.
+
+Dropping references to space and time arguments:
+
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp6_noargs}
+\mb{J}_i = D \nabla a_i + \bar{a}_i \sum_{p \ne i} \zeta_{i,p} \nabla {a}_p - a_i \, \mb{g}
+\end{equation}
+
+The divergence of $\mb{J}_i$ is
+%
+\begin{equation}
+\begin{split}
+\nabla\vcdot\mb{J}_i & = \nabla\vcdot \big[ D \nabla a_i
++ \sum_{p \ne i} \zeta_{i,p} \bar{a}_i  \nabla {a}_p - a_i \, \mb{g} \big] \\
+%
+& =
+D \dvrg a_i
++ \sum_{p \ne i} \zeta_{i,p} \nabla\vcdot \bar{a}_i \nabla {a}_p - \nabla\vcdot a_i \mb{g}_i
+\end{split}
+\end{equation}
+%
+because the divergence operator is distributive (and $D$ \& $\zeta$ are
+scalar).  Applying the vector calculus product rule identity to
+$\nabla\vcdot\big(\bar{a}_i\nabla {a}_p\big)$ and
+$\nabla\vcdot\big(a_i \mb{g}_i\big)$:
+%
+\begin{equation}
+\boxed{
+%
+\nabla\vcdot\mb{J}_i = D \dvrg a_i
+%
++ \sum_{p \ne i} \zeta_{i,p} \big(
+\bar{a}_i \dvrg {a}_p + \nabla {a}_p \vcdot \nabla \bar{a}_i
+\big)
+%
+- \big(
+a_i\nabla\vcdot\mb{g}_i
++
+\mb{g}_i\vcdot\nabla a_i
+\big)
+%
+} % boxed
+\end{equation}
+%
+which on expansion gives $3 + 2(N-1)$ terms terms to compute
+in \code{rd\_james\_comp6.h}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}
 
@@ -1037,6 +1106,22 @@ With the competition described in section~\ref{sec:comp4}, it is
 difficult for separate, well delineated regions to form. I'm trying to
 think of an idea to make the competition between regions stronger.
 
+One possibility is to have each TC type inhibit only selected other TC
+types. This might separate the centroids of effect, leading to better
+row definition.
+
+Another idea is to introduce a chemical generated in proportion to
+axon branching, which then has some finite decay time.
+
+Or, whichever a is the highest sees no attenuation. (Implemented
+as \code{rd\_james\_comp5.h}).
+
+I think the issue is that whatever inter-TC-type attenuation there is
+is swamped by the diffusion term. That branching just keeps on
+spreading out...
+
+I'll re-visit the concept of using the gradient of branching in types $j \ne i$
+to influence the branching flux of type $i$ (That's in section~\ref{sec:comp2}).
 
 \subsection{Barrel rows; 1 guidance molecule pushes right, $N$ others
 push left, giving rows.}

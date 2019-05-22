@@ -38,22 +38,22 @@ target_link_libraries(ermentrout ${MORPH_LDFLAGS} ${HDF5LIBLINK})
 add_executable(embedded embedded.cpp)
 target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5LIBLINK})
 
-# James model 1. RD Karbowski with variable numbers of guidance
+# James model 0. RD Karbowski with variable numbers of guidance
 # molecules and TC populations and runtime setting of parameters to
 # examine behaviour.
-add_executable(james1 james1.cpp)
-target_compile_definitions(james1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
-target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+add_executable(james0 james1.cpp)
+target_compile_definitions(james0 PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
+target_link_libraries(james0 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Compile compute-only with floats
-add_executable(james1c james1.cpp)
-target_compile_definitions(james1c PUBLIC FLOATTYPE=float)
-target_link_libraries(james1c ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+add_executable(james0c james1.cpp)
+target_compile_definitions(james0c PUBLIC FLOATTYPE=float)
+target_link_libraries(james0c ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Compile with doubles:
-#add_executable(james1cd james1.cpp)
-#target_compile_definitions(james1cd PUBLIC FLOATTYPE=double)
-#target_link_libraries(james1cd ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+#add_executable(james0cd james1.cpp)
+#target_compile_definitions(james0cd PUBLIC FLOATTYPE=double)
+#target_link_libraries(james0cd ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # A parameter search
 add_executable(ps_2N0M ps_2N0M.cpp)
@@ -66,31 +66,26 @@ target_compile_definitions(schnak PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
 target_link_libraries(schnak ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Competition scheme 1
-add_executable(james1_c1 james1.cpp)
-target_compile_definitions(james1_c1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP1)
-target_link_libraries(james1_c1 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+add_executable(james1 james1.cpp)
+target_compile_definitions(james1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP1)
+target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Competition scheme 2
-add_executable(james1_c2 james1.cpp)
-target_compile_definitions(james1_c2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP2)
-target_link_libraries(james1_c2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+add_executable(james2 james1.cpp)
+target_compile_definitions(james2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP2)
+target_link_libraries(james2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Competition scheme 3
-add_executable(james1_c3 james1.cpp)
-target_compile_definitions(james1_c3 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP3)
-target_link_libraries(james1_c3 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+add_executable(james3 james1.cpp)
+target_compile_definitions(james3 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP3)
+target_link_libraries(james3 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
 # Competition scheme 4 (comp1 + comp3)
-add_executable(james1_c4 james1.cpp)
-target_compile_definitions(james1_c4 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP4)
-target_link_libraries(james1_c4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+add_executable(james4 james1.cpp)
+target_compile_definitions(james4 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP4)
+target_link_libraries(james4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 
-# Competition scheme 4, no graphics
-add_executable(james1c_c4 james1.cpp)
-target_compile_definitions(james1c_c4 PUBLIC FLOATTYPE=float COMP4)
-target_link_libraries(james1c_c4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
-
-# Call it james2 (this is a copy of james1_c4)
-add_executable(james2 james1.cpp)
-target_compile_definitions(james2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP4)
-target_link_libraries(james2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+# A 5th scheme with better competition?
+add_executable(james5 james1.cpp)
+target_compile_definitions(james5 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP5)
+target_link_libraries(james5 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

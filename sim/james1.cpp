@@ -35,8 +35,10 @@
 #include "rd_james_comp3.h"
 #elif defined COMP4
 #include "rd_james_comp4.h"
+#elif defined COMP5
+#include "rd_james_comp5.h"
 #else
-#include "rd_james.h"
+#include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
 
 #ifdef COMPILE_PLOTTING
@@ -188,6 +190,9 @@ int main (int argc, char **argv)
 #elif defined COMP4
     const double E = root.get ("E", 0.1).asDouble();
     const FLOATTYPE l = root.get ("l", 1).asDouble();
+#elif defined COMP5
+    const double E = root.get ("E", 0.1).asDouble();
+    const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
@@ -224,8 +229,11 @@ int main (int argc, char **argv)
     //const bool plot_contours = root.get ("plot_contours", true).asBool();
     const bool plot_contours = true;
     const bool plot_a = root.get ("plot_a", true).asBool();
+    const bool scale_a = root.get ("scale_a", true).asBool();
     const bool plot_c = root.get ("plot_c", true).asBool();
+    const bool scale_c = root.get ("scale_c", true).asBool();
     const bool plot_n = root.get ("plot_n", true).asBool();
+    const bool scale_n = root.get ("scale_n", true).asBool();
     // Window IDs
     unsigned int guide_id = 0xffff, contours_id = 0xffff, a_id = 0xffff, c_id = 0xffff, n_id = 0xffff;
 
@@ -345,6 +353,8 @@ int main (int argc, char **argv)
     RD_James_comp3<FLOATTYPE> RD;
 #elif defined COMP4
     RD_James_comp4<FLOATTYPE> RD;
+#elif defined COMP5
+    RD_James_comp5<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -377,6 +387,9 @@ int main (int argc, char **argv)
 #elif defined COMP4
     RD.E = E;
     RD.l = l;
+#elif defined COMP5
+    RD.E = E;
+    RD.l = l;
 #endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;
@@ -399,6 +412,9 @@ int main (int argc, char **argv)
 #if defined COMP1
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
 #elif defined COMP4
+        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
+        cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
+#elif defined COMP5
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #endif
@@ -567,13 +583,25 @@ int main (int argc, char **argv)
                 plt.plot_contour (displays[contours_id], RD.hg, ctrs);
             }
             if (plot_a) {
-                plt.scalarfields (displays[a_id], RD.hg, RD.a, 0.0, 1.0);
+                if (scale_a) {
+                    plt.scalarfields (displays[a_id], RD.hg, RD.a);
+                } else {
+                    plt.scalarfields (displays[a_id], RD.hg, RD.a, 0.0, 1.0);
+                }
             }
             if (plot_c) {
-                plt.scalarfields (displays[c_id], RD.hg, RD.c, 0.0, 1.0);
+                if (scale_c) {
+                    plt.scalarfields (displays[c_id], RD.hg, RD.c);
+                } else {
+                    plt.scalarfields (displays[c_id], RD.hg, RD.c, 0.0, 1.0);
+                }
             }
             if (plot_n) {
-                plt.scalarfields (displays[n_id], RD.hg, RD.n, 0.0, 1.0);
+                if (scale_n) {
+                    plt.scalarfields (displays[n_id], RD.hg, RD.n);
+                } else {
+                    plt.scalarfields (displays[n_id], RD.hg, RD.n, 0.0, 1.0);
+                }
             }
             if (plot_guidegrad) {
                 displays[guidegrad_x_id].redrawDisplay();
@@ -615,6 +643,8 @@ int main (int argc, char **argv)
     }
 
 #ifdef COMP4
+    cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
+#elif defined COMP5
     cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
 #endif
 

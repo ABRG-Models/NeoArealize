@@ -89,3 +89,8 @@ target_link_libraries(james4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 add_executable(james5 james1.cpp)
 target_compile_definitions(james5 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP5)
 target_link_libraries(james5 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+
+# The multiplicative reduction of diffusion scheme
+add_executable(james7 james1.cpp)
+target_compile_definitions(james7 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP7)
+target_link_libraries(james7 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

@@ -1,23 +1,13 @@
 /*
- * Competition method 4, which combines method 1 and method 3.
+ * Competition method 7. Reduce diffusion multiplicatively.
  */
 
 #include "rd_james.h"
 
-/*!
- * Additional specialisation to add competition (by modifying the divJ
- * diffusion component)
- */
 template <class Flt>
-class RD_James_comp4 : public RD_James<Flt>
+class RD_James_comp7 : public RD_James<Flt>
 {
 public:
-    /*!
-     * Parameter which controls the strength of the contribution from
-     * the gradient of n(x,t) to the flux current of axonal branching.
-     */
-    alignas(Flt) Flt E = 0.1;
-
     /*!
      * The power to which a_j is raised for the inter-TC axon
      * competition term.
@@ -37,22 +27,34 @@ public:
     vector<vector<Flt> > a_eps;
 
     /*!
-     * This holds the two components of the gradient field of the
-     * scalar value n(x,t)
-     */
-    alignas(alignof(array<vector<Flt>, 2>))
-    array<vector<Flt>, 2> grad_n;
-
-    /*!
-     * divergence of n.
+     * \hat{a}_i. Recomputed for each new i, so doesn't need to be a
+     * vector of vectors.
      */
     alignas(alignof(vector<Flt>))
-    vector<Flt> div_n;
+    vector<Flt> ahat;
+
+    /*!
+     * \lambda(\hat{a}_i)
+     */
+    //@{
+    alignas(alignof(vector<Flt>))
+    vector<Flt> lambda;
+    alignas(alignof(array<vector<Flt>, 2>))
+    array<vector<Flt>, 2> grad_lambda;
+    //@}
+
+    /*!
+     * Sigmoid parameters
+     */
+    //@{
+    alignas(Flt) Flt o = 5.0; // offset
+    alignas(Flt) Flt s = 0.5; // sharpness
+    //@}
 
     /*!
      * Simple constructor; no arguments. Just calls base constructor
      */
-    RD_James_comp4 (void)
+    RD_James_comp7 (void)
         : RD_James<Flt>() {
     }
 
@@ -63,19 +65,23 @@ public:
     //@{
     virtual void allocate (void) {
         RD_James<Flt>::allocate();
-        // Plus:
-        this->resize_gradient_field (this->grad_n);
-        this->resize_vector_variable (this->div_n);
+        this->resize_vector_variable (this->ahat);
+        //this->resize_gradient_field (this->grad_ahat);
+        //this->resize_vector_variable (this->div_ahat);
+        this->resize_vector_variable (this->lambda);
+        this->resize_gradient_field (this->grad_lambda);
         this->resize_vector_param (this->epsilon, this->N);
         this->resize_vector_vector (this->a_eps, this->N);
     }
     virtual void init (void) {
         RD_James<Flt>::init();
-        this->zero_gradient_field (this->grad_n);
-        this->zero_vector_variable (this->div_n);
+        this->zero_vector_variable (this->ahat);
+        //this->zero_gradient_field (this->grad_ahat);
+        //this->zero_vector_variable (this->div_ahat);
+        this->zero_vector_variable (this->lambda);
+        this->zero_gradient_field (this->grad_lambda);
     }
     //@}
-
     /*!
      * Computation methods
      */
@@ -90,34 +96,24 @@ public:
 
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         Flt nsum = 0.0;
-        Flt asum = 0.0;
         Flt csum = 0.0;
 #pragma omp parallel for reduction(+:nsum,csum)
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
             this->n[hi] = 0;
             for (unsigned int i=0; i<this->N; ++i) {
                 this->n[hi] += this->c[i][hi];
-                asum += this->a[i][hi];
             }
             // Prevent sum of c being too large:
             this->n[hi] = (this->n[hi] > 1.0) ? 1.0 : this->n[hi];
-            csum += this->n[hi];
+            csum += this->c[0][hi];
             this->n[hi] = 1. - this->n[hi];
             nsum += this->n[hi];
         }
-        this->v_nsum.push_back(nsum);
-        this->v_csum.push_back(csum);
-        this->v_asum.push_back(asum);
 
-        // 1.1 Compute divergence and gradient of n
-        this->compute_divn();
-        this->spacegrad2D (this->n, this->grad_n);
-
-#define DEBUG_SUMS 1
-#ifdef DEBUG_SUMS
+#ifdef DEBUG__
         if (this->stepCount % 100 == 0) {
-            //DBG ("System computed " << this->stepCount << " times so far...");
-            DBG (this->stepCount << ": nsum = " << nsum << ", csum = " << csum << ", n+c = " << nsum + csum  << ", asum = " << asum);
+            DBG ("System computed " << this->stepCount << " times so far...");
+            DBG ("sum of n+c is " << nsum+csum);
         }
 #endif
 
@@ -125,7 +121,6 @@ public:
 
         // Pre-compute intermediate val:
         for (unsigned int i=0; i<this->N; ++i) {
-//#pragma omp parallel for shared(i,k)
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->alpha_c[i][h] = this->alpha[i] * this->c[i][h];
@@ -157,6 +152,30 @@ public:
                 this->a_eps[i][h] = this->a[i][h] * eps[h];
             }
 
+            Flt ahatmax = 0.0;
+            // Compute "the sum of all a_j for which j!=i"
+            this->zero_vector_variable (this->ahat);
+            for (unsigned int j=0; j<this->N; ++j) {
+                if (j==i) { continue; }
+#pragma omp parallel for
+                for (unsigned int h=0; h<this->nhex; ++h) {
+                    this->ahat[h] += this->a[j][h];
+                    if (this->ahat[h] > ahatmax) {
+                        ahatmax = this->ahat[h];
+                    }
+                }
+            }
+
+            cout << "ahatmax = " << ahatmax << endl;
+            cout << "lambda(ahatmax) = " << (1.0 - (1.0 / (1.0 + exp(this->o - this->s * ahatmax) ))) << endl;
+
+            // Compute lambda(ahat) and grad lambda
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                this->lambda[h] = 1.0 - (1.0 / (1.0 + exp(o - s * this->ahat[h]) ));
+                //cout << "ahat["<<h<<"]=" << this->ahat[h] << " lambda[h]=" << this->lambda[h] << endl;
+            }
+            this->spacegrad2D (this->lambda, this->grad_lambda);
 
             // Runge-Kutta integration for A
             vector<Flt> q(this->nhex, 0.0);
@@ -165,8 +184,7 @@ public:
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                //cout << "k1 = " << this->divJ[i][h] << "(divJ) + " << this->alpha_c[i][h] << "(alphac) - " << this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) << "(beta) - " << this->a_eps[i][h] << "(a_eps)" << endl;
-                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - this->a_eps[i][h];
+                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k))  - this->a_eps[i][h];
                 q[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
@@ -194,6 +212,11 @@ public:
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
                 // Prevent a from becoming negative:
                 this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
+            }
+            //cout << "a[" << i << "][0] = " << this->a[i][0] << endl;
+            if (isnan(this->a[i][0])) {
+                cerr << "Exiting on a[i][0] == NaN" << endl;
+                exit (1);
             }
         }
 
@@ -233,66 +256,21 @@ public:
                 // Avoid over-saturating c_i:
                 this->c[i][h] = (this->c[i][h] > 1.0) ? 1.0 : this->c[i][h];
             }
-        }
-    }
-
-    /*!
-     * Override save to additionally save a_eps.
-     */
-    void save (void) {
-        stringstream fname;
-        fname << this->logpath << "/c_";
-        fname.width(5);
-        fname.fill('0');
-        fname << this->stepCount << ".h5";
-        HdfData data(fname.str());
-        for (unsigned int i = 0; i<this->N; ++i) {
-            stringstream path;
-            // The c variables
-            path << "/c" << i;
-            data.add_contained_vals (path.str().c_str(), this->c[i]);
-            // The a variable
-            path.str("");
-            path.clear();
-            path << "/a" << i;
-            data.add_contained_vals (path.str().c_str(), this->a[i]);
-            // divJ
-            path.str("");
-            path.clear();
-            path << "/j" << i;
-            data.add_contained_vals (path.str().c_str(), this->divJ[i]);
-            // The a_eps variable
-            path.str("");
-            path.clear();
-            path << "/a_eps_" << i;
-            data.add_contained_vals (path.str().c_str(), this->a_eps[i]);
-
-        }
-        data.add_contained_vals ("/n", this->n);
-    }
-
-    /*!
-     * Compute divergence of n
-     */
-    void compute_divn (void) {
-#pragma omp parallel for
-        for (unsigned int hi=0; hi<this->nhex; ++hi) {
-            Flt thesum = -6 * this->n[hi];
-            thesum += this->n[(HAS_NE(hi)  ? NE(hi)  : hi)];
-            thesum += this->n[(HAS_NNE(hi) ? NNE(hi) : hi)];
-            thesum += this->n[(HAS_NNW(hi) ? NNW(hi) : hi)];
-            thesum += this->n[(HAS_NW(hi)  ? NW(hi)  : hi)];
-            thesum += this->n[(HAS_NSW(hi) ? NSW(hi) : hi)];
-            thesum += this->n[(HAS_NSE(hi) ? NSE(hi) : hi)];
-            this->div_n[hi] = this->twoover3dd * thesum;
+#if 0
+            cout << "c[" << i << "][0] = " << this->c[i][0] << endl;
+            if (isnan(this->c[i][0])) {
+                cerr << "Exiting on c[i][0] == NaN" << endl;
+                exit (2);
+            }
+#endif
         }
     }
 
     /*!
      * Computes the "flux of axonal branches" term, J_i(x) (Eq 4)
      *
-     * Inputs: this->g, @fa (which is this->a[i] or a q in the RK
-     * algorithm), this->div_n, this->D, @i, the TC type.  Helper functions:
+     * Inputs: this->g, fa (which is this->a[i] or a q in the RK
+     * algorithm), this->D, @a i, the TC type.  Helper functions:
      * spacegrad2D().  Output: this->divJ
      *
      * Stable with dt = 0.0001;
@@ -302,12 +280,11 @@ public:
         // Compute gradient of a_i(x), for use computing the third term, below.
         this->spacegrad2D (fa, this->grad_a[i]);
 
-        // Three terms to compute; see Eq. 17 in methods_notes.pdf
-#pragma omp parallel for
+        // _Five_ terms to compute; see Eq. 17 in methods_notes.pdf. Copy comp3.
+#pragma omp parallel for //schedule(static) // This was about 10% faster than schedule(dynamic,50).
         for (unsigned int hi=0; hi<this->nhex; ++hi) {
 
             // 1. The D Del^2 a_i term. Eq. 18.
-            // 1a. Or D Del^2 Sum(a_i) (new)
             // Compute the sum around the neighbours
             Flt thesum = -6 * fa[hi];
 
@@ -318,23 +295,40 @@ public:
             thesum += fa[(HAS_NSW(hi) ? NSW(hi) : hi)];
             thesum += fa[(HAS_NSE(hi) ? NSE(hi) : hi)];
 
-            // Multiply sum by 2D/3d^2 to give term1
-            Flt term1 = this->twoDover3dd * thesum;
+            // Multiply sum by \lambda 2D/3d^2 to give term1
+            Flt term1 = this->twoDover3dd * thesum * this->lambda[hi];
+            if (isnan(term1)) {
+                cerr << "term1 isnan" << endl;
+                cerr << "thesum is " << thesum << " fa[hi=" << hi << "] = " << fa[hi] << endl;
+                exit (21);
+            }
 
-            // Term 1.1 is E a div(n)
-            Flt term1_1 = this->E * fa[hi] * this->div_n[hi];
-
-            // Term 1.2 is E grad(n) . grad(a)
-            Flt term1_2 = this->E * (this->grad_n[0][hi] * this->grad_a[i][0][hi]
-                                     + this->grad_n[1][hi] * this->grad_a[i][1][hi]);
+            // Term 1.1 is D grad a dot grad lambda
+            Flt term1_1 = this->D * (this->grad_a[i][0][hi] * this->grad_lambda[0][hi]
+                                     + this->grad_a[i][1][hi] * this->grad_lambda[1][hi]);
+            if (isnan(term1_1)) {
+                cerr << "term1_1 isnan" << endl;
+                cerr << "fa[hi="<<hi<<"] = " << fa[hi] << endl;
+                exit (21);
+            }
 
             // 2. The (a div(g)) term.
             Flt term2 = fa[hi] * this->divg_over3d[i][hi];
 
+            if (isnan(term2)) {
+                cerr << "term2 isnan" << endl;
+                exit (21);
+            }
+
             // 3. Third term is this->g . grad a_i. Should not contribute to J, as g(x) decays towards boundary.
             Flt term3 = this->g[i][0][hi] * this->grad_a[i][0][hi] + (this->g[i][1][hi] * this->grad_a[i][1][hi]);
 
-            this->divJ[i][hi] = term1 - term1_1 - term1_2 - term2 - term3;
+            if (isnan(term3)) {
+                cerr << "term3 isnan" << endl;
+                exit (30);
+            }
+
+            this->divJ[i][hi] = term1 + term1_1 - term2 - term3;
         }
     }
 

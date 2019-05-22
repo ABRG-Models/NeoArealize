@@ -959,6 +959,7 @@ is a blob of each of the 5 TC types of roughly the same size and I
 think the problem might be that the $\epsilon$ term is inhibiting all
 5 TC types more or less equally.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Add interactions with $\nabla {a}_{{p}\ne{i}}$}
 \label{sec:comp6}
 
@@ -1029,6 +1030,38 @@ which on expansion gives $3 + 2(N-1)$ terms terms to compute
 in \code{rd\_james\_comp6.h}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\hat{a}_i$ multiplicatively reduces diffusion of $a_i$}
+\label{sec:comp7}
+
+Change the flux current to:
+%
+\begin{equation} \label{eq:Karb2D_J_NM_with_comp7}
+\mb{J}_i = D (1 - \sigma(\hat{a}_i)) \nabla a_i - a_i \, \mb{g}
+\end{equation}
+
+where $\sigma(\hat{a}_i)$ denotes a sigmoid function:
+
+\begin{equation}
+\sigma(a) = \frac{1}{1 + e^{(o - s \, a)}}
+\end{equation}
+
+Let $\lambda = 1 - \sigma$. Then $\dvrg \mb{J}_i$ is
+
+\begin{equation}
+\nabla\vcdot \mb{J}_i = \nabla\vcdot \big( D \lambda \nabla a_i - a_i \, \mb{g} \big)
+\end{equation}
+
+Product rules all round to give:
+
+\begin{equation}
+\boxed{
+\nabla\vcdot \mb{J}_i = D\big( \lambda \dvrg a_i + \nabla
+a_i \vcdot \nabla \lambda \big) - \big( a_i \nabla.\mb{g} +
+\mb{g} \vcdot \nabla a_i \big)
+}
+\end{equation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}
 
 Initial reading of the literature suggests that axons grow towards
@@ -1036,7 +1069,7 @@ cortex in a `guideposted manner' and then start branching once within
 the cortex. This would suggest that initial conditions should be more
 targeted than in the Karbowski model, with axons of type $i$ arriving
 in a region expected to be region $i$, but with the possibility of
-modifying the model to simulate a denucleated animal by reducing the
+modifying the model to simulate an enucleated animal by reducing the
 density of incident visual TC axons, or reducing their branching rate.
 
 I've implemented a scheme, using 2D Gaussians of varying (symmetrical)

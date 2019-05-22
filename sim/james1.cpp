@@ -37,6 +37,8 @@
 #include "rd_james_comp4.h"
 #elif defined COMP5
 #include "rd_james_comp5.h"
+#elif defined COMP7
+#include "rd_james_comp7.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -192,6 +194,11 @@ int main (int argc, char **argv)
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #elif defined COMP5
     const double E = root.get ("E", 0.1).asDouble();
+    const FLOATTYPE l = root.get ("l", 1).asDouble();
+#elif defined COMP7
+    // Possibly get the parameters for the sigmoid from file
+    const double o = root.get ("o", 0.1).asDouble();
+    const double s = root.get ("s", 1.0).asDouble();
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
@@ -355,6 +362,8 @@ int main (int argc, char **argv)
     RD_James_comp4<FLOATTYPE> RD;
 #elif defined COMP5
     RD_James_comp5<FLOATTYPE> RD;
+#elif defined COMP7
+    RD_James_comp7<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -390,6 +399,10 @@ int main (int argc, char **argv)
 #elif defined COMP5
     RD.E = E;
     RD.l = l;
+#elif defined COMP7
+    RD.o = o;
+    RD.s = s;
+    RD.l = l;
 #endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;
@@ -415,6 +428,9 @@ int main (int argc, char **argv)
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #elif defined COMP5
+        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
+        cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
+#elif defined COMP7
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #endif

@@ -1,0 +1,42 @@
+{
+    // Global simulation parameters
+    "steps" : 6000,               // Number of steps to simulate for
+    "logevery" : 1000,
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./circle.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.1,                     // Global diffusion constant
+    "contour_threshold" : 0.55,
+    "k" : 3,
+    "logpath" : "logs/2N1M_tst",
+    "overwrite_logs" : true,
+
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        {
+            "alpha" : 3,
+            "beta"  : 3,
+            "gamma" : [-1.0] // Array of interactions of this TC popn and guidance mols
+        },
+        {
+            "alpha" : 3,
+            "beta"  : 3,
+            "gamma" : [1.0]
+        }
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.4,
+            "phi"    : 0,
+            //"phi"    : 1.5708,
+            //"phi"    : 1.047,
+            //"phi"    : 2.094,
+            //"phi"    : 3.1415,
+            "width"  : 0.02,
+            "offset" : 0.0
+        }
+    ] // end guidance
+}

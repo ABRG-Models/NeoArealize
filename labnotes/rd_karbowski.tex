@@ -1027,7 +1027,7 @@ a_i\nabla\vcdot\mb{g}_i
 \end{equation}
 %
 which on expansion gives $3 + 2(N-1)$ terms terms to compute
-in \code{rd\_james\_comp6.h}.
+in \code{rd\_james\_comp6.h} (not yet implemented).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{$\hat{a}_i$ multiplicatively reduces diffusion of $a_i$}
@@ -1045,7 +1045,7 @@ where $\sigma(\hat{a}_i)$ denotes a sigmoid function:
 \sigma(a) = \frac{1}{1 + e^{(o - s \, a)}}
 \end{equation}
 
-Let $\lambda = 1 - \sigma$. Then $\dvrg \mb{J}_i$ is
+Let $\lambda = 1 - \sigma$. Then $\nabla \vcdot \mb{J}_i$ is
 
 \begin{equation}
 \nabla\vcdot \mb{J}_i = \nabla\vcdot \big( D \lambda \nabla a_i - a_i \, \mb{g} \big)
@@ -1062,7 +1062,30 @@ a_i \vcdot \nabla \lambda \big) - \big( a_i \nabla.\mb{g} +
 \end{equation}
 
 Ah, I added in the direct competition mechanism of
-section \ref{sec:comp1} too (see \code{rd_james_comp7.h}).
+section \ref{sec:comp1} too (see \code{rd\_james\_comp7.h}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Divisive normalization of $a_i$}
+\label{sec:comp8}
+
+Taking inspiration from the divisive normalization idea in neural
+networks~\cite{carandini_normalization_2011}, where the overall
+activity of a group of neurons modulates the output response of an
+individual member of the group, we will use the overall branching
+level of all of the axons in a layer to modulate the response, $a_i'$,
+of the branching level in each element.
+
+The response can be written out with the normalization
+equation~\cite{carandini_normalization_2011}:
+%
+\begin{equation}\label{eq:norm}
+a_i' = \eta \; \frac {a_i^q} {\xi^q + \textstyle \sum_p a_p^q }
+\end{equation}
+%
+in which $\eta$, $\xi$ and $q$ are free parameters.
+
+$a_i'$, the `branching response', then has to be used to drive
+connections.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}
@@ -1178,7 +1201,7 @@ See \code{configs/whiskers/5N\_boundedorder.json}
 \begin{thebibliography}{1}
 
 \bibitem{george_b._arfken_mathematical_1995}
-{George B. Arfken} and H.~J. Weber.
+{George B.~Arfken} and H.~J.~Weber.
 \newblock {\em Mathematical {Methods} for {Physicists}}.
 \newblock Academic Press, fourth edition edition, 1995.
 
@@ -1197,6 +1220,10 @@ R.~Erzurumlu and P.~Gaspar.
 \newblock {\em European Journal of Neuroscience},
   35:1540--1553, Feb. 2012.
 
+\bibitem{carandini_normalization_2011}
+M.~Carandini and D.~J.~Heeger
+\newblock {\em Nature Reviews Neuroscience},
+  13:51--62, Nov. 2011.
 
 \end{thebibliography}
 

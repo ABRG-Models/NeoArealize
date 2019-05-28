@@ -66,8 +66,6 @@ public:
     virtual void allocate (void) {
         RD_James<Flt>::allocate();
         this->resize_vector_variable (this->ahat);
-        //this->resize_gradient_field (this->grad_ahat);
-        //this->resize_vector_variable (this->div_ahat);
         this->resize_vector_variable (this->lambda);
         this->resize_gradient_field (this->grad_lambda);
         this->resize_vector_param (this->epsilon, this->N);
@@ -76,8 +74,6 @@ public:
     virtual void init (void) {
         RD_James<Flt>::init();
         this->zero_vector_variable (this->ahat);
-        //this->zero_gradient_field (this->grad_ahat);
-        //this->zero_vector_variable (this->div_ahat);
         this->zero_vector_variable (this->lambda);
         this->zero_gradient_field (this->grad_lambda);
     }
@@ -160,9 +156,7 @@ public:
 #pragma omp parallel for
                 for (unsigned int h=0; h<this->nhex; ++h) {
                     this->ahat[h] += this->a[j][h];
-                    if (this->ahat[h] > ahatmax) {
-                        ahatmax = this->ahat[h];
-                    }
+                    ahatmax = (this->ahat[h] > ahatmax) ? this->ahat[h] : ahatmax;
                 }
             }
 

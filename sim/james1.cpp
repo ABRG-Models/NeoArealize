@@ -39,6 +39,8 @@
 #include "rd_james_comp5.h"
 #elif defined COMP7
 #include "rd_james_comp7.h"
+#elif defined COMP8
+#include "rd_james_comp8.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -200,6 +202,10 @@ int main (int argc, char **argv)
     const double o = root.get ("o", 0.1).asDouble();
     const double s = root.get ("s", 1.0).asDouble();
     const FLOATTYPE l = root.get ("l", 1).asDouble();
+#elif defined COMP8
+    const FLOATTYPE eta = root.get ("eta", 0.1).asDouble();
+    const FLOATTYPE xi = root.get ("xi", 1.0).asDouble();
+    const FLOATTYPE q = root.get ("q", 1).asDouble();
 #endif
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
@@ -364,6 +370,8 @@ int main (int argc, char **argv)
     RD_James_comp5<FLOATTYPE> RD;
 #elif defined COMP7
     RD_James_comp7<FLOATTYPE> RD;
+#elif defined COMP8
+    RD_James_comp8<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -403,6 +411,10 @@ int main (int argc, char **argv)
     RD.o = o;
     RD.s = s;
     RD.l = l;
+#elif defined COMP8
+    RD.eta = eta;
+    RD.xi = xi;
+    RD.q = q;
 #endif
     RD.contour_threshold = contour_threshold;
     RD.k = k;

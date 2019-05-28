@@ -1,6 +1,6 @@
 {
     // Global simulation parameters
-    "steps" : 50000,                // Number of steps to simulate for
+    "steps" : 80000,                // Number of steps to simulate for
     "logevery": 1000,
     "plotevery": 1000,
     "overwrite_logs": true,
@@ -15,6 +15,8 @@
     "l" : 3,
     "k" : 3,
     "plot_guide" : false,
+    "scale_a" : false,
+    "scale_c" : false,
     "aNoiseGain": 0.0,  // The noise gain applied in
                         // noiseify_vector_vector, which sets initial
                         // values of a variable.
@@ -22,6 +24,11 @@
                            // field for the a variable.
     "o" : 0.1, // sigmoid offset
     "s" : 10,   // sigmoid sharpness
+
+    // Parameters for divisive normalization
+    "eta" : 6000,
+    "xi" : 1,
+    "q" : 1,
 
     // Array of parameters for N thalamocortical populations:
     "tc": [

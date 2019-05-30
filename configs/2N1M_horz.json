@@ -11,6 +11,10 @@
     "logpath" : "logs/2N1M_tst",
     "overwrite_logs" : true,
 
+    "scale_a" : false,
+    "scale_c" : false,
+    "scale_n" : false,
+
     // Array of parameters for N thalamocortical populations:
     "tc": [
         {

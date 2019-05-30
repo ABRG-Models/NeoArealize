@@ -1,13 +1,31 @@
 /*
- * 2D Karbowski system with divisive normalization of a_i.
+ * 2D Karbowski system with divisive normalization of a_i AND
+ * competition per element.
  */
 
 #include "rd_james.h"
 
+/*!
+ * Additional specialisation to add competition (by modifying the divJ
+ * diffusion component)
+ */
 template <class Flt>
-class RD_James_comp8 : public RD_James<Flt>
+class RD_James_comp9 : public RD_James<Flt>
 {
 public:
+
+    /*!
+     * The power to which a_j is raised for the inter-TC axon
+     * competition term.
+     */
+    alignas(Flt) Flt l = 3.0;
+
+    /*!
+     * epsilon_i parameters. axon competition parameter
+     */
+    alignas(alignof(vector<Flt>))
+    vector<Flt> epsilon;
+
     //! overall 'gain' of the normalization equation
     alignas(Flt) Flt eta = 100.0;
     //! offset of the normalization equation
@@ -27,7 +45,7 @@ public:
     /*!
      * Simple constructor; no arguments. Just calls base constructor
      */
-    RD_James_comp8 (void)
+    RD_James_comp9 (void)
         : RD_James<Flt>() {
     }
 
@@ -39,6 +57,7 @@ public:
     virtual void allocate (void) {
         RD_James<Flt>::allocate();
         // Plus:
+        this->resize_vector_param (this->epsilon, this->N);
         this->resize_vector_vector (this->a_res, this->N);
 
     }
@@ -115,32 +134,47 @@ public:
         // enough to load the threads up.
         for (unsigned int i=0; i<this->N; ++i) {
 
+            // Compute epsilon * a_hat^l. a_hat is "the sum of all a_res_j
+            // for which j!=i". Call the variable just 'eps'. Note that
+            // I'm using the 'branching response' here (a_res[i]) not the
+            // variable a[i].
+            vector<Flt> eps(this->nhex, 0.0);
+            for (unsigned int j=0; j<this->N; ++j) {
+                if (j==i) { continue; }
+#pragma omp parallel for
+                for (unsigned int h=0; h<this->nhex; ++h) {
+                    eps[h] += static_cast<Flt>(pow (this->a_res[j][h], this->l));
+                }
+            }
+
+            // Multiply it by epsilon[i]/(N-1). Now it's ready to subtract from the solutions
+            Flt eps_over_N = this->epsilon[i]/(this->N-1);
+#pragma omp parallel for
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                eps[h] *= eps_over_N;
+            }
+
             // Runge-Kutta integration for A
             vector<Flt> q(this->nhex, 0.0);
             this->compute_divJ (this->a[i], i); // populates divJ[i]
 
-#ifdef ALTERNATIVE_COMPUTE_DIVISIVE_NORM_ACROSS_ONLY_ONE_SHEET
-            // Compute the sum of a[i] across the sheet.
-            Flt sum_a_to_q = 0.0;
-#pragma omp parallel for reduction(+:sum_a_to_q)
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                sum_a_to_q += pow (this->a[i][h], this->q);
-            }
-            Flt eta_to_q_plus_sum_a_to_q = eta_to_q + sum_a_to_q;
-#endif
-
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k));
+                k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k)) - this->a_res[i][h] * eps[h];
                 q[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2(this->nhex, 0.0);
             this->compute_divJ (q, i);
-#pragma omp parallel for
+//#pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                Flt k2hplus = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                Flt k2hminus = this->a_res[i][h] * eps[h];
+                //if (h == 100 || h == 200) {
+                //    cout << "k2hplus: " << k2hplus << "  k2hminus: " << k2hminus << endl;
+                //}
+                k2[h] = k2hplus - k2hminus;
                 q[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
@@ -148,7 +182,7 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a_res[i][h] * eps[h];
                 q[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
@@ -156,14 +190,14 @@ public:
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k)) - this->a_res[i][h] * eps[h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+
+                // Prevent a from becoming negative, necessary only when competition is implemented:
+                this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
 
                 // Divisive normalization step (across all TC types)
                 this->a_res[i][h] = this->eta * (pow (this->a[i][h], this->q) / (eta_to_q_plus_sum_a_to_q));
-
-                // Prevent a from becoming negative, necessary only when competition is implemented:
-                //this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
             }
             if (this->stepCount % 100 == 0) {
                 cout << "step " << this->stepCount << ": a_i500 = " << this->a[i][500] << ", a_res_i500 = " << this->a_res[i][500] << endl;
@@ -203,7 +237,7 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
-                // Avoid over-saturating c_i:
+                // Avoid over-saturating c_i: Hmm, HERE. If this is invoked, then the amount by which a_i is reduced should also change.
                 this->c[i][h] = (this->c[i][h] > 1.0) ? 1.0 : this->c[i][h];
             }
         }

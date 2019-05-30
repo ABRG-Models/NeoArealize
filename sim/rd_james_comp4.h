@@ -4,10 +4,6 @@
 
 #include "rd_james.h"
 
-/*!
- * Additional specialisation to add competition (by modifying the divJ
- * diffusion component)
- */
 template <class Flt>
 class RD_James_comp4 : public RD_James<Flt>
 {

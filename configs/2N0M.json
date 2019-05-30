@@ -1,6 +1,7 @@
 {
     // Global simulation parameters
     "steps" : 80000,                // Number of steps to simulate for
+    "win_width" : 680,
     "logevery": 1000,
     "plotevery": 1000,
     "overwrite_logs": true,
@@ -17,7 +18,8 @@
     "plot_guide" : false,
     "scale_a" : false,
     "scale_c" : false,
-    "aNoiseGain": 0.0,  // The noise gain applied in
+    "scale_n" : false,
+    "aNoiseGain": 0.1,  // The noise gain applied in
                         // noiseify_vector_vector, which sets initial
                         // values of a variable.
     "aInitialOffset": 0.8, // The initial value applied across the
@@ -32,8 +34,8 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 5, "xinit" : -0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 5, "xinit" :  0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 }
+        { "alpha" : 3, "beta" : 460, "epsilon" : 5, "xinit" : -0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 460, "epsilon" : 5, "xinit" :  0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 }
     ], // end tc
 
     // Array of parameters for the guidance molecules

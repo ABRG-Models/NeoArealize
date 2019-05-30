@@ -41,6 +41,8 @@
 #include "rd_james_comp7.h"
 #elif defined COMP8
 #include "rd_james_comp8.h"
+#elif defined COMP9
+#include "rd_james_comp9.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -186,29 +188,34 @@ int main (int argc, char **argv)
     const double aNoiseGain = root.get ("aNoiseGain", 0.1).asDouble();
     const double aInitialOffset = root.get ("aInitialOffset", 0.1).asDouble();
 
+    const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
+
     const double D = root.get ("D", 0.1).asDouble();
+    const FLOATTYPE k = root.get ("k", 3).asDouble();
+
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9)
+    const FLOATTYPE l = root.get ("l", 1).asDouble();
+#endif
+
 #if defined COMP2
     const double F = root.get ("F", 0.1).asDouble();
-#elif defined COMP3
+#endif
+
+#if (defined COMP3 || defined COMP4 || defined COMP5)
     const double E = root.get ("E", 0.1).asDouble();
-#elif defined COMP4
-    const double E = root.get ("E", 0.1).asDouble();
-    const FLOATTYPE l = root.get ("l", 1).asDouble();
-#elif defined COMP5
-    const double E = root.get ("E", 0.1).asDouble();
-    const FLOATTYPE l = root.get ("l", 1).asDouble();
-#elif defined COMP7
+#endif
+
+#if defined COMP7
     // Possibly get the parameters for the sigmoid from file
     const double o = root.get ("o", 0.1).asDouble();
     const double s = root.get ("s", 1.0).asDouble();
-    const FLOATTYPE l = root.get ("l", 1).asDouble();
-#elif defined COMP8
+#endif
+
+#if (defined COMP8 || defined COMP9)
     const FLOATTYPE eta = root.get ("eta", 0.1).asDouble();
     const FLOATTYPE xi = root.get ("xi", 1.0).asDouble();
     const FLOATTYPE q = root.get ("q", 1).asDouble();
 #endif
-    const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
-    const FLOATTYPE k = root.get ("k", 3).asDouble();
 
     bool do_fgf_duplication = root.get ("do_fgf_duplication", false).asBool();
 
@@ -276,9 +283,12 @@ int main (int argc, char **argv)
     unsigned int windowId = 0;
     string winTitle = "";
 
+    const unsigned int win_width = root.get ("win_width", 340).asUInt();
+    unsigned int win_height = static_cast<unsigned int>(0.8824f * (float)win_width);
+
     // SW - Contours. Always plot
     winTitle = worldName + ": contours (from c)"; //3
-    displays.push_back (morph::Gdisplay (360, 300, 100, 1500, winTitle.c_str(),
+    displays.push_back (morph::Gdisplay (win_width, win_height, 100, 1500, winTitle.c_str(),
                                          rhoInit, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
@@ -286,7 +296,7 @@ int main (int argc, char **argv)
 
     if (plot_guide) {
         winTitle = worldName + ": Guidance molecules"; // 0
-        displays.push_back (morph::Gdisplay (340 * (M_GUID>0?M_GUID:1), 300, 100, 300,
+        displays.push_back (morph::Gdisplay (win_width * (M_GUID>0?M_GUID:1), win_height, 100, 300,
                                              winTitle.c_str(), rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -295,7 +305,7 @@ int main (int argc, char **argv)
 
     if (plot_a) {
         winTitle = worldName + ": a[0] to a[N]"; // 1
-        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 900, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width*N_TC, win_height, 100, 900, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -304,7 +314,7 @@ int main (int argc, char **argv)
 
     if (plot_c) {
         winTitle = worldName + ": c[0] to c[N]"; // 2
-        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1200, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width*N_TC, win_height, 100, 1200, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -313,7 +323,7 @@ int main (int argc, char **argv)
 
     if (plot_n) {
         winTitle = worldName + ": n"; //4
-        displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width, win_height, 100, 1800, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -322,14 +332,14 @@ int main (int argc, char **argv)
 
     if (plot_guidegrad) {
         winTitle = worldName + ": Guidance gradient (x)";//5
-        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width*N_TC, win_height, 100, 1800, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
         guidegrad_x_id = windowId++;
 
         winTitle = worldName + ": Guidance gradient (y)";//6
-        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width*N_TC, win_height, 100, 1800, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -338,7 +348,7 @@ int main (int argc, char **argv)
 
     if (plot_divg) {
         winTitle = worldName + ": div(g)/3d";//7
-        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width*N_TC, win_height, 100, 1800, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -347,7 +357,7 @@ int main (int argc, char **argv)
 
     if (plot_divJ) {
         winTitle = worldName + ": div(J)";//8 or 5
-        displays.push_back (morph::Gdisplay (340*N_TC, 300, 100, 1800, winTitle.c_str(),
+        displays.push_back (morph::Gdisplay (win_width*N_TC, win_height, 100, 1800, winTitle.c_str(),
                                              rhoInit, thetaInit, phiInit, displays[0].win));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
@@ -372,6 +382,8 @@ int main (int argc, char **argv)
     RD_James_comp7<FLOATTYPE> RD;
 #elif defined COMP8
     RD_James_comp8<FLOATTYPE> RD;
+#elif defined COMP9
+    RD_James_comp9<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -397,25 +409,30 @@ int main (int argc, char **argv)
 
     // After allocate(), we can set up parameters:
     RD.set_D (D);
+
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9)
+    RD.l = l;
+#endif
+
 #if defined COMP2
     RD.F = F;
-#elif defined COMP3
+#endif
+
+#if (defined COMP3 || defined COMP4 || defined COMP5)
     RD.E = E;
-#elif defined COMP4
-    RD.E = E;
-    RD.l = l;
-#elif defined COMP5
-    RD.E = E;
-    RD.l = l;
-#elif defined COMP7
+#endif
+
+#if defined COMP7
     RD.o = o;
     RD.s = s;
-    RD.l = l;
-#elif defined COMP8
+#endif
+
+#if (defined COMP8 || defined COMP9)
     RD.eta = eta;
     RD.xi = xi;
     RD.q = q;
 #endif
+
     RD.contour_threshold = contour_threshold;
     RD.k = k;
     RD.doFgfDuplication = do_fgf_duplication;
@@ -434,15 +451,7 @@ int main (int argc, char **argv)
         cout << "Set xinit["<<i<<"] to " << gp.x << endl;
         gp.y = v.get("yinit", 0.0).asDouble();
         RD.initmasks.push_back (gp);
-#if defined COMP1
-        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
-#elif defined COMP4
-        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
-        cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
-#elif defined COMP5
-        RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
-        cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
-#elif defined COMP7
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9)
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #endif
@@ -587,14 +596,20 @@ int main (int argc, char **argv)
     }
     // Save images in log folder
     if (RD.M > 0 && plot_guide) { plt.savePngs (logpath, "guidance", 0, displays[guide_id]); }
-    if (plot_c) {
-        plt.savePngs (logpath, "connections", 0, displays[c_id]);
-    }
-    if (plot_contours) {
-        plt.savePngs (logpath, "contours", 0, displays[contours_id]);
+
+
+    // At step 0, there's no connection/contour information to show,
+    // but we can save the initial branching.
+    if (plot_a) {
+        if (scale_a) {
+            plt.scalarfields (displays[a_id], RD.hg, RD.a); // scale between min and max
+        } else {
+            plt.scalarfields (displays[a_id], RD.hg, RD.a, 0.0); // scale between 0 and max
+        }
+        plt.savePngs (logpath, "axonbranch", 0, displays[a_id]);
     }
 
-#endif
+#endif // COMPILE_PLOTTING
 
     // Start the loop
     bool finished = false;
@@ -612,9 +627,9 @@ int main (int argc, char **argv)
             }
             if (plot_a) {
                 if (scale_a) {
-                    plt.scalarfields (displays[a_id], RD.hg, RD.a);
+                    plt.scalarfields (displays[a_id], RD.hg, RD.a); // scale between min and max
                 } else {
-                    plt.scalarfields (displays[a_id], RD.hg, RD.a, 0.0, 1.0);
+                    plt.scalarfields (displays[a_id], RD.hg, RD.a, 0.0); // scale between 0 and max
                 }
             }
             if (plot_c) {
@@ -646,6 +661,9 @@ int main (int argc, char **argv)
                 if (plot_c) {
                     plt.savePngs (logpath, "connections", framecount, displays[c_id]);
                 }
+                if (plot_a) {
+                    plt.savePngs (logpath, "axonbranch", framecount, displays[a_id]);
+                }
                 if (plot_contours) {
                     plt.savePngs (logpath, "contours", framecount, displays[contours_id]);
                 }
@@ -654,12 +672,16 @@ int main (int argc, char **argv)
                 if (plot_c) {
                     plt.savePngs (logpath, "connections", RD.stepCount, displays[c_id]);
                 }
+                if (plot_a) {
+                    plt.savePngs (logpath, "axonbranch", RD.stepCount, displays[a_id]);
+                }
                 if (plot_contours) {
                     plt.savePngs (logpath, "contours", RD.stepCount, displays[contours_id]);
                 }
             }
         }
-#endif
+#endif // COMPILE_PLOTTING
+
         // Save data every 'logevery' steps
         if ((RD.stepCount % logevery) == 0) {
             RD.save();
@@ -670,9 +692,7 @@ int main (int argc, char **argv)
         }
     }
 
-#ifdef COMP4
-    cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
-#elif defined COMP5
+#if (defined COMP4 || defined COMP5)
     cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
 #endif
 
@@ -760,7 +780,7 @@ int main (int argc, char **argv)
     int a;
     cout << "Press any key[return] to exit.\n";
     cin >> a;
-#endif
+#endif // COMPILE_PLOTTING
 
     return 0;
 };

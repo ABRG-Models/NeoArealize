@@ -1,14 +1,12 @@
 /*
  * 2D Karbowski system with upper bound on \sum_i a_i (using sigmoids
  * possibly) AND competition per element as encoded in comp4.
- *
- * Currently NOT IMPLEMENTED PROPERLY, i.e. a work in progress.
  */
 
 #include "rd_james.h"
 
 template <class Flt>
-class RD_James_comp9 : public RD_James<Flt>
+class RD_James_comp10 : public RD_James<Flt>
 {
 public:
 
@@ -21,7 +19,19 @@ public:
     /*!
      * An accumulation parameter.
      */
-    alignas(Flt) Flt y = 1.0;
+    alignas(Flt) Flt y = 0.0;
+
+    /*!
+     * Parameters for the sigmoid transfer function for a_i
+     */
+    //@{
+    //! height parameter for sigmoid
+    alignas(Flt) Flt sig_h = 2.0;
+    //! offset
+    alignas(Flt) Flt sig_o = 5.0;
+    //! sharpness
+    alignas(Flt) Flt sig_s = 0.5;
+    //@}
 
     /*!
      * epsilon_i parameters. axon competition parameter
@@ -45,8 +55,8 @@ public:
     alignas(Flt) Flt eta_to_q = 1.0;
 
     /*!
-     * Response of a after being passed through the normalization
-     * equation.
+     * Response of a after being passed through the sigmoid transfer
+     * function.
      */
     alignas(alignof(vector<vector<Flt> >))
     vector<vector<Flt> > a_res;
@@ -60,7 +70,7 @@ public:
     /*!
      * Simple constructor; no arguments. Just calls base constructor
      */
-    RD_James_comp9 (void)
+    RD_James_comp10 (void)
         : RD_James<Flt>() {
     }
 
@@ -99,26 +109,26 @@ public:
             }
 
             // Runge-Kutta integration for C (or ci)
-            vector<Flt> q(this->nhex,0.);
+            vector<Flt> qq(this->nhex,0.);
             vector<Flt> k1 = this->compute_dci_dt (this->c[i], i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k1[h] * this->halfdt;
+                qq[h] = this->c[i][h] + k1[h] * this->halfdt;
             }
 
-            vector<Flt> k2 = this->compute_dci_dt (q, i);
+            vector<Flt> k2 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k2[h] * this->halfdt;
+                qq[h] = this->c[i][h] + k2[h] * this->halfdt;
             }
 
-            vector<Flt> k3 = this->compute_dci_dt (q, i);
+            vector<Flt> k3 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k3[h] * this->dt;
+                qq[h] = this->c[i][h] + k3[h] * this->dt;
             }
 
-            vector<Flt> k4 = this->compute_dci_dt (q, i);
+            vector<Flt> k4 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->dc[i][h] = (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
@@ -181,44 +191,40 @@ public:
             }
 
             // Runge-Kutta integration for A
-            vector<Flt> q(this->nhex, 0.0);
+            vector<Flt> qq(this->nhex, 0.0);
             this->compute_divJ (this->a_res[i], i); // populates divJ[i]
 
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->y * this->a_res[i][h] * this->a_res[i][h] - this->dc[i][h] - this->a_res[i][h] * eps[h];
-                q[h] = this->a[i][h] + k1[h] * this->halfdt;
+                qq[h] = this->a_res[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2(this->nhex, 0.0);
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->y * q[h] * q[h] - this->dc[i][h] - q[h] * eps[h];
-                q[h] = this->a[i][h] + k2[h] * this->halfdt;
+                k2[h] = this->divJ[i][h] + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                qq[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
             vector<Flt> k3(this->nhex, 0.0);
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h]  + this->y * q[h] * q[h] - this->dc[i][h] - q[h] * eps[h];
-                q[h] = this->a[i][h] + k3[h] * this->dt;
+                k3[h] = this->divJ[i][h]  + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                qq[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
             vector<Flt> k4(this->nhex, 0.0);
             this->compute_divJ (q, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h]  + this->y * q[h] * q[h] - this->dc[i][h] - q[h] * eps[h];
+                k4[h] = this->divJ[i][h]  + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
-
-                // Prevent a from becoming negative, necessary only when competition is implemented:
-                this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
-
-                // Divisive normalization step (across all TC types)
-                this->a_res[i][h] = this->eta * (pow (this->a[i][h], this->q) / (eta_to_q_plus_sum_a_to_q));
+                // Sigmoid transfer function
+                this->a_res[i][h] =  sig_h / (1 - exp (sig_o - sig_s * this->a[i][h]));
             }
             if (this->stepCount % 100 == 0) {
                 cout << "step " << this->stepCount << ": a_i500 = " << this->a[i][500] << ", a_res_i500 = " << this->a_res[i][500] << endl;

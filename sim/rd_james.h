@@ -274,7 +274,7 @@ public:
      * I apply a sigmoid to the boundary hexes, so that the noise
      * drops away towards the edge of the domain.
      */
-    void noiseify_vector_vector (vector<vector<Flt> >& vv) {
+    virtual void noiseify_vector_vector (vector<vector<Flt> >& vv) {
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is

@@ -1,64 +1,25 @@
 /*
- * 2D Karbowski system with divisive normalization of a_i AND
- * competition per element as encoded in comp4.
+ * 2D Karbowski system with normalization of a_i - intended to be a
+ * base class
  */
 
 #include "rd_james.h"
 
 template <class Flt>
-class RD_James_comp9 : public RD_James<Flt>
+class RD_James_norm : public RD_James<Flt>
 {
 public:
 
     /*!
-     * The power to which a_j is raised for the inter-TC axon
-     * competition term.
-     */
-    alignas(Flt) Flt l = 3.0;
-
-    /*!
-     * An accumulation parameter.
-     */
-    alignas(Flt) Flt y = 1.0;
-
-    /*!
-     * epsilon_i parameters. axon competition parameter
-     */
-    alignas(alignof(vector<Flt>))
-    vector<Flt> epsilon;
-
-    /*!
-     * Holds a copy of a[i] * epsilon / (1-N)
-     */
-    alignas(alignof(vector<vector<Flt> >))
-    vector<vector<Flt> > a_eps;
-
-    //! overall 'gain' of the normalization equation
-    alignas(Flt) Flt eta = 100.0;
-    //! offset of the normalization equation
-    alignas(Flt) Flt xi = 1.0;
-    //! power value of the normalization equation
-    alignas(Flt) Flt q = 2.0;
-    //! eta to the power of q
-    alignas(Flt) Flt eta_to_q = 1.0;
-
-    /*!
-     * Response of a after being passed through the normalization
-     * equation.
-     */
-    alignas(alignof(vector<vector<Flt> >))
-    vector<vector<Flt> > a_res;
-
-    /*!
-     * To record dci/dt, as this is used in the computation of a
+     * To record dci/dt, as this is used in the computation of a.
      */
     alignas(alignof(vector<vector<Flt> >))
     vector<vector<Flt> > dc;
 
     /*!
-     * Simple constructor; no arguments. Just calls base constructor
+     * Simple constructor; no arguments. Just calls base constructor.
      */
-    RD_James_comp9 (void)
+    RD_James_norm (void)
         : RD_James<Flt>() {
     }
 
@@ -70,9 +31,9 @@ public:
     virtual void allocate (void) {
         RD_James<Flt>::allocate();
         // Plus:
-        this->resize_vector_param (this->epsilon, this->N);
-        this->resize_vector_vector (this->a_eps, this->N);
-        this->resize_vector_vector (this->a_res, this->N);
+        //this->resize_vector_param (this->epsilon, this->N);
+        //this->resize_vector_vector (this->a_eps, this->N);
+        //this->resize_vector_vector (this->a_res, this->N);
         this->resize_vector_vector (this->dc, this->N);
 
     }
@@ -86,7 +47,7 @@ public:
      */
     //@{
 
-    void integrate_c (void) {
+    virtual void integrate_c (void) {
         // 3. Do integration of c
         for (unsigned int i=0; i<this->N; ++i) {
 
@@ -123,60 +84,43 @@ public:
                 Flt c_cand = this->c[i][h] + this->dc[i][h];
                 // Avoid over-saturating c_i and make sure dc is similarly modified.
                 this->dc[i][h] = (c_cand > 1.0) ? (1.0 - this->c[i][h]) : this->dc[i][h];
-                this->c[i][h] =   (c_cand > 1.0) ? 1.0 : c_cand;
+                this->c[i][h] = (c_cand > 1.0) ? 1.0 : c_cand;
             }
         }
     }
 
-    void integrate_a (void) {
+    /*!
+     * A possibly normalization-function specific task to carry out
+     * once after the sum of a has been computed.
+     */
+    virtual void sum_a_computation (void) {}
+
+    /*!
+     * The normalization/transfer function.
+     */
+    virtual Flt transfer_a (const Flt& _a, const unsigned int _i) {
+        Flt a_rtn = _a;
+        return a_rtn;
+    }
+
+    virtual void integrate_a (void) {
 
         // 2. Do integration of a (RK in the 1D model). Involves computing axon branching flux.
 
         // Pre-compute:
         // 1) The intermediate val alpha_c.
         // 2) The sum of all a_i across ALL TC sheets.
-        Flt total_sum_a = 0.0;
         for (unsigned int i=0; i<this->N; ++i) {
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->alpha_c[i][h] = this->alpha[i] * this->c[i][h];
             }
-
-            // Compute the sum of a[i] across the sheet.
-            Flt sum_a_to_q = 0.0;
-#pragma omp parallel for reduction(+:sum_a_to_q)
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                sum_a_to_q += pow (this->a[i][h], this->q);
-            }
-
-            total_sum_a += sum_a_to_q;
         }
-        Flt eta_to_q_plus_sum_a_to_q = this->eta_to_q + total_sum_a;
 
         // Runge-Kutta:
         // No OMP here - there are only N(<10) loops, which isn't
         // enough to load the threads up.
         for (unsigned int i=0; i<this->N; ++i) {
-
-            // Compute epsilon * a_hat^l. a_hat is "the sum of all a_j
-            // for which j!=i". Call the variable just 'eps'.
-            vector<Flt> eps(this->nhex, 0.0);
-            for (unsigned int j=0; j<this->N; ++j) {
-                if (j==i) { continue; }
-#pragma omp parallel for
-                for (unsigned int h=0; h<this->nhex; ++h) {
-                    eps[h] += static_cast<Flt>(pow (this->a[j][h], this->l));
-                }
-            }
-
-            // Multiply it by epsilon[i]/(N-1). Now it's ready to subtract from the solutions
-            Flt eps_over_N = this->epsilon[i]/(this->N-1);
-#pragma omp parallel for
-            for (unsigned int h=0; h<this->nhex; ++h) {
-                eps[h] *= eps_over_N;
-                // Store a[i][h] * eps[h] for analysis (it's also used 4 times below)
-                //this->a_eps[i][h] = this->a[i][h] * eps[h];
-            }
 
             // Runge-Kutta integration for A
             vector<Flt> qq(this->nhex, 0.0);
@@ -185,7 +129,7 @@ public:
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k1[h] = this->divJ[i][h] + this->y * this->a[i][h] * this->a[i][h] - this->dc[i][h] - this->a[i][h] * eps[h];
+                k1[h] = this->divJ[i][h] - this->dc[i][h];
                 qq[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
@@ -193,7 +137,7 @@ public:
             this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                k2[h] = this->divJ[i][h] - this->dc[i][h];
                 qq[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
@@ -201,7 +145,7 @@ public:
             this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h]  + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                k3[h] = this->divJ[i][h] - this->dc[i][h];
                 qq[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
@@ -209,15 +153,16 @@ public:
             this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h]  + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                k4[h] = this->divJ[i][h] - this->dc[i][h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
+            }
 
-                // Prevent a from becoming negative, necessary only when competition is implemented:
-                this->a[i][h] = (this->a[i][h] < 0.0) ? 0.0 : this->a[i][h];
+            // Do any necessary computation which involves summing a here
+            this->sum_a_computation();
 
-                // Divisive normalization step (across all TC types)
-                this->a_res[i][h] = this->eta * (pow (this->a[i][h], this->q) / (eta_to_q_plus_sum_a_to_q));
-                this->a[i][h] = this->a_res[i][h];
+            // Now apply the transfer function
+            for (unsigned int h=0; h<this->nhex; ++h) {
+                this->a[i][h] = this->transfer_a (this->a[i][h], i);
             }
         }
     }
@@ -225,12 +170,9 @@ public:
     /*!
      * Do a single step through the model.
      */
-    void step (void) {
+    virtual void step (void) {
 
         this->stepCount++;
-
-        // Don't really need to do this every step, but it'll take negligible time
-        this->eta_to_q = pow (this->eta, this->q);
 
         // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         Flt nsum = 0.0;
@@ -262,40 +204,4 @@ public:
         this->integrate_c();
     }
 
-
-    /*!
-     * Override save to additionally save a_res.
-     */
-    void save (void) {
-        stringstream fname;
-        fname << this->logpath << "/c_";
-        fname.width(5);
-        fname.fill('0');
-        fname << this->stepCount << ".h5";
-        HdfData data(fname.str());
-        for (unsigned int i = 0; i<this->N; ++i) {
-            stringstream path;
-            // The c variables
-            path << "/c" << i;
-            data.add_contained_vals (path.str().c_str(), this->c[i]);
-            // The a variable
-            path.str("");
-            path.clear();
-            path << "/a" << i;
-            data.add_contained_vals (path.str().c_str(), this->a[i]);
-            // divJ
-            path.str("");
-            path.clear();
-            path << "/j" << i;
-            data.add_contained_vals (path.str().c_str(), this->divJ[i]);
-            // The a_res variable
-            path.str("");
-            path.clear();
-            path << "/a_res_" << i;
-            data.add_contained_vals (path.str().c_str(), this->a_res[i]);
-
-        }
-        data.add_contained_vals ("/n", this->n);
-    }
-
-}; // RD_James
+}; // RD_James_norm

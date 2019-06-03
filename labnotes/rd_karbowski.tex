@@ -1089,8 +1089,45 @@ a_i' = \eta \; \frac {a_i^q} {\xi^q + \textstyle \sum_p a_p^q }
 %
 in which $\eta$, $\xi$ and $q$ are free parameters.
 
-$a_i'$, the `branching response', then has to be used to drive
-connections.
+$a_i'$, the `branching response' (\code{a\_res} in the code), then has
+to be used to drive connections.
+
+That gives the following set of equations to express in the code:
+
+%
+\begin{equation} \label{eq:Karb2D_dc_comp8}
+\frac{\partial c_i}{\partial t} = -\alpha_i c_i
++ \beta_i n
+[a_i]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_da_comp8}
+\frac{\partial a_i}{\partial t}
+= \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n [a_i]^k
+\end{equation}
+%
+\begin{equation}\label{eq:norm_comp8}
+a_i' = \eta \; \frac {a_i^q} {\xi^q + \textstyle \sum_p a_p^q }
+\end{equation}
+%
+($a_i'$ becomes $a_i$ in the next computational step.)
+%
+\begin{equation} \label{eq:Karb2D_conserve_NM_comp8}
+n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
+\end{equation}
+%
+\begin{equation} \label{eq:divJExpanded_comp8}
+%
+\nabla\vcdot\mb{J}_i = D \dvrg a_i
+%
+- E a_i \dvrg n
+- E \nabla n \vcdot \nabla a_i
+%
+- a_i\nabla\vcdot\mb{g}_i
+- \mb{g}_i\vcdot\nabla a_i
+%
+\end{equation}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Divisive normalization of $a_i$ and $\hat{a}_i$ inhibits $\dot{a}_i$}
@@ -1109,13 +1146,23 @@ there's no upper bound on $a$ (even with the divisive
 normalization).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Upper bound on $a_i$ and $\hat{a}_i$ inhibits $\dot{a}_i$}
+\subsection{Upper bound on $a_i$ (with $n_a$) and $\hat{a}_i$ inhibits $\dot{a}_i$}
 \label{sec:comp10}
 
-This is some sort of fixed upper limit either on the branching density
-per element, of of the total branching density within a single TC type.
+The previous attempts at competition suggest a need for a fixed upper
+limit either on the branching density per element, of of the total
+branching density within a single TC type.
 
-One option is to let $n_c \equiv n$ and introduce a new $n_a$ such that
+One option is to put a sigmoid on each $a_i$, so that it saturates at
+a finite value. This could be argued to result from physical or
+chemical constraints.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Upper bound on $a_i$ (sigmoid) and $\hat{a}_i$ inhibits $\dot{a}_i$}
+\label{sec:comp11}
+
+The alternative is to let $n_c \equiv n$ and introduce a new $n_a$
+such that
 %
 \begin{equation}
 n_c = 1 - \sum_i c_i
@@ -1129,9 +1176,6 @@ and then introduce $n_a$ into the RD equations. The quantity $n_a$ is
 then the maximum density of branching permissible due to physical
 and/or chemical considerations.
 
-The alternative is to put a sigmoid on each $a_i$, so that it
-saturates at a finite value. Again, this could be argued to result
-from physical or chemical constraints.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}

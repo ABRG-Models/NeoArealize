@@ -1,6 +1,8 @@
 /*
- * 2D Karbowski system with divisive normalization of a_i AND
- * competition per element as encoded in comp4.
+ * 2D Karbowski system with upper bound on \sum_i a_i (using sigmoids
+ * possibly) AND competition per element as encoded in comp4.
+ *
+ * Currently NOT IMPLEMENTED PROPERLY, i.e. a work in progress.
  */
 
 #include "rd_james.h"

@@ -11,7 +11,7 @@
     "hextohex_d" : 0.016,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.2,
+    "D" : 0.1,
     "E" : 0.0,
 
     // Exponent parameters
@@ -22,17 +22,17 @@
     "plotevery": 1000,
     "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
     //
-    "plot_guide" : true, // Default true
+    "plot_guide" : true,
     //"plot_contours" : true, // IGNORED FOR NOW
-    "plot_a" : true, // Default true
-    "scale_a" : false, // Default true
-    "plot_c" : true, // Default true
-    "scale_c" : false, // Default true
-    "scale_n" : false, // Default true
+    "plot_a" : true,
+    "plot_c" : true,
+    "scale_a" : false,
+    "scale_c" : false,
+    "scale_n" : false,
     //
-    "plot_guidegrad" : false, // Default false
-    "plot_divg" : false, // Default false
-    "plot_divJ" : false, // Default false
+    "plot_guidegrad" : false,
+    "plot_divg" : false,
+    "plot_divJ" : false,
 
     // Parameters for divisive normalization
     "eta" : 6000,
@@ -62,7 +62,7 @@
     "guidance": [
         {
             "shape"  : "Linear1D",
-            "gain"   : 0.01,
+            "gain"   : 0.05,
             "phi"    : 0,
             "width"  : 0.1,
             "offset" : 0.0

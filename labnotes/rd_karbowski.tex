@@ -709,7 +709,7 @@ boundary conditions as usual. This adds two parameter sets; $\epsilon$
 and $l$. The factor $\frac{1}{N-1}$ ensures that the value of
 $\epsilon$ scales with $N$.
 
-See the binary \code{james1\_c1} for the implementation.
+See the binary \code{james1} for the implementation.
 
 The additional term could result from some sort of axon-axon repulsion
 as the axons grow into the cortex, or an effect that occurs only once
@@ -959,6 +959,10 @@ is a blob of each of the 5 TC types of roughly the same size and I
 think the problem might be that the $\epsilon$ term is inhibiting all
 5 TC types more or less equally.
 
+This idea (to avoid attenuating the biggest $a$) didn't work but lead
+me to think about bounding $a$ and the problem of a winner-takes-all
+situation that is easily seen.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Add interactions with $\nabla {a}_{{p}\ne{i}}$}
 \label{sec:comp6}
@@ -1062,7 +1066,8 @@ a_i \vcdot \nabla \lambda \big) - \big( a_i \nabla.\mb{g} +
 \end{equation}
 
 Ah, I added in the direct competition mechanism of
-section \ref{sec:comp1} too (see \code{rd\_james\_comp7.h}).
+section \ref{sec:comp1} (though as refined in section \ref{sec:comp4})
+too (see \code{rd\_james\_comp7.h}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Divisive normalization of $a_i$}
@@ -1086,6 +1091,47 @@ in which $\eta$, $\xi$ and $q$ are free parameters.
 
 $a_i'$, the `branching response', then has to be used to drive
 connections.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Divisive normalization of $a_i$ and $\hat{a}_i$ inhibits $\dot{a}_i$}
+\label{sec:comp9}
+
+This is a combination of code in section \ref{sec:comp4} (the
+competition part) and \ref{sec:comp8}.
+
+I think I like the idea of computing $\partial c_i/\partial t$ first in the simulation,
+then using that as one part of the $\partial a_i/\partial t$ computation. Also, I think
+there should be an additional `branching accumulation' term to reflect
+the idea that branching increases with time.
+
+I've tried these ideas. They again suffer from the problem that
+there's no upper bound on $a$ (even with the divisive
+normalization).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Upper bound on $a_i$ and $\hat{a}_i$ inhibits $\dot{a}_i$}
+\label{sec:comp10}
+
+This is some sort of fixed upper limit either on the branching density
+per element, of of the total branching density within a single TC type.
+
+One option is to let $n_c \equiv n$ and introduce a new $n_a$ such that
+%
+\begin{equation}
+n_c = 1 - \sum_i c_i
+\end{equation}
+%
+\begin{equation}
+n_a = 1 - \sum_i a_i
+\end{equation}
+%
+and then introduce $n_a$ into the RD equations. The quantity $n_a$ is
+then the maximum density of branching permissible due to physical
+and/or chemical considerations.
+
+The alternative is to put a sigmoid on each $a_i$, so that it
+saturates at a finite value. Again, this could be argued to result
+from physical or chemical constraints.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}

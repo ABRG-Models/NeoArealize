@@ -248,6 +248,7 @@ int main (int argc, char **argv)
     const bool plot_guide = root.get ("plot_guide", true).asBool();
     //const bool plot_contours = root.get ("plot_contours", true).asBool();
     const bool plot_contours = true;
+    const bool plot_a_contours = root.get ("plot_a_contours", true).asBool();
     const bool plot_a = root.get ("plot_a", true).asBool();
     const bool scale_a = root.get ("scale_a", true).asBool();
     const bool plot_c = root.get ("plot_c", true).asBool();
@@ -255,7 +256,7 @@ int main (int argc, char **argv)
     const bool plot_n = root.get ("plot_n", true).asBool();
     const bool scale_n = root.get ("scale_n", true).asBool();
     // Window IDs
-    unsigned int guide_id = 0xffff, contours_id = 0xffff, a_id = 0xffff, c_id = 0xffff, n_id = 0xffff;
+    unsigned int guide_id = 0xffff, contours_id = 0xffff, a_id = 0xffff, c_id = 0xffff, n_id = 0xffff, a_contours_id = 0xffff;
 
     const bool plot_guidegrad = root.get ("plot_guidegrad", false).asBool();
     const bool plot_divg = root.get ("plot_divg", false).asBool();
@@ -293,6 +294,16 @@ int main (int argc, char **argv)
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
     contours_id = windowId++;
+
+    // a contours.
+    if (plot_a_contours) {
+        winTitle = worldName + ": contours (from a)"; //3
+        displays.push_back (morph::Gdisplay (win_width, win_height, 100, 1500, winTitle.c_str(),
+                                             rhoInit, thetaInit, phiInit));
+        displays.back().resetDisplay (fix, eye, rot);
+        displays.back().redrawDisplay();
+        a_contours_id = windowId++;
+    }
 
     if (plot_guide) {
         winTitle = worldName + ": Guidance molecules"; // 0
@@ -622,8 +633,13 @@ int main (int argc, char **argv)
             DBG2("Plot at step " << RD.stepCount);
             // Do a final plot of the ctrs as found.
             vector<list<Hex> > ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.c, RD.contour_threshold);
+            vector<list<Hex> > a_ctrs;
             if (plot_contours) {
                 plt.plot_contour (displays[contours_id], RD.hg, ctrs);
+            }
+            if (plot_a_contours) {
+                a_ctrs = RD_Help<FLOATTYPE>::get_contours (RD.hg, RD.a, RD.contour_threshold);
+                plt.plot_contour (displays[a_contours_id], RD.hg, a_ctrs);
             }
             if (plot_a) {
                 if (scale_a) {
@@ -667,6 +683,9 @@ int main (int argc, char **argv)
                 if (plot_contours) {
                     plt.savePngs (logpath, "contours", framecount, displays[contours_id]);
                 }
+                if (plot_a_contours) {
+                    plt.savePngs (logpath, "a_contours", framecount, displays[a_contours_id]);
+                }
                 ++framecount;
             } else {
                 if (plot_c) {
@@ -677,6 +696,9 @@ int main (int argc, char **argv)
                 }
                 if (plot_contours) {
                     plt.savePngs (logpath, "contours", RD.stepCount, displays[contours_id]);
+                }
+                if (plot_a_contours) {
+                    plt.savePngs (logpath, "a_contours", RD.stepCount, displays[a_contours_id]);
                 }
             }
         }
@@ -774,6 +796,9 @@ int main (int argc, char **argv)
     }
     if (plot_contours) {
         plt.savePngs (logpath, "contours", RD.stepCount, displays[contours_id]);
+    }
+    if (plot_a_contours) {
+        plt.savePngs (logpath, "a_contours", RD.stepCount, displays[a_contours_id]);
     }
 
     // Ask for a keypress before exiting so that the final images can be studied

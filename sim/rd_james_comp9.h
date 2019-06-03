@@ -97,26 +97,26 @@ public:
             }
 
             // Runge-Kutta integration for C (or ci)
-            vector<Flt> q(this->nhex,0.);
+            vector<Flt> qq(this->nhex,0.);
             vector<Flt> k1 = this->compute_dci_dt (this->c[i], i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k1[h] * this->halfdt;
+                qq[h] = this->c[i][h] + k1[h] * this->halfdt;
             }
 
-            vector<Flt> k2 = this->compute_dci_dt (q, i);
+            vector<Flt> k2 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k2[h] * this->halfdt;
+                qq[h] = this->c[i][h] + k2[h] * this->halfdt;
             }
 
-            vector<Flt> k3 = this->compute_dci_dt (q, i);
+            vector<Flt> k3 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k3[h] * this->dt;
+                qq[h] = this->c[i][h] + k3[h] * this->dt;
             }
 
-            vector<Flt> k4 = this->compute_dci_dt (q, i);
+            vector<Flt> k4 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->dc[i][h] = (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
@@ -179,37 +179,37 @@ public:
             }
 
             // Runge-Kutta integration for A
-            vector<Flt> q(this->nhex, 0.0);
+            vector<Flt> qq(this->nhex, 0.0);
             this->compute_divJ (this->a_res[i], i); // populates divJ[i]
 
             vector<Flt> k1(this->nhex, 0.0);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->y * this->a_res[i][h] * this->a_res[i][h] - this->dc[i][h] - this->a_res[i][h] * eps[h];
-                q[h] = this->a[i][h] + k1[h] * this->halfdt;
+                qq[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->y * q[h] * q[h] - this->dc[i][h] - q[h] * eps[h];
-                q[h] = this->a[i][h] + k2[h] * this->halfdt;
+                k2[h] = this->divJ[i][h] + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                qq[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
             vector<Flt> k3(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h]  + this->y * q[h] * q[h] - this->dc[i][h] - q[h] * eps[h];
-                q[h] = this->a[i][h] + k3[h] * this->dt;
+                k3[h] = this->divJ[i][h]  + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
+                qq[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
             vector<Flt> k4(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h]  + this->y * q[h] * q[h] - this->dc[i][h] - q[h] * eps[h];
+                k4[h] = this->divJ[i][h]  + this->y * qq[h] * qq[h] - this->dc[i][h] - qq[h] * eps[h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
 
                 // Prevent a from becoming negative, necessary only when competition is implemented:

@@ -116,7 +116,7 @@ public:
         for (unsigned int i=0; i<this->N; ++i) {
 
             // Runge-Kutta integration for A
-            vector<Flt> q(this->nhex, 0.0);
+            vector<Flt> qq(this->nhex, 0.0);
             this->compute_divJ (this->a[i], i); // populates divJ[i]
 
 #ifdef ALTERNATIVE_COMPUTE_DIVISIVE_NORM_ACROSS_ONLY_ONE_SHEET
@@ -133,30 +133,30 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k1[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (this->a[i][h], this->k));
-                q[h] = this->a[i][h] + k1[h] * this->halfdt;
+                qq[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
 
             vector<Flt> k2(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
-                q[h] = this->a[i][h] + k2[h] * this->halfdt;
+                k2[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (qq[h], this->k));
+                qq[h] = this->a[i][h] + k2[h] * this->halfdt;
             }
 
             vector<Flt> k3(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
-                q[h] = this->a[i][h] + k3[h] * this->dt;
+                k3[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (qq[h], this->k));
+                qq[h] = this->a[i][h] + k3[h] * this->dt;
             }
 
             vector<Flt> k4(this->nhex, 0.0);
-            this->compute_divJ (q, i);
+            this->compute_divJ (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
-                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (q[h], this->k));
+                k4[h] = this->divJ[i][h] + this->alpha_c[i][h] - this->beta[i] * this->n[h] * static_cast<Flt>(pow (qq[h], this->k));
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
 
                 // Divisive normalization step (across all TC types)
@@ -180,26 +180,26 @@ public:
             }
 
             // Runge-Kutta integration for C (or ci)
-            vector<Flt> q(this->nhex,0.);
+            vector<Flt> qq(this->nhex,0.);
             vector<Flt> k1 = this->compute_dci_dt (this->c[i], i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k1[h] * this->halfdt;
+                qq[h] = this->c[i][h] + k1[h] * this->halfdt;
             }
 
-            vector<Flt> k2 = this->compute_dci_dt (q, i);
+            vector<Flt> k2 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k2[h] * this->halfdt;
+                qq[h] = this->c[i][h] + k2[h] * this->halfdt;
             }
 
-            vector<Flt> k3 = this->compute_dci_dt (q, i);
+            vector<Flt> k3 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
-                q[h] = this->c[i][h] + k3[h] * this->dt;
+                qq[h] = this->c[i][h] + k3[h] * this->dt;
             }
 
-            vector<Flt> k4 = this->compute_dci_dt (q, i);
+            vector<Flt> k4 = this->compute_dci_dt (qq, i);
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; h++) {
                 this->c[i][h] += (k1[h]+2. * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;

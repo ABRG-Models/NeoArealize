@@ -1084,13 +1084,16 @@ The response can be written out with the normalization
 equation~\cite{carandini_normalization_2011}:
 %
 \begin{equation}\label{eq:norm}
-a_i' = \eta \; \frac {a_i^q} {\xi^q + \textstyle \sum_p a_p^q }
+a_i' = h \; \frac {a_i^q} {\xi^q + \textstyle \sum_j^h a_{i,j}^q }
 \end{equation}
 %
-in which $\eta$, $\xi$ and $q$ are free parameters.
+in which $\xi$ and $q$ are free parameters and $h$ is the number of
+hex elements in the domain of computation (although $h$ could also be
+chosen as a free parameter if required). Here, I'll let $\xi=0$ and $q=1$.
 
-$a_i'$, the `branching response' (\code{a\_res} in the code), then has
-to be used to drive connections.
+$a_i'$, the `branching response', then has to be used to drive
+connections, in practice, it is written back into $a_i$ on every
+timestep.
 
 That gives the following set of equations to express in the code:
 
@@ -1107,7 +1110,7 @@ That gives the following set of equations to express in the code:
 \end{equation}
 %
 \begin{equation}\label{eq:norm_comp8}
-a_i' = \eta \; \frac {a_i^q} {\xi^q + \textstyle \sum_p a_p^q }
+a_i' = h \; \frac {a_i} {\textstyle \sum_j^h a_{i,j} }
 \end{equation}
 %
 ($a_i'$ becomes $a_i$ in the next computational step.)

@@ -93,7 +93,7 @@ public:
      * A possibly normalization-function specific task to carry out
      * once after the sum of a has been computed.
      */
-    virtual void sum_a_computation (void) {}
+    virtual void sum_a_computation (const unsigned int _i) {}
 
     /*!
      * The normalization/transfer function.
@@ -109,7 +109,6 @@ public:
 
         // Pre-compute:
         // 1) The intermediate val alpha_c.
-        // 2) The sum of all a_i across ALL TC sheets.
         for (unsigned int i=0; i<this->N; ++i) {
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
@@ -158,12 +157,16 @@ public:
             }
 
             // Do any necessary computation which involves summing a here
-            this->sum_a_computation();
+            this->sum_a_computation (i);
 
             // Now apply the transfer function
+            Flt sum_a_transferred = 0.0;
+//#pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->a[i][h] = this->transfer_a (this->a[i][h], i);
+                sum_a_transferred += this->a[i][h];
             }
+            cout << "After transfer_a(), sum_a is " << sum_a_transferred << endl;
         }
     }
 

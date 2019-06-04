@@ -42,7 +42,7 @@
 #elif defined COMP8
 #include "rd_james_norm8.h"
 #elif defined COMP9
-#include "rd_james_comp9.h"
+#include "rd_james_norm9.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -209,12 +209,6 @@ int main (int argc, char **argv)
     // Possibly get the parameters for the sigmoid from file
     const double o = root.get ("o", 0.1).asDouble();
     const double s = root.get ("s", 1.0).asDouble();
-#endif
-
-#if (defined COMP8 || defined COMP9)
-    const FLOATTYPE eta = root.get ("eta", 0.1).asDouble();
-    const FLOATTYPE xi = root.get ("xi", 1.0).asDouble();
-    const FLOATTYPE q = root.get ("q", 1).asDouble();
 #endif
 
     bool do_fgf_duplication = root.get ("do_fgf_duplication", false).asBool();
@@ -394,7 +388,7 @@ int main (int argc, char **argv)
 #elif defined COMP8
     RD_James_norm8<FLOATTYPE> RD;
 #elif defined COMP9
-    RD_James_comp9<FLOATTYPE> RD;
+    RD_James_norm9<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -436,12 +430,6 @@ int main (int argc, char **argv)
 #if defined COMP7
     RD.o = o;
     RD.s = s;
-#endif
-
-#if (defined COMP8 || defined COMP9)
-    RD.eta = eta;
-    RD.xi = xi;
-    RD.q = q;
 #endif
 
     RD.contour_threshold = contour_threshold;

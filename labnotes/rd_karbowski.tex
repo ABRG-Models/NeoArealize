@@ -1087,8 +1087,8 @@ equation~\cite{carandini_normalization_2011}:
 a_i' = h \; \frac {a_i^q} {\xi^q + \textstyle \sum_j^h a_{i,j}^q }
 \end{equation}
 %
-in which $\xi$ and $q$ are free parameters and $h$ is the number of
-hex elements in the domain of computation (although $h$ could also be
+in which $\xi$ and $q$ are free parameters and $n_e$ is the number of
+hex elements in the domain of computation (although $n_e$ could also be
 chosen as a free parameter if required). Here, I'll let $\xi=0$ and $q=1$.
 
 $a_i'$, the `branching response', then has to be used to drive
@@ -1110,27 +1110,19 @@ That gives the following set of equations to express in the code:
 \end{equation}
 %
 \begin{equation}\label{eq:norm_comp8}
-a_i' = h \; \frac {a_i} {\textstyle \sum_j^h a_{i,j} }
+a_i' = n_e \; \frac {a_i} {\textstyle \sum_j^{n_e} a_{i,j} }
 \end{equation}
 %
 ($a_i'$ becomes $a_i$ in the next computational step.)
 %
 \begin{equation} \label{eq:Karb2D_conserve_NM_comp8}
-n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
+n = 1 - \sum_{i=1}^{N} c_i
 \end{equation}
 %
 \begin{equation} \label{eq:divJExpanded_comp8}
-%
-\nabla\vcdot\mb{J}_i = D \dvrg a_i
-%
-- E a_i \dvrg n
-- E \nabla n \vcdot \nabla a_i
-%
-- a_i\nabla\vcdot\mb{g}_i
-- \mb{g}_i\vcdot\nabla a_i
-%
+\nabla\vcdot\mb{J}_i(\mb{x}) =
+D \dvrg a_i - a_i\nabla\vcdot\mb{g} - \mb{g}\vcdot\nabla a_i
 \end{equation}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Divisive normalization of $a_i$ and $\hat{a}_i$ inhibits $\dot{a}_i$}
@@ -1139,30 +1131,55 @@ n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 This is a combination of code in section \ref{sec:comp4} (the
 competition part) and \ref{sec:comp8}.
 
-I think I like the idea of computing $\partial c_i/\partial t$ first in the simulation,
-then using that as one part of the $\partial a_i/\partial t$ computation. Also, I think
-there should be an additional `branching accumulation' term to reflect
-the idea that branching increases with time.
+I think I like the idea of computing $\partial c_i/\partial t$ first
+in the simulation, then using that as one part of the $\partial
+a_i/\partial t$ computation. Also, I think there should be an
+additional `branching accumulation' term to reflect the idea that
+branching increases with time.
 
 I've tried these ideas. They again suffer from the problem that
-there's no upper bound on $a$ (even with the divisive
-normalization).
+there's no upper bound on $a$ (even with the divisive normalization).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Upper bound on $a_i$ (with $n_a$) and $\hat{a}_i$ inhibits $\dot{a}_i$}
+\subsection{Piecewise linear transfer function normalizes $a_i$}
 \label{sec:comp10}
 
-The previous attempts at competition suggest a need for a fixed upper
-limit either on the branching density per element, of of the total
-branching density within a single TC type.
+%
+\begin{equation} \label{eq:Karb2D_dc_comp10}
+\frac{\partial c_i}{\partial t} = -\alpha_i c_i
++ \beta_i n
+[a_i]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2D_da_comp10}
+\frac{\partial a_i}{\partial t}
+= \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n [a_i]^k
+\end{equation}
+%
+\begin{equation}\label{eq:norm_comp1}
+a_i' = a_i \quad or \quad a_{max}
+\end{equation}
+%
+Fix the maths above!
+($a_i'$ becomes $a_i$ in the next computational step.)
+%
+\begin{equation} \label{eq:Karb2D_conserve_NM_comp10}
+n = 1 - \sum_{i=1}^{N} c_i
+\end{equation}
+%
+\begin{equation} \label{eq:divJExpanded_comp10}
+\nabla\vcdot\mb{J}_i(\mb{x}) =
+D \dvrg a_i - a_i\nabla\vcdot\mb{g} - \mb{g}\vcdot\nabla a_i
+\end{equation}
 
-One option is to put a sigmoid on each $a_i$, so that it saturates at
-a finite value. This could be argued to result from physical or
-chemical constraints.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Piecewise linear transfer function normalizes $a_i$ plus competition}
+\label{sec:comp11}
+
+Write me.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Upper bound on $a_i$ (sigmoid) and $\hat{a}_i$ inhibits $\dot{a}_i$}
-\label{sec:comp11}
 
 The alternative is to let $n_c \equiv n$ and introduce a new $n_a$
 such that
@@ -1172,13 +1189,12 @@ n_c = 1 - \sum_i c_i
 \end{equation}
 %
 \begin{equation}
-n_a = 1 - \sum_i a_i
+n_{a,i} = 1 - \sum_i a_i
 \end{equation}
 %
-and then introduce $n_a$ into the RD equations. The quantity $n_a$ is
-then the maximum density of branching permissible due to physical
-and/or chemical considerations.
-
+and then introduce $n_{a,i}$ into the RD equations. The quantity
+$n_{a,i}$ is then the maximum density of branching permissible for TC
+type $i$, due to physical and/or chemical considerations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Initial conditions}

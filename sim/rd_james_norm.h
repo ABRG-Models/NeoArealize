@@ -160,13 +160,22 @@ public:
             this->sum_a_computation (i);
 
             // Now apply the transfer function
+//#define DEBUG_SUM_A_TRANSFERRED 1
+#ifdef DEBUG_SUM_A_TRANSFERRED
             Flt sum_a_transferred = 0.0;
-//#pragma omp parallel for
+#endif
+#ifndef DEBUG_SUM_A_TRANSFERRED
+# pragma omp parallel for
+#endif
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->a[i][h] = this->transfer_a (this->a[i][h], i);
+#ifdef DEBUG_SUM_A_TRANSFERRED
                 sum_a_transferred += this->a[i][h];
+#endif
             }
+#ifdef DEBUG_SUM_A_TRANSFERRED
             cout << "After transfer_a(), sum_a is " << sum_a_transferred << endl;
+#endif
         }
     }
 

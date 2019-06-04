@@ -1,27 +1,35 @@
 {
     // Global simulation parameters
-    "steps" : 10000,                // Number of steps to simulate for
-    "logevery": 100,
+    "steps" : 100000,                // Number of steps to simulate for
+    "logevery": 1000,
     "plotevery": 100,
     "overwrite_logs": true,
     "logpath" : "./logs/3N0M",
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.05,
+    "D" : 0.2,
     "E" : 0.0,
     "F" : 0.5,
     "plot_guide" : false,
     "scale_a" : false,
     "scale_c" : false,
     "scale_n" : false,
+
     "l" : 3,
+
+    // Sigmoid params for comp10
+    "o" : 5, // offset
+    "s" : 8, // sharpness
+
+    // "y" accumulation param
+    "y" : 1.0,
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 500, "xinit" : -0.15, "yinit" : -0.05, "sigmainit" : 0.1, "gaininit" : 0.3 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 500, "xinit" : 0.0, "yinit" : 0.1, "sigmainit" : 0.2, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 500, "xinit" : 0.15, "yinit" : -0.05, "sigmainit" : 0.2, "gaininit" : 0.5  }
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100.0, "xinit" : -0.15, "yinit" : -0.05, "sigmainit" : 0.2, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100.0, "xinit" : 0.0, "yinit" : 0.1, "sigmainit" : 0.2, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 100.0, "xinit" : 0.15, "yinit" : -0.05, "sigmainit" : 0.2, "gaininit" : 0.5  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

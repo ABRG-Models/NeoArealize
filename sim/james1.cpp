@@ -43,6 +43,10 @@
 #include "rd_james_comp8.h"
 #elif defined COMP9
 #include "rd_james_comp9.h"
+#elif defined COMP10
+#include "rd_james_comp10.h"
+#elif defined COMP11
+#include "rd_james_comp11.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -193,7 +197,7 @@ int main (int argc, char **argv)
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
 
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
 
@@ -205,10 +209,15 @@ int main (int argc, char **argv)
     const double E = root.get ("E", 0.1).asDouble();
 #endif
 
-#if defined COMP7
-    // Possibly get the parameters for the sigmoid from file
+#if defined COMP7 || defined COMP10 || defined COMP11
+    // Parameters for a sigmoid
     const double o = root.get ("o", 0.1).asDouble();
     const double s = root.get ("s", 1.0).asDouble();
+#endif
+
+#if defined COMP11
+    // Accumulation parameter
+    const double y = root.get ("y", 0.1).asDouble();
 #endif
 
     bool do_fgf_duplication = root.get ("do_fgf_duplication", false).asBool();
@@ -389,6 +398,10 @@ int main (int argc, char **argv)
     RD_James_comp8<FLOATTYPE> RD;
 #elif defined COMP9
     RD_James_comp9<FLOATTYPE> RD;
+#elif defined COMP10
+    RD_James_comp10<FLOATTYPE> RD;
+#elif defined COMP11
+    RD_James_comp11<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -415,7 +428,8 @@ int main (int argc, char **argv)
     // After allocate(), we can set up parameters:
     RD.set_D (D);
 
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
+    cout << "Setting RD.l to " << l << endl;
     RD.l = l;
 #endif
 
@@ -427,9 +441,14 @@ int main (int argc, char **argv)
     RD.E = E;
 #endif
 
-#if defined COMP7
+#if defined COMP7 || defined COMP10 || defined COMP11
     RD.o = o;
     RD.s = s;
+#endif
+
+#if defined COMP11
+    cout << "Setting RD.y to " << y << endl;
+    RD.y = y;
 #endif
 
     RD.contour_threshold = contour_threshold;
@@ -450,7 +469,7 @@ int main (int argc, char **argv)
         cout << "Set xinit["<<i<<"] to " << gp.x << endl;
         gp.y = v.get("yinit", 0.0).asDouble();
         RD.initmasks.push_back (gp);
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #endif
@@ -701,10 +720,6 @@ int main (int argc, char **argv)
             finished = true;
         }
     }
-
-#if (defined COMP4 || defined COMP5)
-    cout << "RD.epsilon[0] = " << RD.epsilon[0] << endl;
-#endif
 
     // Save out the sums.
     RD.savesums();

@@ -54,12 +54,12 @@ if plot_timedepstuff:
     f1.legend (('sum c','sum n','sum (n+c)'))
     f1.set_title ('sums');
 
+cnum = int(1)
+pt.surface2 (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
+#pt.surface2 (ae_matrix[cnum,:,trgt], x, y, ix, 'ae{0}'.format(cnum))
 cnum = int(2)
 pt.surface2 (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
-pt.surface2 (ae_matrix[cnum,:,trgt], x, y, ix, 'ae{0}'.format(cnum))
-cnum = int(4)
-pt.surface2 (amatrix[cnum,:,trgt], x, y, ix, 'a{0}'.format(cnum))
-pt.surface2 (ae_matrix[cnum,:,trgt], x, y, ix, 'ae{0}'.format(cnum))
+#pt.surface2 (ae_matrix[cnum,:,trgt], x, y, ix, 'ae{0}'.format(cnum))
 
 #pt.surface2 (nmatrix[:,trgt], x, y, ix, 'n')
 

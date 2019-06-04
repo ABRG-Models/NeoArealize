@@ -55,7 +55,7 @@ public:
      * The normalization/transfer function.
      */
     virtual Flt transfer_a (const Flt& _a, const unsigned int _i) {
-        // Divisive normalization step (across all TC types)
+        // Divisive normalization step
         Flt a_rtn = this->nhex * _a / this->sum_a[_i];
         // Prevent a from becoming negative, necessary only when competition is implemented:
         return (a_rtn < 0.0) ? 0.0 : a_rtn;

@@ -40,9 +40,9 @@
 #elif defined COMP7
 #include "rd_james_comp7.h"
 #elif defined COMP8
-#include "rd_james_norm8.h"
+#include "rd_james_comp8.h"
 #elif defined COMP9
-#include "rd_james_norm9.h"
+#include "rd_james_comp9.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -386,9 +386,9 @@ int main (int argc, char **argv)
 #elif defined COMP7
     RD_James_comp7<FLOATTYPE> RD;
 #elif defined COMP8
-    RD_James_norm8<FLOATTYPE> RD;
+    RD_James_comp8<FLOATTYPE> RD;
 #elif defined COMP9
-    RD_James_norm9<FLOATTYPE> RD;
+    RD_James_comp9<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif

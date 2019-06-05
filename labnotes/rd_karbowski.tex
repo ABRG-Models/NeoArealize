@@ -719,6 +719,14 @@ An implementation of this mechanism in \code{rd\_james\_comp1.cpp}
 does introduce competition quite nicely. Especially evident if $\beta$
 is large.
 
+The problem with using this mechanism on its own, is that the
+diffusion can easily swamp the $\epsilon_i$ attenuation term, and if
+one level of branching for one TC type runs away, then the attenuation
+of all the others runs away.
+
+One solution is to pass $a_i$ through a sigmoid, suggesting that there
+might be a maximal branching density allowable.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Add an interaction with $\nabla \hat{a}_i$}
 \label{sec:comp2}

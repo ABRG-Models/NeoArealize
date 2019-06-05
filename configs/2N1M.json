@@ -1,6 +1,7 @@
 {
     // Global simulation parameters
-    "steps" : 10000,               // Number of steps to simulate for
+    "steps" : 150000,               // Number of steps to simulate for
+    "win_width" : 680,
     "logevery" : 5000,
     "plotevery" : 200,
     "vidframes" : false,
@@ -16,11 +17,15 @@
     "logpath" : "logs/2N1M",
     "overwrite_logs" : true,
 
+    "scale_a" : false,
+    "scale_c" : false,
+    "scale_n" : false,
+
     // Array of parameters for N thalamocortical populations:
     "tc": [
         {
             "alpha" : 3,
-            "beta"  : 3,
+            "beta"  : 460,
             "gamma" : [-1.0], // Array of interactions of this TC popn and guidance mols
             "epsilon" : 1.0,
             "xinit" : 0.0,
@@ -30,7 +35,7 @@
         },
         {
             "alpha" : 3,
-            "beta"  : 3,
+            "beta"  : 460,
             "gamma" : [1.0],
             "epsilon" : 1.0,
             "xinit" : 0.0,

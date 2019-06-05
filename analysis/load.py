@@ -54,7 +54,10 @@ def readFiles (logdir):
     cmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
     # There are as many 'a's as 'c's:
     amatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
+
+    # An additional matrix for a_ext or a_res
     ae_matrix = np.empty([numcs, numhexes, numtimes], dtype=float)
+
     jmatrix = np.empty([numcs, numhexes, numtimes], dtype=float)
     nmatrix = np.empty([numhexes, numtimes], dtype=float)
 
@@ -79,7 +82,7 @@ def readFiles (logdir):
                 cmatrix[cnum,:,fileidx] = np.array(f[k])
             elif k[0] == 'a':
                 if len(k) > 2:
-                    if k[2] =='e':
+                    if k[2] =='r': # was e
                         aenum = int(k[6:])
                         ae_matrix[aenum,:,fileidx] = np.array(f[k])
                 else:

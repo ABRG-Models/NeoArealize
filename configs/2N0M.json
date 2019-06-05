@@ -1,8 +1,9 @@
 {
     // Global simulation parameters
-    "steps" : 50000,                // Number of steps to simulate for
+    "steps" : 3000,                // Number of steps to simulate for
+    "win_width" : 340,
     "logevery": 1000,
-    "plotevery": 1000,
+    "plotevery": 10,
     "overwrite_logs": true,
     "logpath" : "./logs/2N0M",
     "hextohex_d" : 0.02,           // Hex to hex distance, determines num hexes
@@ -15,7 +16,10 @@
     "l" : 3,
     "k" : 3,
     "plot_guide" : false,
-    "aNoiseGain": 0.0,  // The noise gain applied in
+    "scale_a" : false,
+    "scale_c" : false,
+    "scale_n" : false,
+    "aNoiseGain": 0.1,  // The noise gain applied in
                         // noiseify_vector_vector, which sets initial
                         // values of a variable.
     "aInitialOffset": 0.8, // The initial value applied across the
@@ -23,10 +27,15 @@
     "o" : 0.1, // sigmoid offset
     "s" : 10,   // sigmoid sharpness
 
+    // Parameters for divisive normalization
+    "eta" : 6000,
+    "xi" : 1,
+    "q" : 1,
+
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 5, "xinit" : -0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 5, "xinit" :  0.02, "yinit" : -0.0, "sigmainit" : 0.3, "gaininit" : 0.5 }
+        { "alpha" : 3, "beta" : 300, "epsilon" : 500, "xinit" : -0.05, "yinit" : -0.0, "sigmainit" : 0.2, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 300, "epsilon" : 500, "xinit" :  0.05, "yinit" : -0.0, "sigmainit" : 0.2, "gaininit" : 0.5 }
     ], // end tc
 
     // Array of parameters for the guidance molecules

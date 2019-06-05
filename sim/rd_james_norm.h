@@ -30,10 +30,6 @@ public:
     //@{
     virtual void allocate (void) {
         RD_James<Flt>::allocate();
-        // Plus:
-        //this->resize_vector_param (this->epsilon, this->N);
-        //this->resize_vector_vector (this->a_eps, this->N);
-        //this->resize_vector_vector (this->a_res, this->N);
         this->resize_vector_vector (this->dc, this->N);
 
     }

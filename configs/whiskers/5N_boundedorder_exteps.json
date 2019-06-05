@@ -7,11 +7,11 @@
     "steps" : 50000,                // Number of steps to simulate for
     "logevery": 1000,
     "overwrite_logs": true,
-    "logpath" : "./logs/5N_boundedorder2",
+    "logpath" : "./logs/5N_boundedorder2_exteps",
     "hextohex_d" : 0.016,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.5,
+    "D" : 2  ,
     "E" : 0.0,
     "F" : 0,
 
@@ -42,19 +42,19 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 15, "epsilon" : 200,
+        { "alpha" : 3, "beta" : 15, "epsilon" : [0, 200, 10, 10, 200],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [-2,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : 200,
+        { "alpha" : 3, "beta" : 15, "epsilon" : [200, 0, 200, 10, 10],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [-1,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : 200,
+        { "alpha" : 3, "beta" : 15, "epsilon" : [10, 200, 0, 200, 10],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [0,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : 200,
+        { "alpha" : 3, "beta" : 15, "epsilon" : [10, 10, 200, 0, 200],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [1,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : 200,
+        { "alpha" : 3, "beta" : 15, "epsilon" : [200, 10, 10, 200, 0],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [2,-1,-1,-1,-1] }
     ], // end tc

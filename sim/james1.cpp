@@ -47,6 +47,8 @@
 #include "rd_james_comp10.h"
 #elif defined COMP11
 #include "rd_james_comp11.h"
+#elif defined COMP12
+#include "rd_james_comp12.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -197,7 +199,7 @@ int main (int argc, char **argv)
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
 
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP12)
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
 
@@ -402,6 +404,8 @@ int main (int argc, char **argv)
     RD_James_comp10<FLOATTYPE> RD;
 #elif defined COMP11
     RD_James_comp11<FLOATTYPE> RD;
+#elif defined COMP12
+    RD_James_comp12<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -428,7 +432,7 @@ int main (int argc, char **argv)
     // After allocate(), we can set up parameters:
     RD.set_D (D);
 
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP12)
     cout << "Setting RD.l to " << l << endl;
     RD.l = l;
 #endif
@@ -472,6 +476,20 @@ int main (int argc, char **argv)
 #if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
+#elif (defined COMP12)
+        Json::Value epsilon = v["epsilon"];
+        int paramRtn = 0;
+        for (unsigned int j = 0; j < guid.size(); ++j) {
+            // Set up epsilon values using a setter which checks we
+            // don't set a value that's off the end of the epsilon
+            // container.
+            paramRtn += RD.setEpsilon (j, i, epsilon[j].asDouble());
+        }
+        if (paramRtn) {
+            cerr << "Something went wrong setting epsilon values" << endl;
+            return paramRtn;
+        }
+
 #endif
     }
 

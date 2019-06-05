@@ -317,23 +317,23 @@ conditions state that $J(0) = J(L) = 0$, then
 Extending the system above to two spatial dimensions changes $x$ into
 a two-dimensional $\mb{x}$ and changes the flux term, $J_i(x,t)$ as follows:
 %
-\begin{equation} \label{eq:Karb2D_dc}
+\begin{equation} \label{eq:dc}
 \frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t) + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da}
+\begin{equation} \label{eq:da}
 \frac{\partial a_i(\mb{x},t)}{\partial t}
 = \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial c_i(\mb{x},t)}{\partial t}
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve}
+\begin{equation} \label{eq:conserve}
 n(\mb{x},t) + \sum_{i=1}^{N} c_i(\mb{x}, t) = 1
 \end{equation}
 %
 with the flux current
 %
-\begin{equation} \label{eq:Karb2D_J}
+\begin{equation} \label{eq:J}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
 \big(\gamma_{Ai} \nabla\rho_A(\mb{x}) +\gamma_{Bi} \nabla\rho_B(\mb{x}) + \gamma_{Ci} \nabla\rho_C(\mb{x}) \big)
 \end{equation}
@@ -360,11 +360,11 @@ a little work. First, I point out that
 is a static vector field; once computed at the start of the
 simulation, it is time-invariant. $\mb{J}_i$ is thus:
 %
-\begin{equation}\label{eq:J}
+\begin{equation}\label{eq:J_again}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i \mb{g}(\mb{x})
 \end{equation}
 
-Taking the divergence of Eq.~\ref{eq:J}:
+Taking the divergence of Eq.~\ref{eq:J_again}:
 %
 \begin{equation} \label{eq:divJ}
 \nabla\vcdot\mb{J}_i(\mb{x},t) = \nabla\vcdot\bigg(D \nabla
@@ -570,23 +570,23 @@ was observed ($\approx$20\% reduction).
 We're modifying the system above so that we have N TC populations and
 M curated gradients.
 %
-\begin{equation} \label{eq:Karb2D_dc_NM}
+\begin{equation} \label{eq:dc_NM}
 \frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t) + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_NM}
+\begin{equation} \label{eq:da_NM}
 \frac{\partial a_i(\mb{x},t)}{\partial t}
 = \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial c_i(\mb{x},t)}{\partial t}
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM}
+\begin{equation} \label{eq:conserve_NM}
 n(\mb{x},t) + \sum_{i=1}^{N} c_i(\mb{x}, t) = 1
 \end{equation}
 %
 with the flux current
 %
-\begin{equation} \label{eq:Karb2D_J_NM}
+\begin{equation} \label{eq:J_NM}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}
@@ -688,13 +688,13 @@ Define the static vector field $\mb{g}$ as:
 Add a term to the Karbowski equations which reduces the branching rate
 change based on the proximity of branching of other TC axon types:
 %
-\begin{equation} \label{eq:Karb2D_dc_compo_1}
+\begin{equation} \label{eq:dc_compo_1}
 \frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha_i c_i(\mb{x},t)
 + \beta_i n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_compo_1}
+\begin{equation} \label{eq:da_compo_1}
 \frac{\partial a_i(\mb{x},t)}{\partial t}
 = \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial
 c_i(\mb{x},t)}{\partial t} - \frac{\epsilon_i  a_i}{N-1} \sum_{p \ne i}^{N} a_p(\mb{x}, t)^l
@@ -704,7 +704,7 @@ c_i(\mb{x},t)}{\partial t} - \frac{\epsilon_i  a_i}{N-1} \sum_{p \ne i}^{N} a_p(
 n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 %
-with the flux current as given by Eq.~\ref{eq:Karb2D_J} and Neumann
+with the flux current as given by Eq.~\ref{eq:J} and Neumann
 boundary conditions as usual. This adds two parameter sets; $\epsilon$
 and $l$. The factor $\frac{1}{N-1}$ ensures that the value of
 $\epsilon$ scales with $N$.
@@ -734,11 +734,11 @@ might be a maximal branching density allowable.
 There could be an additional term to interact with the other branching
 densities, to prevent the \emph{branching} overlapping (rather than
 just relying on the competition between connections implied by the
-definition of $n(\mb{x},t)$ in Eq.~\ref{eq:Karb2D_conserve_NM}).
+definition of $n(\mb{x},t)$ in Eq.~\ref{eq:conserve_NM}).
 
 Change the flux current to:
 %
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp}
+\begin{equation} \label{eq:J_NM_with_comp}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
 + \frac{\bar{a}_i(\mb{x}, t) F}{N-1} \nabla \hat{a}_i(\mb{x}, t) -
 a_i(\mb{x}, t) \, \mb{g}(\mb{x})
@@ -764,7 +764,7 @@ diffusion of branching away from that location should be increased.
 
 Dropping references to space and time arguments:
 
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp_noargs}
+\begin{equation} \label{eq:J_NM_with_comp_noargs}
 \mb{J}_i = D \nabla a_i
 + \frac{\bar{a}_i F}{N-1} \nabla \hat{a}_i - a_i \, \mb{g}
 \end{equation}
@@ -833,9 +833,9 @@ molecule is expressed. Axon branching should expand into areas with
 low connections, so the `flux of branching' should follow the gradient
 of this `connectivity molecule' from low $n$ (region with few
 connection sites) to high $n$ (region with many connection sites). I've
-expressed this by adding a new term to Eq.~\ref{eq:Karb2D_J_NM}:
+expressed this by adding a new term to Eq.~\ref{eq:J_NM}:
 %
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp3}
+\begin{equation} \label{eq:J_NM_with_comp3}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
 \boxed{-a_i(\mb{x}, t) E \nabla n(\mb{x}, t)}
  - a_i(\mb{x},t) \, \mb{g}(\mb{x})
@@ -845,10 +845,10 @@ With the new term (boxed), it's probably worth going back to look at
 the method for computing $\nabla\vcdot\mb{J}_i$. Let's drop references
 to the space and time arguments ($\mb{g}_i(\mb{x})$ becomes
 $\mb{g}_i$; $n(\mb{x}, t)$ becomes $n$; and so on). This allows a
-tidier version of Eq.~\ref{eq:Karb2D_J_NM_with_comp3} to be written
+tidier version of Eq.~\ref{eq:J_NM_with_comp3} to be written
 down:
 %
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp3_simpler}
+\begin{equation} \label{eq:J_NM_with_comp3_simpler}
 \mb{J}_i = D \nabla a_i - a_i E \nabla n - a_i(\mb{x}, t) \mb{g}_i
 \end{equation}
 %
@@ -919,19 +919,19 @@ competition between $a_i$ and $\hat{a}_i$ should prevent excessive
 branching into neighbouring regions.
 
 %
-\begin{equation} \label{eq:Karb2D_dc_comp4}
+\begin{equation} \label{eq:dc_comp4}
 \frac{\partial c_i}{\partial t} = -\alpha_i c_i
 + \beta_i n
 [a_i]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_comp4}
+\begin{equation} \label{eq:da_comp4}
 \frac{\partial a_i}{\partial t}
 = \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n
 [a_i]^k - \frac{\epsilon_i}{N-1} a_i \sum_{p \ne i}^{N} a_p^l
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM_comp4}
+\begin{equation} \label{eq:conserve_NM_comp4}
 n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 %
@@ -948,10 +948,10 @@ n = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 
 Note that
-Eqs.~\ref{eq:Karb2D_dc_comp4}--\ref{eq:Karb2D_conserve_NM_comp4} are
+Eqs.~\ref{eq:dc_comp4}--\ref{eq:conserve_NM_comp4} are
 not quite identical those in section~\ref{sec:comp1}. The difference
 is the $\frac{1}{N-1}$ factor and the inclusion of $a_i$ in the third term of
-Eq.~\ref{eq:Karb2D_da_comp4}.
+Eq.~\ref{eq:da_comp4}.
 
 This is very promising! Initial branching conditions produce reliable
 regions. Initial conditions can be modified to simulate denucleated
@@ -982,7 +982,7 @@ interaction.
 
 Change the flux current to:
 %
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp6}
+\begin{equation} \label{eq:J_NM_with_comp6}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t)
 + \bar{a}_i(\mb{x}, t)  \sum_{p \ne i}  \zeta_{i,p} \nabla {a}_p(\mb{x}, t) -
 a_i(\mb{x}, t) \, \mb{g}(\mb{x})
@@ -998,7 +998,7 @@ used for the same reason as in section \ref{sec:comp2}.
 
 Dropping references to space and time arguments:
 
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp6_noargs}
+\begin{equation} \label{eq:J_NM_with_comp6_noargs}
 \mb{J}_i = D \nabla a_i + \bar{a}_i \sum_{p \ne i} \zeta_{i,p} \nabla {a}_p - a_i \, \mb{g}
 \end{equation}
 
@@ -1047,7 +1047,7 @@ in \code{rd\_james\_comp6.h} (not yet implemented).
 
 Change the flux current to:
 %
-\begin{equation} \label{eq:Karb2D_J_NM_with_comp7}
+\begin{equation} \label{eq:J_NM_with_comp7}
 \mb{J}_i = D (1 - \sigma(\hat{a}_i)) \nabla a_i - a_i \, \mb{g}
 \end{equation}
 
@@ -1106,13 +1106,13 @@ timestep.
 That gives the following set of equations to express in the code:
 
 %
-\begin{equation} \label{eq:Karb2D_dc_comp8}
+\begin{equation} \label{eq:dc_comp8}
 \frac{\partial c_i}{\partial t} = -\alpha_i c_i
 + \beta_i n
 [a_i]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_comp8}
+\begin{equation} \label{eq:da_comp8}
 \frac{\partial a_i}{\partial t}
 = \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n [a_i]^k
 \end{equation}
@@ -1123,7 +1123,7 @@ a_i' = n_e \; \frac {a_i} {\textstyle \sum_j^{n_e} a_{i,j} }
 %
 ($a_i'$ becomes $a_i$ in the next computational step.)
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM_comp8}
+\begin{equation} \label{eq:conserve_NM_comp8}
 n = 1 - \sum_{i=1}^{N} c_i
 \end{equation}
 %
@@ -1160,13 +1160,13 @@ have the same branching density.
 \label{sec:comp10}
 
 %
-\begin{equation} \label{eq:Karb2D_dc_comp10}
+\begin{equation} \label{eq:dc_comp10}
 \frac{\partial c_i}{\partial t} = -\alpha_i c_i
 + \beta_i n
 [a_i]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_comp10}
+\begin{equation} \label{eq:da_comp10}
 \frac{\partial a_i}{\partial t}
 = \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n [a_i]^k
 \end{equation}
@@ -1181,7 +1181,7 @@ a_i' = \begin{cases}
 %
 ($a_i'$ becomes $a_i$ in the next computational step.)
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM_comp10}
+\begin{equation} \label{eq:conserve_NM_comp10}
 n = 1 - \sum_{i=1}^{N} c_i
 \end{equation}
 %
@@ -1198,6 +1198,25 @@ This is implemented in \code{rd\_james\_comp10.h}.
 
 This is implemented in \code{rd\_james\_comp11.h}. It introduces
 
+\subsection{Divisive normalization of $a_i$ plus competition with
+extended $\epsilon_{i,j}$}
+\label{sec:comp12}
+
+Allow each TC type to interact with the other $N-1$ TC types with
+varying magnitudes. This is an extension to the competition type in
+section \ref{sec:comp9}. The $N$ sized vector $\epsilon$ becomes an
+$N \times N$ matrix $\epsilon$ and Eq. \ref{eq:da_comp4} becomes
+%
+\begin{equation} \label{eq:da_comp12}
+\frac{\partial a_i}{\partial t}
+= \nabla\vcdot\mb{J}_i + \alpha_i c_i - \beta_i n
+[a_i]^k - \frac{1}{N-1} a_i \sum_{p \ne i}^{N} \epsilon_{i,p} \; a_p^l
+\end{equation}
+%
+
+
+
+\section{Unimplemented ideas}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Upper bound on $a_i$ (sigmoid) and $\hat{a}_i$ inhibits $\dot{a}_i$}
 

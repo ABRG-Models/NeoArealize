@@ -1132,6 +1132,19 @@ n = 1 - \sum_{i=1}^{N} c_i
 D \dvrg a_i - a_i\nabla\vcdot\mb{g} - \mb{g}\vcdot\nabla a_i
 \end{equation}
 
+One issue with divisive normalization is that each TC type is
+normalized to have the same overall branching, and so changed initial
+conditions, such as reduced initial innervation for one field over
+another will not result is very different simulations.
+
+An idea to get around this is to introduce an additional multiplier to
+the normalization, which is the mean initial branching density per
+element, $d_i/n_e$, so that Eq.~\ref{eq:norm_comp8} becomes
+
+\begin{equation}\label{eq:norm_comp8plus}
+a_i' = d_i \; \frac {a_i} {\textstyle \sum_j^{n_e} a_{i,j} }
+\end{equation}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Divisive normalization of $a_i$ and $\hat{a}_i$ inhibits $\dot{a}_i$}
 \label{sec:comp9}
@@ -1139,14 +1152,8 @@ D \dvrg a_i - a_i\nabla\vcdot\mb{g} - \mb{g}\vcdot\nabla a_i
 This is a combination of code in section \ref{sec:comp4} (the
 competition part) and \ref{sec:comp8}.
 
-I think I like the idea of computing $\partial c_i/\partial t$ first
-in the simulation, then using that as one part of the $\partial
-a_i/\partial t$ computation. Also, I think there should be an
-additional `branching accumulation' term to reflect the idea that
-branching increases with time.
-
-I've tried these ideas. They again suffer from the problem that
-there's no upper bound on $a$ (even with the divisive normalization).
+The separate regions compete evenly, as they are all normalized to
+have the same branching density.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Piecewise linear transfer function normalizes $a_i$}
@@ -1165,10 +1172,13 @@ there's no upper bound on $a$ (even with the divisive normalization).
 \end{equation}
 %
 \begin{equation}\label{eq:norm_comp1}
-a_i' = a_i \quad or \quad a_{max}
+a_i' = \begin{cases}
+     0 & a_i < 0 \\
+     a_i & a_i\leq a_{max} \\
+     a_{max} & a_i > a_{max}
+     \end{cases}
 \end{equation}
 %
-Fix the maths above!
 ($a_i'$ becomes $a_i$ in the next computational step.)
 %
 \begin{equation} \label{eq:Karb2D_conserve_NM_comp10}
@@ -1180,11 +1190,13 @@ n = 1 - \sum_{i=1}^{N} c_i
 D \dvrg a_i - a_i\nabla\vcdot\mb{g} - \mb{g}\vcdot\nabla a_i
 \end{equation}
 
+This is implemented in \code{rd\_james\_comp10.h}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Piecewise linear transfer function normalizes $a_i$ plus competition}
 \label{sec:comp11}
 
-Write me.
+This is implemented in \code{rd\_james\_comp11.h}. It introduces
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Upper bound on $a_i$ (sigmoid) and $\hat{a}_i$ inhibits $\dot{a}_i$}

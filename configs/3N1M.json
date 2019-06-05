@@ -4,14 +4,14 @@
     "logevery": 1000,
     "plotevery": 100,
     "overwrite_logs": true,
-    "logpath" : "./logs/3N0M",
+    "logpath" : "./logs/3N1M",
     "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.2,
     "E" : 0.0,
     "F" : 0.5,
-    "plot_guide" : false,
+    "plot_guide" : true,
     "scale_a" : false,
     "scale_c" : true,
     "scale_n" : false,
@@ -30,16 +30,26 @@
     // Array of parameters for N thalamocortical populations:
     "tc": [
         { "alpha" : 3, "beta" : 30, "epsilon" : 500.0,
+          "gamma" : [4],
           "xinit" : -0.15, "yinit" : -0.05, "sigmainit" : 0.1, "gaininit" : 0.3 },
 
         { "alpha" : 3, "beta" : 15, "epsilon" : 500.0,
+          "gamma" : [4],
           "xinit" : 0.0, "yinit" : 0.1, "sigmainit" : 0.2, "gaininit" : 0.5  },
 
         { "alpha" : 3, "beta" : 15, "epsilon" : 500.0,
+          "gamma" : [4],
           "xinit" : 0.15, "yinit" : -0.05, "sigmainit" : 0.2, "gaininit" : 0.5  }
     ], // end tc
 
     // Array of parameters for the guidance molecules
     "guidance": [
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 0,
+            "width"  : 0.3,
+            "offset" : 0.0
+        }
     ] // end guidance
 }

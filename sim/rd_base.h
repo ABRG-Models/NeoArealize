@@ -211,6 +211,17 @@ public:
             vv[i].assign (this->nhex, 0.0);
         }
     }
+    void resize_vector_vector (vector<vector<Flt> >& vv, unsigned int N, unsigned int M) {
+        vv.resize (N);
+        for (unsigned int i=0; i<N; ++i) {
+            vv[i].resize (M, 0.0);
+        }
+    }
+    void zero_vector_vector (vector<vector<Flt> >& vv, unsigned int N, unsigned int M) {
+        for (unsigned int i=0; i<N; ++i) {
+            vv[i].assign (M, 0.0);
+        }
+    }
     //@}
 
     /*!

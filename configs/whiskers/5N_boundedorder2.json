@@ -4,16 +4,16 @@
  */
 {
     // Global simulation parameters
-    "steps" : 1000000,                // Number of steps to simulate for
-    "logevery": 100,
+    "steps" : 50000,                // Number of steps to simulate for
+    "logevery": 1000,
     "overwrite_logs": true,
-    "logpath" : "./logs/5N1M_ordering",
+    "logpath" : "./logs/5N_boundedorder2",
     "hextohex_d" : 0.016,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.5,
+    "D" : 0.2,
     "E" : 0.0,
-    "F" : 3,
+    "F" : 0,
 
     // Exponent parameters
     "k" : 3,
@@ -38,7 +38,7 @@
     "o" : 2, // sigmoid offset
     "s" : 2,   // sigmoid sharpness
 
-    "contour_threshold" : 0.3,
+    "contour_threshold" : 0.5,
 
     // Array of parameters for N thalamocortical populations:
     "tc": [

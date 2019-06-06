@@ -9,27 +9,13 @@ class RD_James_comp9 : public RD_James_comp8<Flt>
 {
 public:
 
-    /*!
-     * The power to which a_j is raised for the inter-TC axon
-     * competition term.
-     */
+    //! The power to which a_j is raised for the inter-TC axon competition term.
     alignas(Flt) Flt l = 3.0;
 
-    /*!
-     * epsilon_i parameters. axon competition parameter
-     */
+    //! epsilon_i parameters. axon competition parameter
     alignas(alignof(vector<Flt>))
     vector<Flt> epsilon;
 
-    /*!
-     * Holds a copy of a[i] * epsilon / (1-N)
-     */
-    alignas(alignof(vector<vector<Flt> >))
-    vector<vector<Flt> > a_eps;
-
-    /*!
-     * Simple constructor; no arguments. Just calls base constructor.
-     */
     RD_James_comp9 (void)
         : RD_James_comp8<Flt>() {
     }
@@ -37,17 +23,12 @@ public:
     virtual void allocate (void) {
         RD_James_comp8<Flt>::allocate();
         this->resize_vector_param (this->epsilon, this->N);
-        this->resize_vector_vector (this->a_eps, this->N);
     }
 
     virtual void init (void) {
         RD_James_comp8<Flt>::init();
     }
 
-    /*!
-     * Computation methods
-     */
-    //@{
     virtual void integrate_a (void) {
 
         // 2. Do integration of a (RK in the 1D model). Involves computing axon branching flux.
@@ -82,8 +63,6 @@ public:
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 eps[h] *= eps_over_N;
-                // Store a[i][h] * eps[h] for analysis (it's also used 4 times below)
-                //this->a_eps[i][h] = this->a[i][h] * eps[h];
             }
 
             // Runge-Kutta integration for A
@@ -130,6 +109,5 @@ public:
             }
         }
     }
-    //@}
 
 }; // RD_James_norm

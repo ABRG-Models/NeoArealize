@@ -1,6 +1,6 @@
 {
     // Global simulation parameters
-    "steps" : 10000,                // Number of steps to simulate for
+    "steps" : 100000,                // Number of steps to simulate for
     "logevery": 5000,
     "overwrite_logs": true,
     "logpath" : "./logs/4N0M_line",
@@ -8,8 +8,8 @@
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.1,
-    "E" : 0.8,
-    "F" : 0.01,
+    "E" : 0.0,
+    "F" : 0.0,
     "l" : 2,
 
     // Visualization parameters (ignored by computation-only binaries)
@@ -18,8 +18,8 @@
     //
     "plot_guide" : false, // Default true
     //"plot_contours" : true, // IGNORED FOR NOW
-    "plot_a" : false, // Default true
-    "plot_c" : false, // Default true
+    "plot_a" : true,
+    "plot_c" : true,
     //
     "plot_guidegrad" : false, // Default false
     "plot_divg" : false, // Default false
@@ -27,10 +27,10 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.5 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  -0.1,  "yinit" : 0, "sigmainit" : 0.12, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1, "xinit" :  0.1, "yinit" : 0, "sigmainit" : 0.13, "gaininit" : 0.5  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.48  }
+        { "alpha" : 3, "beta" : 3, "epsilon" : 500,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.5 },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 500,  "xinit" :  -0.1,  "yinit" : 0, "sigmainit" : 0.12, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 500, "xinit" :  0.1, "yinit" : 0, "sigmainit" : 0.13, "gaininit" : 0.5  },
+        { "alpha" : 3, "beta" : 3, "epsilon" : 500,  "xinit" :  0.25,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.48  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

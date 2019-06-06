@@ -10,7 +10,7 @@
     "dt" : 0.0001,
     "boundaryFalloffDist" : 0.01,
     "D" : 0.1,  // Diffusion constant for branching of a
-    "E" : 0.0,  // Diffusion constant for branching into empty regions
+    "E" : 0.1,  // Diffusion constant for branching into empty regions
     "F" : 2,  // Diffusion constant for branching away from other-axons
     "l" : 3,
     "k" : 3,
@@ -23,8 +23,8 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0, "xinit" : 0.0, "yinit" : 0.0, "sigmainit" : 0.4, "gaininit" : 0.5 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 0, "xinit" : 0.0, "yinit" : 0.0, "sigmainit" : 0.1, "gaininit" : 0.5 }
+        { "alpha" : 30, "beta" : 10, "epsilon" : 0, "xinit" : 0.0, "yinit" : 0.0, "sigmainit" : 0.4, "gaininit" : 0.5 },
+        { "alpha" : 30, "beta" : 10, "epsilon" : 0, "xinit" : 0.0, "yinit" : 0.0, "sigmainit" : 0.1, "gaininit" : 0.5 }
     ], // end tc
 
     // Array of parameters for the guidance molecules

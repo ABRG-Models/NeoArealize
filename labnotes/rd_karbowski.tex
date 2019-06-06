@@ -906,7 +906,7 @@ Expanding the brackets we have:
 which gives us 5 terms to compute in \code{compute\_divJ()} in place
 of the original 3 terms in Eq.~\ref{eq:divJExpanded}.
 
-This apprach simply increases how fast branching diffuses into free
+This approach simply increases how fast branching diffuses into free
 space; the $D\nabla a_i$ term already provides diffusion of branching.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1198,6 +1198,7 @@ This is implemented in \code{rd\_james\_comp10.h}.
 
 This is implemented in \code{rd\_james\_comp11.h}. It introduces
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Divisive normalization of $a_i$ plus competition with
 extended $\epsilon_{i,j}$}
 \label{sec:comp12}
@@ -1214,9 +1215,54 @@ $N \times N$ matrix $\epsilon$ and Eq. \ref{eq:da_comp4} becomes
 \end{equation}
 %
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Divisive normalization, additional competition mechanisms}
+\label{sec:comp13}
 
+Because the divisive normalization is so helpful in keeping the $N$
+branching variables balanced with respect to each other, I want to
+reintroduce the additional diffusion ideas from
+sections \ref{sec:comp2} (flux current affected by gradient of other
+branching densities); \ref{sec:comp3} (diffusion is increased into
+regions with low $n$); and \ref{sec:comp7} (multiplicative reduction
+of diffusion of $a_i$).
 
+Note that the mechanism from section \ref{sec:comp2} shouldn't need
+the sigmoid, as $a_i$ is already divisively normalized in this scheme.
+
+\begin{equation} \label{eq:J_comp13}
+\mb{J}_i = D \nabla a_i
++ \frac{a_i F}{N-1} \nabla \hat{a}_i - a_i \, \mb{g}
+\end{equation}
+
+The divergence of $\mb{J}_i$ can be computed in the same was as in
+section \ref{sec:comp2}:
+%
+\begin{equation} \label{eq:divJExpanded_comp13}
+%
+\nabla\vcdot\mb{J}_i = D \dvrg a_i
+%
++ \frac{F}{N-1} {a}_i \dvrg \hat{a}_i
++ \frac{F}{N-1} \nabla \hat{a}_i \vcdot \nabla {a}_i
+%
+- a_i\nabla\vcdot\mb{g}_i
+- \mb{g}_i\vcdot\nabla a_i
+\end{equation}
+
+This is implemented in \code{rd\_james\_comp13}. It seems to be very
+unstable, as it was before.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Divisive normalization, additional competition mechanisms 2}
+\label{sec:comp14}
+
+\ref{sec:comp3} (diffusion is increased into
+regions with low $n$); and \ref{sec:comp7} (multiplicative reduction
+of diffusion of $a_i$).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Unimplemented ideas}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Upper bound on $a_i$ (sigmoid) and $\hat{a}_i$ inhibits $\dot{a}_i$}
 

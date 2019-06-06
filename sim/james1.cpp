@@ -49,6 +49,10 @@
 #include "rd_james_comp11.h"
 #elif defined COMP12
 #include "rd_james_comp12.h"
+#elif defined COMP13
+#include "rd_james_comp13.h"
+#elif defined COMP14
+#include "rd_james_comp14.h"
 #else
 #include "rd_james.h" // 2D Karbowski, no additional competition/features
 #endif
@@ -116,7 +120,8 @@ using namespace std;
  * }
  *
  * A file containing JSON similar to the above should be saved and its
- * path provided as the only argument to the binary here.
+ * path provided as the only argument to any of the binaries compiled
+ * from this code.
  */
 int main (int argc, char **argv)
 {
@@ -199,16 +204,17 @@ int main (int argc, char **argv)
     const double D = root.get ("D", 0.1).asDouble();
     const FLOATTYPE k = root.get ("k", 3).asDouble();
 
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP12)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP12 || defined COMP13 || defined COMP14)
     const FLOATTYPE l = root.get ("l", 1).asDouble();
 #endif
 
-#if defined COMP2
+#if defined COMP2 || defined COMP13
     const double F = root.get ("F", 0.1).asDouble();
 #endif
 
-#if (defined COMP3 || defined COMP4 || defined COMP5)
+#if (defined COMP3 || defined COMP4 || defined COMP5 || defined COMP14)
     const double E = root.get ("E", 0.1).asDouble();
+    cout << "E is set to " << E << endl;
 #endif
 
 #if defined COMP7 || defined COMP10 || defined COMP11
@@ -406,6 +412,10 @@ int main (int argc, char **argv)
     RD_James_comp11<FLOATTYPE> RD;
 #elif defined COMP12
     RD_James_comp12<FLOATTYPE> RD;
+#elif defined COMP13
+    RD_James_comp13<FLOATTYPE> RD;
+#elif defined COMP14
+    RD_James_comp14<FLOATTYPE> RD;
 #else
     RD_James<FLOATTYPE> RD;
 #endif
@@ -432,16 +442,16 @@ int main (int argc, char **argv)
     // After allocate(), we can set up parameters:
     RD.set_D (D);
 
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP12)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP12 || defined COMP13 || defined COMP14)
     cout << "Setting RD.l to " << l << endl;
     RD.l = l;
 #endif
 
-#if defined COMP2
+#if (defined COMP2 || defined COMP13)
     RD.F = F;
 #endif
 
-#if (defined COMP3 || defined COMP4 || defined COMP5)
+#if (defined COMP3 || defined COMP4 || defined COMP5 || defined COMP14)
     RD.E = E;
 #endif
 
@@ -473,7 +483,7 @@ int main (int argc, char **argv)
         cout << "Set xinit["<<i<<"] to " << gp.x << endl;
         gp.y = v.get("yinit", 0.0).asDouble();
         RD.initmasks.push_back (gp);
-#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11)
+#if (defined COMP1 || defined COMP4 || defined COMP5 || defined COMP7 || defined COMP9 || defined COMP11 || defined COMP13 || defined COMP14)
         RD.epsilon[i] = v.get("epsilon", 0.0).asDouble();
         cout << "Set RD.epsilon["<<i<<"] to " << RD.epsilon[i] << endl;
 #elif (defined COMP12)
@@ -489,7 +499,6 @@ int main (int argc, char **argv)
             cerr << "Something went wrong setting epsilon values" << endl;
             return paramRtn;
         }
-
 #endif
     }
 

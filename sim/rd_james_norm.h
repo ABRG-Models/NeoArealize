@@ -1,6 +1,6 @@
 /*
  * 2D Karbowski system with normalization of a_i - intended to be a
- * base class
+ * base class on which to build various types of normalization.
  */
 
 #include "rd_james.h"
@@ -34,6 +34,7 @@ public:
 
     }
     virtual void init (void) {
+        cout << "RD_James_norm::init() called" << endl;
         RD_James<Flt>::init();
     }
     //@}
@@ -176,13 +177,10 @@ public:
     }
 
     /*!
-     * Do a single step through the model.
+     * Compute n
      */
-    virtual void step (void) {
+    virtual void compute_n (void) {
 
-        this->stepCount++;
-
-        // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
         Flt nsum = 0.0;
         Flt csum = 0.0;
 #pragma omp parallel for reduction(+:nsum,csum)
@@ -206,6 +204,17 @@ public:
             DBG ("sum of n+c is " << nsum+csum);
         }
 #endif
+    }
+
+    /*!
+     * Do a single step through the model.
+     */
+    virtual void step (void) {
+
+        this->stepCount++;
+
+        // 1. Compute Karb2004 Eq 3. (coupling between connections made by each TC type)
+        this->compute_n();
 
         // 2. Call Runge Kutta numerical integration code
         this->integrate_a();

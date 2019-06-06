@@ -424,6 +424,8 @@ public:
      */
     virtual void init (void) {
 
+        cout << "RD_James::init() called" << endl;
+
         this->stepCount = 0;
 
         // Zero c and n and other temporary variables
@@ -445,6 +447,7 @@ public:
         this->zero_vector_array_vector (this->J, this->N);
 
         // Initialise a with noise
+        cout << "init a..." << endl;
         this->noiseify_vector_vector (this->a);
 
         // Mask the noise off (set sigmas to 0 to ignore the masking)

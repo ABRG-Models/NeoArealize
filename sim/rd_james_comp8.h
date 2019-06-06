@@ -34,6 +34,7 @@ public:
     }
 
     virtual void init (void) {
+        cout << "RD_James_comp8::init() called" << endl;
         RD_James_norm<Flt>::init();
         // Now compute sum of a and record this as sum_a_init.
         for (unsigned int i = 0; i < this->N; ++i) {

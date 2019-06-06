@@ -119,3 +119,15 @@ target_link_libraries(james11 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
 add_executable(james12 james1.cpp)
 target_compile_definitions(james12 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP12)
 target_link_libraries(james12 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+
+# Divisive normalization of a_i along with competition scheme 1, plus
+# comp scheme 2.
+add_executable(james13 james1.cpp)
+target_compile_definitions(james13 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP13)
+target_link_libraries(james13 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+
+# Divisive normalization of a_i along with competition scheme 1, plus
+# comp schemes 3 (and 7?).
+add_executable(james14 james1.cpp)
+target_compile_definitions(james14 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP14)
+target_link_libraries(james14 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)

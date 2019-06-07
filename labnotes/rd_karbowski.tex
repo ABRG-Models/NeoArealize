@@ -1196,7 +1196,7 @@ This is implemented in \code{rd\_james\_comp10.h}.
 \subsection{Piecewise linear transfer function normalizes $a_i$ plus competition}
 \label{sec:comp11}
 
-This is implemented in \code{rd\_james\_comp11.h}. It introduces
+This is implemented in \code{rd\_james\_comp11.h}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Divisive normalization of $a_i$ plus competition with
@@ -1221,20 +1221,19 @@ $N \times N$ matrix $\epsilon$ and Eq. \ref{eq:da_comp4} becomes
 
 Because the divisive normalization is so helpful in keeping the $N$
 branching variables balanced with respect to each other, I want to
-reintroduce the additional diffusion ideas from
-sections \ref{sec:comp2} (flux current affected by gradient of other
-branching densities); \ref{sec:comp3} (diffusion is increased into
-regions with low $n$); and \ref{sec:comp7} (multiplicative reduction
-of diffusion of $a_i$).
+reintroduce the additional diffusion ideas developed earlier.  First,
+introduce section \ref{sec:comp2} (flux current affected by gradient
+of other branching densities).
 
 Note that the mechanism from section \ref{sec:comp2} shouldn't need
-the sigmoid, as $a_i$ is already divisively normalized in this scheme.
-
+the sigmoid, as $a_i$ is already divisively normalized in this
+scheme. The computation of $\mb{J}_i$ is thus:
+%
 \begin{equation} \label{eq:J_comp13}
 \mb{J}_i = D \nabla a_i
 + \frac{a_i F}{N-1} \nabla \hat{a}_i - a_i \, \mb{g}
 \end{equation}
-
+%
 The divergence of $\mb{J}_i$ can be computed in the same was as in
 section \ref{sec:comp2}:
 %
@@ -1256,9 +1255,13 @@ unstable, as it was before.
 \subsection{Divisive normalization, additional competition mechanisms 2}
 \label{sec:comp14}
 
-\ref{sec:comp3} (diffusion is increased into
-regions with low $n$); and \ref{sec:comp7} (multiplicative reduction
-of diffusion of $a_i$).
+I've added\ref{sec:comp3} (diffusion is increased into
+regions with low $n$). This mechanism is successful in keeping
+branching outside regions where connections have been made.
+
+I'm also going to try to add \ref{sec:comp7} (multiplicative reduction
+of diffusion of $a_i$), which I should be able to turn on and off with
+a parameter.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Unimplemented ideas}

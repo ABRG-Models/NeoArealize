@@ -13,11 +13,12 @@
     "l" : 2,
 
     // Visualization parameters (ignored by computation-only binaries)
-    "plotevery": 100,
+    "plotevery": 1000,
     "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
     //
     "plot_guide" : false, // Default true
     //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_a_contours" : true,
     "plot_a" : false, // Default true
     "plot_c" : false, // Default true
     //

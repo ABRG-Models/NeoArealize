@@ -740,6 +740,7 @@ int main (int argc, char **argv)
 
         // Save data every 'logevery' steps
         if ((RD.stepCount % logevery) == 0) {
+            cout << "Logging data at step " << RD.stepCount << endl;
             RD.save();
         }
 

@@ -95,7 +95,7 @@ public:
     /*!
      * The normalization/transfer function.
      */
-    virtual Flt transfer_a (const Flt& _a, const unsigned int _i) {
+    virtual inline Flt transfer_a (const Flt& _a, const unsigned int _i) {
         Flt a_rtn = _a;
         return a_rtn;
     }

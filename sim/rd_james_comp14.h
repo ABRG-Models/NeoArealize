@@ -30,6 +30,21 @@ public:
     vector<Flt> div_n;
     //@}
 
+    //! comp7 params
+    //@{
+    //! \hat{a}_i.
+    alignas(alignof(vector<Flt>)) vector<Flt> ahat;
+    //! \lambda(\hat{a}_i)
+    alignas(alignof(vector<Flt>)) vector<Flt> lambda;
+    //! gradient \lambda(\hat{a}_i)
+    alignas(alignof(array<vector<Flt>, 2>)) array<vector<Flt>, 2> grad_lambda;
+    //! Sigmoid offset
+    alignas(Flt) Flt o = 5.0;
+    //! Sigmoid sharpness
+    alignas(Flt) Flt s = 0.5;
+    //@}
+
+
     RD_James_comp14 (void)
         : RD_James_comp8<Flt>() {
     }
@@ -43,6 +58,11 @@ public:
         // comp3
         this->resize_gradient_field (this->grad_n);
         this->resize_vector_variable (this->div_n);
+
+        // comp7
+        this->resize_vector_variable (this->ahat);
+        this->resize_vector_variable (this->lambda);
+        this->resize_gradient_field (this->grad_lambda);
     }
 
     virtual void init (void) {
@@ -50,6 +70,10 @@ public:
 
         this->zero_gradient_field (this->grad_n);
         this->zero_vector_variable (this->div_n);
+
+        this->zero_vector_variable (this->ahat);
+        this->zero_vector_variable (this->lambda);
+        this->zero_gradient_field (this->grad_lambda);
     }
 
     //! Compute divergence of n
@@ -162,7 +186,13 @@ public:
                 k1[h] = this->divJ[i][h] - this->dc[i][h] - this->a[i][h] * eps[h];
                 qq[h] = this->a[i][h] + k1[h] * this->halfdt;
             }
-
+#if 0
+            // Code to look at relative contributions of divJ, dc/dt and a*epsilon (competition)
+            if ((this->stepCount % 1000) == 0) {
+                unsigned int ki = 0;
+                cout << "divJ[i][h]=" << this->divJ[i][ki] << " -dc[i][h]=" << -this->dc[i][ki] << " -a*eps=" << -this->a[i][ki] * eps[ki] << endl;
+            }
+#endif
             vector<Flt> k2(this->nhex, 0.0);
             this->compute_divJ (qq, i);
 #pragma omp parallel for
@@ -181,16 +211,26 @@ public:
 
             vector<Flt> k4(this->nhex, 0.0);
             this->compute_divJ (qq, i);
+
 #pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 k4[h] = this->divJ[i][h] - this->dc[i][h] - qq[h] * eps[h];
                 this->a[i][h] += (k1[h] + 2.0 * (k2[h] + k3[h]) + k4[h]) * this->sixthdt;
             }
 
+#if 0
+            // Shows that the various ks are all about the same size
+            if ((this->stepCount % 1000) == 0) {
+                unsigned int ki = 400;
+                cout << "k1[ki]:" << k1[ki] << " k2[ki]:" << k2[ki] << " k3[ki]:" << k3[ki] << " k4[ki]:" << k4[ki] << endl;
+            }
+#endif
+
             // Do any necessary computation which involves summing a here
             this->sum_a_computation (i);
 
             // Now apply the transfer function
+//#pragma omp parallel for
             for (unsigned int h=0; h<this->nhex; ++h) {
                 this->a[i][h] = this->transfer_a (this->a[i][h], i);
             }

@@ -70,7 +70,7 @@ public:
     /*!
      * The normalization/transfer function.
      */
-    virtual Flt transfer_a (const Flt& _a, const unsigned int _i) {
+    virtual inline Flt transfer_a (const Flt& _a, const unsigned int _i) {
         // Divisive normalization step
         //Flt a_rtn = this->nhex * _a / this->sum_a[_i];
         // Divisive norm with initial sum multiplier

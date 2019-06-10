@@ -1,7 +1,10 @@
 #!/bin/bash
 
-touch $1.mp4
+if [ ! -z ${1} ]; then
+    pushd ${1}
+fi
 
-ffmpeg -r 20 -i $1%05d.png -vb 5MB -vcodec mpeg4 $1.mp4 -y
-
-open $1.mp4
+for i in contours connections axonbranch a_contours; do
+    touch ${i}.mp4
+    ffmpeg -r 60 -i ${i}_%05d.png -vb 5MB -vcodec mpeg4 ${i}.mp4 -y
+done

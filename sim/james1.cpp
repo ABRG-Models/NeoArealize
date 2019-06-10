@@ -199,6 +199,8 @@ int main (int argc, char **argv)
     const double aNoiseGain = root.get ("aNoiseGain", 0.1).asDouble();
     const double aInitialOffset = root.get ("aInitialOffset", 0.1).asDouble();
 
+    const FLOATTYPE dt = static_cast<FLOATTYPE>(root.get ("dt", 0.00001).asDouble());
+
     const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
 
     const double D = root.get ("D", 0.1).asDouble();
@@ -426,6 +428,9 @@ int main (int argc, char **argv)
     // NB: Set .N, .M BEFORE RD.allocate().
     RD.N = N_TC; // Number of TC populations
     RD.M = M_GUID; // Number of guidance molecules that are sculpted
+
+    // Set up timestep
+    RD.set_dt (dt);
 
     // Control the size of the hexes, and therefore the number of hexes in the grid
     RD.hextohex_d = hextohex_d;
@@ -763,6 +768,9 @@ int main (int argc, char **argv)
     root["D"] = RD.get_D();
     root["k"] = RD.k;
     root["dt"] = RD.get_dt();
+
+    // Obtain result from `git rev-parse HEAD` and from `git status | grep modified\: | wc -l`
+    // root["git"] = 'commit' '+ mods'; or even the whole of `git status`?
 
     // We'll save a copy of the parameters for the simulation in the log directory as params.json
     const string paramsCopy = logpath + "/params.json";

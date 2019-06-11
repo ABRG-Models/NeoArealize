@@ -274,7 +274,7 @@ public:
      * I apply a sigmoid to the boundary hexes, so that the noise
      * drops away towards the edge of the domain.
      */
-    virtual void noiseify_vector_vector (vector<vector<Flt> >& vv) {
+    virtual void noiseify_vector_vector (vector<vector<Flt> >& vv, vector<GaussParams<Flt> >& gp) {
         for (unsigned int i = 0; i<this->N; ++i) {
             for (auto h : this->hg->hexen) {
                 // boundarySigmoid. Jumps sharply (100, larger is
@@ -284,7 +284,7 @@ public:
                 vv[i][h.vi] = morph::Tools::randF<Flt>() * this->aNoiseGain + this->aInitialOffset;
                 if (h.distToBoundary > -0.5) { // It's possible that distToBoundary is set to -1.0
                     Flt bSig = 1.0 / ( 1.0 + exp (-100.0*(h.distToBoundary-this->boundaryFalloffDist)) );
-                    vv[i][h.vi] = vv[i][h.vi] * bSig;
+                    vv[i][h.vi] = vv[i][h.vi] * bSig * gp[i].gain; // New: apply gain here (and not in the Gaussian mask).
                 }
             }
         }
@@ -349,9 +349,11 @@ public:
                 Flt rx = gp[i].x - h.x;
                 Flt ry = gp[i].y - h.y;
                 Flt r = sqrt (rx*rx + ry*ry);
-                Flt gauss = gp[i].gain * (one_over_sigma_root_2_pi
-                                          * exp ( static_cast<Flt>(-(r*r))
-                                                  / two_sigma_sq ));
+                // Note that the gain of the gauss (gp[i].gain) has
+                // already been applied in noiseify_vector_vector()
+                Flt gauss = (one_over_sigma_root_2_pi
+                             * exp ( static_cast<Flt>(-(r*r))
+                                     / two_sigma_sq ));
                 vv[i][h.vi] *= gauss;
             }
 
@@ -448,7 +450,7 @@ public:
 
         // Initialise a with noise
         cout << "init a..." << endl;
-        this->noiseify_vector_vector (this->a);
+        this->noiseify_vector_vector (this->a, this->initmasks);
 
         // Mask the noise off (set sigmas to 0 to ignore the masking)
         this->mask_a (this->a, this->initmasks);

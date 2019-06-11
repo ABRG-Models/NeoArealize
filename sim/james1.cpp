@@ -71,11 +71,123 @@
 #include "morph/tools.h"
 
 /*!
+ * A class to launch a process (git status) and obtain the output.
+ */
+#include "morph/Process.h"
+using morph::Process;
+using morph::ProcessData;
+using morph::ProcessCallbacks;
+
+/*!
  * I'm using JSON to read in simulation parameters
  */
 #include <json/json.h>
 
 using namespace std;
+
+/*!
+ * Callbacks class extends ProcessCallbacks
+ */
+class RDProcessCallbacks : public ProcessCallbacks
+{
+public:
+    RDProcessCallbacks (ProcessData* p) {
+        this->parent = p;
+    }
+    void startedSignal (std::string msg) {}
+    void errorSignal (int err) {
+        this->parent->setErrorNum (err);
+    }
+    void processFinishedSignal (std::string msg) {
+        this->parent->setProcessFinishedMsg (msg);
+    }
+    void readyReadStandardOutputSignal (void) {
+        this->parent->setStdOutReady (true);
+    }
+    void readyReadStandardErrorSignal (void) {
+        this->parent->setStdErrReady (true);
+    }
+private:
+    ProcessData* parent;
+};
+
+/*
+ * Make external process calls to insert git information (current
+ * revision, whether or not the git repo has any modified or untracked
+ * files) into the given Json::Value object.
+ */
+void insertGitInfo (Json::Value& root)
+{
+    ProcessData pD;
+    RDProcessCallbacks cb(&pD);
+    Process p;
+    string command ("/usr/bin/git");
+
+    list<string> args1;
+    args1.push_back ("git");
+    args1.push_back ("rev-parse");
+    args1.push_back ("HEAD");
+
+    try {
+        p.setCallbacks (&cb);
+        p.start (command, args1);
+        p.probeProcess ();
+        if (!p.waitForStarted()) {
+            throw runtime_error ("Process failed to start");
+        }
+        while (p.running() == true) {
+            p.probeProcess();
+        }
+
+        stringstream theOutput;
+        theOutput << p.readAllStandardOutput();
+        string line = "";
+        int nlines = 0;
+        while (getline (theOutput, line, '\n')) {
+            cout << "Revparse: " << line << endl;
+            if (nlines++ > 0) {
+                //throw runtime_error ("Should be one line only from git rev-parse HEAD");
+            }
+            root["git_head"] = line; // Should be one line only
+        }
+
+    } catch (const exception& e) {
+        cerr << "Exception: " << e.what() << endl;
+    }
+
+    // Reset Process with arg true to keep callbacks
+    p.reset (true);
+
+    list<string> args2;
+    args2.push_back ("git");
+    args2.push_back ("status");
+
+    try {
+        p.start (command, args2);
+        p.probeProcess ();
+        if (!p.waitForStarted()) {
+            throw runtime_error ("Process failed to start");
+        }
+        while (p.running() == true) {
+            p.probeProcess();
+        }
+
+        stringstream theOutput;
+        theOutput << p.readAllStandardOutput();
+        string line = "";
+        while (getline (theOutput, line, '\n')) {
+            if (line.find("modified:")) {
+                root["git_modified"] = true;
+            }
+            if (line.find("Untracked files:")) {
+                root["git_untracked_present"] = true;
+            }
+        }
+
+    } catch (const exception& e) {
+        cerr << "Exception: " << e.what() << endl;
+    }
+}
 
 /*!
  * main(): Run a simulation, using parameters obtained from a JSON
@@ -772,9 +884,8 @@ int main (int argc, char **argv)
     root["D"] = RD.get_D();
     root["k"] = RD.k;
     root["dt"] = RD.get_dt();
-
-    // Obtain result from `git rev-parse HEAD` and from `git status | grep modified\: | wc -l`
-    // root["git"] = 'commit' '+ mods'; or even the whole of `git status`?
+    // Call our function to place git information into root.
+    insertGitInfo (root);
 
     // We'll save a copy of the parameters for the simulation in the log directory as params.json
     const string paramsCopy = logpath + "/params.json";

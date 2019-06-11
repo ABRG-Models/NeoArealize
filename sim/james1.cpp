@@ -146,13 +146,14 @@ void insertGitInfo (Json::Value& root)
         while (getline (theOutput, line, '\n')) {
             cout << "Current git HEAD: " << line << endl;
             if (nlines++ > 0) {
-                throw runtime_error ("Should be one line only from git rev-parse HEAD");
+                break;
             }
             root["git_head"] = line; // Should be one line only
         }
 
     } catch (const exception& e) {
         cerr << "Exception: " << e.what() << endl;
+        root["git_head"] = "unknown";
     }
 
     // Reset Process with arg true to keep callbacks
@@ -196,6 +197,7 @@ void insertGitInfo (Json::Value& root)
 
     } catch (const exception& e) {
         cerr << "Exception: " << e.what() << endl;
+        root["git_status"] = "unknown";
     }
 
     // Reset for third call
@@ -225,13 +227,14 @@ void insertGitInfo (Json::Value& root)
         while (getline (theOutput, line, '\n')) {
             cout << "Current git branch: " << line << endl;
             if (nlines++ > 0) {
-                throw runtime_error ("Should be one line only from git rev-parse HEAD");
+                break;
             }
             root["git_branch"] = line; // Should be one line only
         }
 
     } catch (const exception& e) {
         cerr << "Exception: " << e.what() << endl;
+        root["git_branch"] = "unknown";
     }
 }
 

@@ -22,7 +22,7 @@
     "aNoiseGain": 0.1,  // The noise gain applied in
                         // noiseify_vector_vector, which sets initial
                         // values of a variable.
-    "aInitialOffset": 0.8, // The initial value applied across the
+    "aInitialOffset": 0.4, // The initial value applied across the
                            // field for the a variable.
     "o" : 0.1, // sigmoid offset
     "s" : 10,   // sigmoid sharpness

@@ -144,7 +144,7 @@ void insertGitInfo (Json::Value& root)
         string line = "";
         int nlines = 0;
         while (getline (theOutput, line, '\n')) {
-            cout << "Revparse: " << line << endl;
+            cout << "Current git HEAD: " << line << endl;
             if (nlines++ > 0) {
                 //throw runtime_error ("Should be one line only from git rev-parse HEAD");
             }
@@ -178,9 +178,11 @@ void insertGitInfo (Json::Value& root)
         while (getline (theOutput, line, '\n')) {
             if (line.find("modified:")) {
                 root["git_modified"] = true;
+                cout << "Repository has local modifications" << endl;
             }
             if (line.find("Untracked files:")) {
                 root["git_untracked_present"] = true;
+                cout << "Repository has untracked files present" << endl;
             }
         }
 

@@ -300,10 +300,14 @@ int main (int argc, char **argv)
     const unsigned int win_width = root.get ("win_width", 340).asUInt();
     unsigned int win_height = static_cast<unsigned int>(0.8824f * (float)win_width);
 
+    // Default the contours to 720p format 16:9 ratio for nice movies
+    const unsigned int win_width_contours = root.get ("win_width_contours", 1280).asUInt();
+    unsigned int win_height_contours = static_cast<unsigned int>(0.5625f * (float)win_width_contours);
+
     // SW - Contours. Always plot
     winTitle = worldName + ": contours (from c)"; //3
-    displays.push_back (morph::Gdisplay (win_width, win_height, 100, 1500, winTitle.c_str(),
-                                         rhoInit, thetaInit, phiInit));
+    displays.push_back (morph::Gdisplay (win_width_contours, win_height_contours, 100, 1500,
+                                         winTitle.c_str(), rhoInit*0.7, thetaInit, phiInit));
     displays.back().resetDisplay (fix, eye, rot);
     displays.back().redrawDisplay();
     contours_id = windowId++;
@@ -311,8 +315,8 @@ int main (int argc, char **argv)
     // a contours.
     if (plot_a_contours) {
         winTitle = worldName + ": contours (from a)"; //3
-        displays.push_back (morph::Gdisplay (win_width, win_height, 100, 1500, winTitle.c_str(),
-                                             rhoInit, thetaInit, phiInit));
+        displays.push_back (morph::Gdisplay (win_width_contours, win_height_contours, 100, 1500,
+                                             winTitle.c_str(), rhoInit*0.7, thetaInit, phiInit));
         displays.back().resetDisplay (fix, eye, rot);
         displays.back().redrawDisplay();
         a_contours_id = windowId++;

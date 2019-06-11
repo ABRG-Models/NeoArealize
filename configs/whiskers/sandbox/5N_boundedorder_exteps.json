@@ -42,19 +42,19 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 15, "epsilon" : [0, 200, 10, 10, 200],
+        { "alpha" : 3, "beta" : 15, "epsilon" : [0, 200,  0,  0,   0],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [-2,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : [200, 0, 200, 10, 10],
+        { "alpha" : 3, "beta" : 15, "epsilon" : [200, 0, 200,  0,  0],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [-1,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : [10, 200, 0, 200, 10],
+        { "alpha" : 3, "beta" : 15, "epsilon" : [ 0, 200, 0, 200,  0],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [0,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : [10, 10, 200, 0, 200],
+        { "alpha" : 3, "beta" : 15, "epsilon" : [ 0,  0, 200, 0, 200],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [1,-1,-1,-1,-1] },
-        { "alpha" : 3, "beta" : 15, "epsilon" : [200, 10, 10, 200, 0],
+        { "alpha" : 3, "beta" : 15, "epsilon" : [  0,  0,  0, 200, 0],
           "xinit" : 0,   "yinit" : 0.0, "sigmainit" : 0.8, "gaininit" : 0.5,
           "gamma" : [2,-1,-1,-1,-1] }
     ], // end tc

@@ -2,16 +2,16 @@
     // Global simulation parameters
     "steps" : 10000,                // Number of steps to simulate for
     "logevery": 5000,
-    "plotevery": 100,
+    "plotevery": 15,
     "overwrite_logs": true,
     "logpath" : "./logs/4N0M_line_fgfdup",
     "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
-    "D" : 0.1,
-    "E" : 0.8,
-    "F" : 0.01,
-    "l" : 2,
+    "D" : 0.2,
+    "E" : 0.2,
+    "F" : 0.0,
+    "l" : 3,
 
     // In this one, make the initial conditions duplicate. This will
     // take the x locations, bunch them up, and also mirror the
@@ -20,10 +20,10 @@
 
     // Array of parameters for N thalamocortical populations:
     "tc": [
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.43 },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" : -0.1,   "yinit" : 0, "sigmainit" : 0.12, "gaininit" : 0.47  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.1,   "yinit" : 0, "sigmainit" : 0.13, "gaininit" : 0.45  },
-        { "alpha" : 3, "beta" : 3, "epsilon" : 1,  "xinit" :  0.25,  "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.48  }
+        { "alpha" : 3, "beta" : 20, "epsilon" : 100,  "xinit" : -0.2,   "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.43 },
+        { "alpha" : 3, "beta" : 20, "epsilon" : 100,  "xinit" : -0.1,   "yinit" : 0, "sigmainit" : 0.12, "gaininit" : 0.47  },
+        { "alpha" : 3, "beta" : 20, "epsilon" : 100,  "xinit" :  0.1,   "yinit" : 0, "sigmainit" : 0.13, "gaininit" : 0.45  },
+        { "alpha" : 3, "beta" : 20, "epsilon" : 100,  "xinit" :  0.25,  "yinit" : 0, "sigmainit" : 0.11, "gaininit" : 0.48  }
     ], // end tc
 
     // Array of parameters for the guidance molecules

@@ -146,7 +146,7 @@ void insertGitInfo (Json::Value& root)
         while (getline (theOutput, line, '\n')) {
             cout << "Current git HEAD: " << line << endl;
             if (nlines++ > 0) {
-                //throw runtime_error ("Should be one line only from git rev-parse HEAD");
+                throw runtime_error ("Should be one line only from git rev-parse HEAD");
             }
             root["git_head"] = line; // Should be one line only
         }
@@ -192,6 +192,42 @@ void insertGitInfo (Json::Value& root)
                 }
                 ut = true;
             }
+        }
+
+    } catch (const exception& e) {
+        cerr << "Exception: " << e.what() << endl;
+    }
+
+    // Reset for third call
+    p.reset (true);
+
+    // This gets the git branch name
+    list<string> args3;
+    args3.push_back ("git");
+    args3.push_back ("rev-parse");
+    args3.push_back ("--abbrev-ref");
+    args3.push_back ("HEAD");
+
+    try {
+        p.start (command, args3);
+        p.probeProcess ();
+        if (!p.waitForStarted()) {
+            throw runtime_error ("Process failed to start");
+        }
+        while (p.running() == true) {
+            p.probeProcess();
+        }
+
+        stringstream theOutput;
+        theOutput << p.readAllStandardOutput();
+        string line = "";
+        int nlines = 0;
+        while (getline (theOutput, line, '\n')) {
+            cout << "Current git branch: " << line << endl;
+            if (nlines++ > 0) {
+                throw runtime_error ("Should be one line only from git rev-parse HEAD");
+            }
+            root["git_branch"] = line; // Should be one line only
         }
 
     } catch (const exception& e) {

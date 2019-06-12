@@ -939,6 +939,9 @@ int main (int argc, char **argv)
     root["dt"] = RD.get_dt();
     // Call our function to place git information into root.
     insertGitInfo (root);
+    // Store the binary name and command argument into root, too.
+    if (argc > 0) { root["argv0"] = argv[0]; }
+    if (argc > 1) { root["argv1"] = argv[1]; }
 
     // We'll save a copy of the parameters for the simulation in the log directory as params.json
     const string paramsCopy = logpath + "/params.json";

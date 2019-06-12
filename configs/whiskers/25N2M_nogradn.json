@@ -7,7 +7,7 @@
  */
 {
     // Global simulation parameters
-    "steps" : 80000,                // Number of steps to simulate for
+    "steps" : 160000,                // Number of steps to simulate for
     "logevery": 1000,
     "overwrite_logs": true,
     "logpath" : "./logs/25N2M_nogradn",
@@ -31,7 +31,8 @@
     "vidframes": true,    // If true, number video frame saves consecutively, rather than by simulation step number
     //
     "plot_guide" : true,
-    //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_contours" : true, // IGNORED FOR NOW
+    "plot_a_contours" : true,
     "plot_a" : false,
     "plot_c" : false,
     "scale_a" : false,

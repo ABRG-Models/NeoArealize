@@ -180,18 +180,22 @@ void insertGitInfo (Json::Value& root)
         bool ut = false;
         while (getline (theOutput, line, '\n')) {
             if (line.find("modified:") != string::npos) {
-                if (!lm) {
-                    root["git_modified"] = true;
-                    cout << "Repository has local modifications" << endl;
+                if (line.find("sim/") != string::npos) {
+                    if (!lm) {
+                        root["git_modified_sim"] = true;
+                        cout << "Repository has local modifications in sim/ dir" << endl;
+                    }
+                    lm = true;
                 }
-                lm = true;
             }
             if (line.find("Untracked files:") != string::npos) {
-                if (!ut) {
-                    root["git_untracked_present"] = true;
-                    cout << "Repository has untracked files present" << endl;
+                if (line.find("sim/") != string::npos) {
+                    if (!ut) {
+                        root["git_untracked_sim"] = true;
+                        cout << "Repository has untracked files present in sim/ dir" << endl;
+                    }
+                    ut = true;
                 }
-                ut = true;
             }
         }
 

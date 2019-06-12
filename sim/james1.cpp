@@ -993,17 +993,6 @@ int main (int argc, char **argv)
     }
 
 #ifdef COMPILE_PLOTTING
-    // Save final images
-    if (plot_c) {
-        plt.savePngs (logpath, "connections", RD.stepCount, displays[c_id]);
-    }
-    if (plot_contours) {
-        plt.savePngs (logpath, "contours", RD.stepCount, displays[contours_id]);
-    }
-    if (plot_a_contours) {
-        plt.savePngs (logpath, "a_contours", RD.stepCount, displays[a_contours_id]);
-    }
-
     // Ask for a keypress before exiting so that the final images can be studied
     int a;
     cout << "Press any key[return] to exit.\n";

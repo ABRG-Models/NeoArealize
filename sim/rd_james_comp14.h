@@ -162,7 +162,10 @@ public:
             // for which j!=i". Call the variable just 'eps'.
             vector<Flt> eps(this->nhex, 0.0);
             for (unsigned int j=0; j<this->N; ++j) {
+#define J_NE_I_IS_CRITICAL 1
+#ifdef J_NE_I_IS_CRITICAL
                 if (j==i) { continue; }
+#endif
 #pragma omp parallel for
                 for (unsigned int h=0; h<this->nhex; ++h) {
                     eps[h] += static_cast<Flt>(pow (this->a[j][h], this->l));

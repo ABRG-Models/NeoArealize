@@ -1,17 +1,21 @@
 /*
- * Whisker rows with one whisker row plucked and hence smaller than the rest
+ * This configuration has 5 TC axon types and attempts to define 5
+ * rows using a single guidance gradient. In this config, the
+ * competition is turned on, and E is set to 0, meaning no effect of
+ * grad(n). This shows that the effect of grad(n) is not required for
+ * the development of the barrel-like pattern.
  */
 {
     // Global simulation parameters
-    "steps" : 80000,                // Number of steps to simulate for
+    "steps" : 160000,                // Number of steps to simulate for
     "logevery": 1000,
     "overwrite_logs": true,
-    "logpath" : "./logs/25N2M_pluckrow",
+    "logpath" : "./logs/25N2M_withgradn",
     "hextohex_d" : 0.008,           // Hex to hex distance, determines num hexes
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.2,
-    "E" : 0.0,
+    "E" : 0.2,
 
     // Exponent parameters
     "k" : 3,
@@ -27,7 +31,7 @@
     "vidframes": true,    // If true, number video frame saves consecutively, rather than by simulation step number
     //
     "plot_guide" : true,
-    "plot_contours" : true,
+    "plot_contours" : true, // IGNORED FOR NOW
     "plot_a_contours" : true,
     "plot_a" : false,
     "plot_c" : false,
@@ -61,19 +65,19 @@
           "gamma" : [2,-2] }
         ,
         { "alpha" : 3, "beta" : 20, "epsilon" : 400,
-          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 0.3, // PLUCK
+          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 1.0,
           "gamma" : [-2,-1] },
         { "alpha" : 3, "beta" : 20, "epsilon" : 400,
-          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 0.3, // PLUCK
+          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 1.0,
           "gamma" : [-1,-1] },
         { "alpha" : 3, "beta" : 20, "epsilon" : 400,
-          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 0.3, // PLUCK
+          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 1.0,
           "gamma" : [0,-1] },
         { "alpha" : 3, "beta" : 20, "epsilon" : 400,
-          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 0.3, // PLUCK
+          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 1.0,
           "gamma" : [1,-1] },
         { "alpha" : 3, "beta" : 20, "epsilon" : 400,
-          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 0.3, // PLUCK
+          "xinit" : -0.16,   "yinit" : 0.0, "sigmainit" : 0.0, "gaininit" : 1.0,
           "gamma" : [2,-1] }
         ,
         { "alpha" : 3, "beta" : 20, "epsilon" : 400,

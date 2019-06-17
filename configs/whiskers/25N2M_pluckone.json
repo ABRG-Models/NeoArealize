@@ -11,7 +11,7 @@
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.2,
-    "E" : 0.2,
+    "E" : 0.0,
 
     // Exponent parameters
     "k" : 3,
@@ -28,8 +28,8 @@
     //
     "plot_guide" : true,
     //"plot_contours" : true, // IGNORED FOR NOW
-    "plot_a" : true,
-    "plot_c" : true,
+    "plot_a" : false,
+    "plot_c" : false,
     "scale_a" : false,
     "scale_c" : false,
     "scale_n" : false,

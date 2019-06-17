@@ -11,7 +11,7 @@
     "svgpath" : "./ellipse.svg",
     "boundaryFalloffDist" : 0.01,
     "D" : 0.2,
-    "E" : 0.0,
+    "E" : 0.2,
 
     // Exponent parameters
     "k" : 3,

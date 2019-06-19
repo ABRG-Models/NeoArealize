@@ -228,13 +228,6 @@ n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 = \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial c_i(\mb{x},t)}{\partial t}- \frac{\epsilon_i  a_i}{N-1} \sum_{j \ne i}^{N} a_j(\mb{x}, t)^l
 \end{equation}
 
-with the flux current
-
-\begin{equation} \label{eq:Karb2DExt_J}
-\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
-\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
-\end{equation}
-
 And normalization step
 
 \begin{equation}\label{eq:norm_comp8}
@@ -242,12 +235,5 @@ a_i' = n_e \; \frac {a_i} {\textstyle \sum_j^{n_e} a_{i,j} }
 \end{equation}
 
 ($a_i'$ becomes $a_i$ in the next computational step.)
-
-The boundary condition applied to these equations is:
-
-\begin{equation}
-\mb{J}_i(\mb{x},t) \bigg\rvert_{boundary} = 0
-\end{equation}
-
 
 \end{document}

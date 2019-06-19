@@ -43,91 +43,91 @@ target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5LIBLINK})
 # examine behaviour.
 add_executable(james0 james1.cpp)
 target_compile_definitions(james0 PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
-target_link_libraries(james0 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james0 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Compile compute-only with floats
 add_executable(james0c james1.cpp)
 target_compile_definitions(james0c PUBLIC FLOATTYPE=float)
-target_link_libraries(james0c ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james0c ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Compile with doubles:
 #add_executable(james0cd james1.cpp)
 #target_compile_definitions(james0cd PUBLIC FLOATTYPE=double)
-#target_link_libraries(james0cd ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+#target_link_libraries(james0cd ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # A parameter search
 add_executable(ps_2N0M ps_2N0M.cpp)
 target_compile_definitions(ps_2N0M PUBLIC FLOATTYPE=float)
-target_link_libraries(ps_2N0M ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(ps_2N0M ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Schnakenberg RD system
 add_executable(schnak schnak.cpp)
 target_compile_definitions(schnak PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
-target_link_libraries(schnak ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(schnak ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Competition scheme 1
 add_executable(james1 james1.cpp)
 target_compile_definitions(james1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP1)
-target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james1 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Competition scheme 2
 add_executable(james2 james1.cpp)
 target_compile_definitions(james2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP2)
-target_link_libraries(james2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Competition scheme 3
 add_executable(james3 james1.cpp)
 target_compile_definitions(james3 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP3)
-target_link_libraries(james3 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james3 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Competition scheme 4 (comp1 + comp3)
 add_executable(james4 james1.cpp)
 target_compile_definitions(james4 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP4)
-target_link_libraries(james4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james4 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # A 5th scheme with better competition?
 add_executable(james5 james1.cpp)
 target_compile_definitions(james5 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP5)
-target_link_libraries(james5 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james5 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # The multiplicative reduction of diffusion scheme
 add_executable(james7 james1.cpp)
 target_compile_definitions(james7 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP7)
-target_link_libraries(james7 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james7 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Divisive normalization of a_i
 add_executable(james8 james1.cpp)
 target_compile_definitions(james8 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP8)
-target_link_libraries(james8 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james8 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Divisive normalization of a_i along with competition scheme 1
 add_executable(james9 james1.cpp)
 target_compile_definitions(james9 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP9)
-target_link_libraries(james9 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james9 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Sigmoidal normalization of a_i
 add_executable(james10 james1.cpp)
 target_compile_definitions(james10 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP10)
-target_link_libraries(james10 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james10 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Sigmoidal normalization of a_i + competition + accumulation
 add_executable(james11 james1.cpp)
 target_compile_definitions(james11 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP11)
-target_link_libraries(james11 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james11 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Divisive normalization of a_i along with competition scheme 1 with extended epsilon
 add_executable(james12 james1.cpp)
 target_compile_definitions(james12 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP12)
-target_link_libraries(james12 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james12 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Divisive normalization of a_i along with competition scheme 1, plus
 # comp scheme 2.
 add_executable(james13 james1.cpp)
 target_compile_definitions(james13 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP13)
-target_link_libraries(james13 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james13 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # Divisive normalization of a_i along with competition scheme 1, plus
 # comp schemes 3 (and 7?).
 add_executable(james14 james1.cpp)
 target_compile_definitions(james14 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP14)
-target_link_libraries(james14 ${MORPH_LDFLAGS} ${HDF5LIBLINK} jsoncpp)
+target_link_libraries(james14 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})

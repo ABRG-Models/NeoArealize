@@ -50,11 +50,13 @@ find_package(X11 REQUIRED)
 if(APPLE)
   find_package (HDF5 REQUIRED)
   set (HDF5LIBLINK ${HDF5_C_LIBRARY_hdf5})
+  set (JSONLIBLINK /usr/local/lib/libjsoncpp.dylib)
 else()
   set (LIB_TYPE SHARED) # STATIC or SHARED
   string(TOLOWER ${LIB_TYPE} SEARCH_TYPE)
   find_package (HDF5 NAMES hdf5 COMPONENTS C ${SEARCH_TYPE} REQUIRED)
   set (HDF5LIBLINK ${HDF5_C_${LIB_TYPE}_LIBRARY})
+  set (JSONLIBLINK jsoncpp)
 endif(APPLE)
 
 include_directories(${OpenCV_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIR} ${GLUT_INCLUDE_DIR} ${X11_INC_SEARCH_PATH} ${HDF5_INCLUDE_DIR})

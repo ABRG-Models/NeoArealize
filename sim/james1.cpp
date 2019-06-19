@@ -454,7 +454,7 @@ int main (int argc, char **argv)
     // A plot object.
     RD_plot<FLOATTYPE> plt(fix, eye, rot);
 
-    double rhoInit = 1; // This is effectively a zoom control. Increase to zoom out.
+    double rhoInit = root.get ("rhoInit", 1.0).asDouble(); // This is effectively a zoom control. Increase to zoom out.
     double thetaInit = 0.0;
     double phiInit = 0.0;
 
@@ -692,6 +692,8 @@ int main (int argc, char **argv)
             RD.rhoMethod[j] = FieldShape::Gauss1D;
         } else if (rmeth == "Gauss2D") {
             RD.rhoMethod[j] = FieldShape::Gauss2D;
+        } else if (rmeth == "CircLinear2D") {
+            RD.rhoMethod[j] = FieldShape::CircLinear2D;
         }
         // Set up guidance molecule method parameters
         RD.guidance_gain.push_back (v.get("gain", 1.0).asDouble());

@@ -12,7 +12,8 @@ enum class FieldShape {
     Gauss2D,
     Exponential1D,
     Sigmoid1D,
-    Linear1D
+    Linear1D,
+    CircLinear2D
 };
 
 /*!
@@ -500,6 +501,9 @@ public:
 
             } else if (this->rhoMethod[m] == FieldShape::Linear1D) {
                 this->linear_guidance (m);
+
+            } else if (this->rhoMethod[m] == FieldShape::CircLinear2D) {
+                this->circlinear_guidance (m);
             }
         }
 
@@ -989,6 +993,24 @@ public:
             Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
             Flt x_ = (h.x * cosphi) + (h.y * sinphi);
             this->rho[m][h.vi] = (x_-guidance_offset[m]) * this->guidance_gain[m];
+        }
+    }
+
+    /*!
+     * @m The molecule id
+     */
+    void circlinear_guidance (unsigned int m) {
+        for (auto h : this->hg->hexen) {
+            // Initial position is guidance_offset * cosphi/sinphi
+            Flt cosphi = (Flt) cos (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt sinphi = (Flt) sin (this->TWOPI_OVER_360 * this->guidance_phi[m]);
+            Flt x_centre = guidance_offset[m] * cosphi;
+            Flt y_centre = guidance_offset[m] * sinphi;
+
+            Flt x_ = (h.x - x_centre);
+            Flt y_ = (h.y - y_centre);
+            Flt r_ = sqrt(x_*x_ + y_*y_);
+            this->rho[m][h.vi] = (this->guidance_gain[m] - r_) * this->guidance_gain[m];
         }
     }
 

@@ -182,26 +182,55 @@
 \vspace{-1.8cm} % HACK bring the introduction up towards the title. It
                 % would be better to do this with titling in \maketitle
 
-\section{Karbowski system with N TCs and M gradients plus competition}
-
+\section{Karbowski system with N TCs and M gradients}
 %
-\begin{equation} \label{eq:Karb2D_dc_NM}
+\begin{equation} \label{eq:Karb2D_dc}
 \frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha c_i(\mb{x},t) + \beta n(\mb{x},t)
 [a_i(\mb{x},t)]^k
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_conserve_NM}
+\begin{equation} \label{eq:Karb2D_conserve}
 n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
 \end{equation}
 %
-\begin{equation} \label{eq:Karb2D_da_NM}
+\begin{equation} \label{eq:Karb2D_da}
+\frac{\partial a_i(\mb{x},t)}{\partial t}
+= \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial c_i(\mb{x},t)}{\partial t}
+\end{equation}
+
+with the flux current
+
+\begin{equation} \label{eq:Karb2D_J}
+\mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
+\sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
+\end{equation}
+
+The boundary condition applied to these equations is:
+
+\begin{equation}
+\mb{J}_i(\mb{x},t) \bigg\rvert_{boundary} = 0
+\end{equation}
+
+\section{Karbowski system with N TCs and M gradients plus competition}
+
+%
+\begin{equation} \label{eq:Karb2DExt_dc}
+\frac{\partial c_i(\mb{x},t)}{\partial t} = -\alpha c_i(\mb{x},t) + \beta n(\mb{x},t)
+[a_i(\mb{x},t)]^k
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2DExt_conserve}
+n(\mb{x},t) = 1 - \sum_{i=1}^{N} c_i(\mb{x}, t)
+\end{equation}
+%
+\begin{equation} \label{eq:Karb2DExt_da}
 \frac{\partial a_i(\mb{x},t)}{\partial t}
 = \nabla\vcdot\mb{J}_i(\mb{x},t) - \frac{\partial c_i(\mb{x},t)}{\partial t}- \frac{\epsilon_i  a_i}{N-1} \sum_{j \ne i}^{N} a_j(\mb{x}, t)^l
 \end{equation}
 
 with the flux current
 
-\begin{equation} \label{eq:Karb2D_J_NM}
+\begin{equation} \label{eq:Karb2DExt_J}
 \mb{J}_i(\mb{x},t) = D \nabla a_i(\mb{x},t) - a_i
 \sum_{j=1}^M \big(\gamma_{i,j} \nabla\rho_j(\mb{x}) \big)
 \end{equation}

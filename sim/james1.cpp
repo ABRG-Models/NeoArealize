@@ -62,7 +62,7 @@
  * Include display and plotting code
  */
 # include "morph/display.h"
-# include "rd_plot.h"
+# include "morph/RD_Plot.h"
 #endif
 
 /*!

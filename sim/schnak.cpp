@@ -172,7 +172,7 @@ int main (int argc, char **argv)
     vector<double> rot(3, 0.0);
 
     // A plot object.
-    RD_plot<FLOATTYPE> plt(fix, eye, rot);
+    morph::RD_plot<FLOATTYPE> plt(fix, eye, rot);
 
     double rhoInit = 1; // This is effectively a zoom control. Increase to zoom out.
     double thetaInit = 0.0;

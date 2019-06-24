@@ -101,8 +101,13 @@ int main (int argc, char **argv)
     }
 
     const FLOATTYPE dt = static_cast<FLOATTYPE>(root.get ("dt", 0.00001).asDouble());
-    const FLOATTYPE contour_threshold = root.get ("contour_threshold", 0.6).asDouble();
-    const double Dn = root.get ("Dn", 0.1).asDouble();
+    const double Dn = root.get ("Dn", 0.3).asDouble();
+    const double Dc = root.get ("Dc", 0.3*0.3).asDouble(); // 0.3 * Dn
+    const double beta = root.get ("beta", 5.0).asDouble();
+    const double a = root.get ("a", 1.0).asDouble();
+    const double b = root.get ("b", 1.0).asDouble();
+    const double mu = root.get ("mu", 1.0).asDouble();
+    //const double chi = root.get ("chi", 0.3).asDouble(); // Dn
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -120,7 +125,7 @@ int main (int argc, char **argv)
     vector<double> rot(3, 0.0);
 
     // A plotting object.
-    RD_plot<FLOATTYPE> plt(fix, eye, rot);
+    morph::RD_plot<FLOATTYPE> plt(fix, eye, rot);
 
     double rhoInit = root.get ("rhoInit", 1.0).asDouble(); // This is effectively a zoom control. Increase to zoom out.
     const unsigned int win_width = root.get ("win_width", 340).asUInt();
@@ -143,11 +148,18 @@ int main (int argc, char **argv)
     RD.svgpath = svgpath;
     RD.logpath = logpath;
 
-    // Set parameters from config
-    RD.Dn = Dn;
-    RD.chi = RD.Dn;
-    RD.Dc = 0.3*RD.Dn;
+    RD.set_dt(dt);
+    RD.hextohex_d = hextohex_d;
+    RD.boundaryFalloffDist = boundaryFalloffDist;
+
     RD.N = 1;
+    RD.Dn = Dn;
+    RD.Dc = Dc;
+    RD.beta = beta;
+    RD.a = a;
+    RD.b = b;
+    RD.mu = mu;
+    RD.chi = RD.Dn;
 
     // Allocate and initialise the model
     RD.allocate();
@@ -241,9 +253,9 @@ int main (int argc, char **argv)
 
 #ifdef COMPILE_PLOTTING
     // Ask for a keypress before exiting so that the final images can be studied
-    int a;
+    int key;
     cout << "Press any key[return] to exit.\n";
-    cin >> a;
+    cin >> key;
 #endif // COMPILE_PLOTTING
 
     return 0;

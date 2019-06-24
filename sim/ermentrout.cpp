@@ -46,7 +46,7 @@ int main (int argc, char **argv)
     vector<double> rot(3, 0.0);
 
     // A plotting object.
-    RD_plot<FLOATTYPE> plt(fix, eye, rot);
+    morph::RD_plot<FLOATTYPE> plt(fix, eye, rot);
 
     double rhoInit = 1;
     string winTitle = worldName + ": n";

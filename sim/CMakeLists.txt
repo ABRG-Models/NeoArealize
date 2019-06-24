@@ -36,7 +36,7 @@ target_link_libraries(ermentrout ${MORPH_LDFLAGS} ${HDF5LIBLINK})
 
 # RD_Base-derived Ermentrout model
 add_executable(erm2 erm2.cpp)
-target_compile_definitions(erm2 PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
+target_compile_definitions(erm2 PUBLIC FLOATTYPE=double COMPILE_PLOTTING)
 target_link_libraries(erm2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
 # A first combined model

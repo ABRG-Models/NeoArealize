@@ -22,10 +22,18 @@ endif()
 
 # Add the host definition to CXXFLAGS along with other switches
 if (APPLE)
-  # I'm not sure how to enable openmp on clang, so add whatever is
-  # required here (and check process.cpp to correctly include the
-  # omp.h header)
+  # OpenMP: According to
+  # https://stackoverflow.com/questions/39979836/using-openmp-with-c11-on-mac-os#39983933
+  # it should now be a case of:
+  #
+  #   set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11 -Xpreprocessor -fopenmp")
+  #
+  # You should be able to get away without the libomp that's mentioned
+  # in that post, as I don't use any of the runtime library OpenMP
+  # features.
+  #
   set(CMAKE_CXX_FLAGS "${MORPH_HOST_DEFINITION} -Wall -g -std=c++11")
+
 else()
   # To use Intel compiler, call cmake as: cmake -DCMAKE_CXX_COMPILER=icpc ..
   if (CMAKE_CXX_COMPILER_ID MATCHES Intel)

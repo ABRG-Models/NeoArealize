@@ -38,6 +38,9 @@ using namespace std;
 
 int main (int argc, char **argv)
 {
+    // Randomly set the RNG seed
+    srand (morph::Tools::randomSeed());
+
     if (argc < 2) {
         cerr << "Usage: " << argv[0] << " /path/to/params.json [/path/to/logdir]" << endl;
         return 1;
@@ -159,6 +162,7 @@ int main (int argc, char **argv)
     RD.a = a;
     RD.b = b;
     RD.mu = mu;
+    // Set chi to Dn, as in the paper (see linear analysis)
     RD.chi = RD.Dn;
 
     // Allocate and initialise the model

@@ -336,7 +336,8 @@ int main (int argc, char **argv)
 
     // Default the contours to 720p format 16:9 ratio for nice movies
     const unsigned int win_width_contours = root.get ("win_width_contours", 1280).asUInt();
-    unsigned int win_height_contours = static_cast<unsigned int>(0.5625f * (float)win_width_contours);
+    unsigned int win_height_contours_default = static_cast<unsigned int>(0.5625f * (float)win_width_contours);
+    unsigned int win_height_contours = root.get ("win_height_contours", win_height_contours_default).asUInt();
 
     // SW - Contours. Always plot
     winTitle = worldName + ": contours (from c)"; //3

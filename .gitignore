@@ -34,8 +34,11 @@
 # Python compiled files
 *.pyc
 
-# CMake build dir
+# CMake build dirs
 build*
+bgcc*
+bclang*
+bicc*
 
 # Emacs backup files
 *~

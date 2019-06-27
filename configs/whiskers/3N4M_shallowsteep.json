@@ -1,0 +1,79 @@
+/*
+ * 5 Gaussians produce 5 rows of connections.
+ */
+{
+    // Global simulation parameters
+    "steps" : 50000,                // Number of steps to simulate for
+    "win_width" : 340,
+    "win_width_contours" : 1280,
+    "win_height_contours" : 880,
+    "logevery": 10000,
+    "overwrite_logs": true,
+    "logpath" : "./logs/3N4M_shallowsteep",
+    "hextohex_d" : 0.01,           // Hex to hex distance, determines num hexes
+    "svgpath" : "./trial.svg",
+    "boundaryFalloffDist" : 0.01,
+    "D" : 0.4,
+    "E" : 0.0,
+    "l" : 3,
+    "contour_threshold" : 0.6,
+    "rhoInit" : 1.2,
+    // Visualization parameters (ignored by computation-only binaries)
+    "plotevery": 1000,
+    "vidframes": false,    // If true, number video frame saves consecutively, rather than by simulation step number
+    //
+    "plot_guide" : true, // Default true
+    //"plot_contours" : true, // IGNORED FOR NOW
+    "plot_a" : true, // Default true
+    "plot_c" : true, // Default true
+    "scale_a" : true,
+    "scale_c" : true,
+    //
+    "plot_guidegrad" : false, // Default false
+    "plot_divg" : false, // Default false
+    "plot_divJ" : false, // Default false
+
+    // Array of parameters for N thalamocortical populations:
+    "tc": [
+        { "alpha" : 3, "beta" : 400, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,1,0,0]
+        },
+        { "alpha" : 3, "beta" : 400, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,0,1,0] },
+        { "alpha" : 3, "beta" : 400, "epsilon" : 0,  "xinit" : 0.0,   "yinit" : 0.0, "sigmainit" : 0.3, "gaininit" : 0.5,
+          "gamma" : [1,0,0,1] }
+
+    ], // end tc
+
+    // Array of parameters for the guidance molecules
+    "guidance": [
+        {
+            "shape"  : "Linear1D",
+            "gain"   : 1.0,
+            "phi"    : 0,
+            "width"  : 0.05,
+            "offset" : 0.0
+        },
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 180,
+            "width"  : 0.05,
+            "offset" : 0.05
+        },
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 180,
+            "width"  : 0.05,
+            "offset" : -0.15
+        },
+        {
+            "shape"  : "Sigmoid1D",
+            "gain"   : 0.5,
+            "phi"    : 180,
+            "width"  : 0.05,
+            "offset" : -0.35
+        }
+    ] // end guidance
+}

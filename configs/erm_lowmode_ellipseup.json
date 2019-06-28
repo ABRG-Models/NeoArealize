@@ -1,7 +1,7 @@
 {
     // Ermentrout simulation
     "steps" : 400000,                // Number of steps to simulate for
-    "win_width" : 340,
+    "win_width" : 800,
     "logevery": 100000,
     "plotevery": 5000,
     "rhoInit" : 1,

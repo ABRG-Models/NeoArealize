@@ -70,6 +70,11 @@ add_executable(schnak schnak.cpp)
 target_compile_definitions(schnak PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
 target_link_libraries(schnak ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
+# Gierer-Meinhardt RD system
+add_executable(gm gm.cpp)
+target_compile_definitions(gm PUBLIC FLOATTYPE=float COMPILE_PLOTTING)
+target_link_libraries(gm ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
+
 # Competition scheme 1
 add_executable(james1 james1.cpp)
 target_compile_definitions(james1 PUBLIC FLOATTYPE=float COMPILE_PLOTTING COMP1)

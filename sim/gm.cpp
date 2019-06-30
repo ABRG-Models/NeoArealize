@@ -1,5 +1,5 @@
 /*
- * Schnakenberg Turing like RD system
+ * Gierer-Meinhardt Turing like RD system
  */
 
 /*!
@@ -24,7 +24,7 @@
 /*!
  * Include the reaction diffusion class
  */
-#include "rd_schnakenberg.h"
+#include "rd_gm.h"
 
 #ifdef COMPILE_PLOTTING
 /*!
@@ -141,13 +141,14 @@ int main (int argc, char **argv)
     }
     const FLOATTYPE dt = root.get ("dt", 0.00001).asDouble();
 
-    // Schakenberg model parameters
+    // model parameters
     const FLOATTYPE D_A = root.get ("D_A", 0.1).asDouble();
-    const FLOATTYPE D_B = root.get ("D_B", 0.1).asDouble();
+    const FLOATTYPE D_B = root.get ("D_A", 0.1).asDouble();
     const FLOATTYPE k1 = root.get ("k1", 1).asDouble();
     const FLOATTYPE k2 = root.get ("k2", 1).asDouble();
     const FLOATTYPE k3 = root.get ("k3", 1).asDouble();
     const FLOATTYPE k4 = root.get ("k4", 1).asDouble();
+    const FLOATTYPE k5 = root.get ("k5", 1).asDouble();
 
     cout << "steps to simulate: " << steps << endl;
 
@@ -178,7 +179,7 @@ int main (int argc, char **argv)
     double thetaInit = 0.0;
     double phiInit = 0.0;
 
-    string worldName("schnak");
+    string worldName("gm");
 
     string winTitle = worldName + ": A"; // 0
     displays.push_back (morph::Gdisplay (340, 300, 100, 1800, winTitle.c_str(),
@@ -196,7 +197,7 @@ int main (int argc, char **argv)
     /*
      * Instantiate and set up the model object
      */
-    RD_Schnakenberg<FLOATTYPE> RD;
+    RD_GM<FLOATTYPE> RD;
 
     RD.svgpath = svgpath;
     RD.logpath = logpath;
@@ -216,6 +217,7 @@ int main (int argc, char **argv)
     RD.k2 = k2;
     RD.k3 = k3;
     RD.k4 = k4;
+    RD.k5 = k5;
     RD.D_A = D_A;
     RD.D_B = D_B;
 

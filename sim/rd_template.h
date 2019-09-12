@@ -393,13 +393,13 @@ public:
 
             DBG2 ("(h->ri,h->gi): (" << h->ri << "," << h->gi << ")");
             // Find x gradient
-            if (h->has_ne && h->has_nw) {
+            if (h->has_ne() && h->has_nw()) {
                 DBG2 ("x case 1 f[h->ne]: " << f[h->ne->vi] << " - f[h->nw]" << f[h->nw->vi] << "/ h->d*2: " << (double)h->d * 2.0);
                 gradf[0][h->vi] = (f[h->ne->vi] - f[h->nw->vi]) / ((double)h->d * 2.0);
-            } else if (h->has_ne) {
+            } else if (h->has_ne()) {
                 DBG2 ("x case 2 f[h->ne]: " << f[h->ne->vi] << " - f[h]" << f[h->vi] << "/ h->d: " << (double)h->d);
                 gradf[0][h->vi] = (f[h->ne->vi] - f[h->vi]) / (double)h->d;
-            } else if (h->has_nw) {
+            } else if (h->has_nw()) {
                 DBG2 ("x case 3 f[h]: " << f[h->vi] << " - f[h->nw]" << f[h->nw->vi] << "/ h->d: " << (double)h->d);
                 gradf[0][h->vi] = (f[h->vi] - f[h->nw->vi]) / (double)h->d;
             } else {
@@ -409,7 +409,10 @@ public:
             }
 
             // Find y gradient
-            if (h->has_nnw && h->has_nne && h->has_nsw && h->has_nse) {
+            // Note: Now that I can access flags in h, can get the flags and achieve this in a single test:
+            // hflags & (HEX_HAS_NNW | HAS_HAS_NNE | HAS_HAS_NSW | HAS_HAS_NSE) == (HEX_HAS_NNW | HAS_HAS_NNE | HAS_HAS_NSW | HAS_HAS_NSE)
+            // or perhaps hflags & HEX_NEIGHB_DIAGS == HEX_NEIGHB_DIAGS
+            if (h->has_nnw() && h->has_nne() && h->has_nsw() && h->has_nse()) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
 #ifdef DEBUG2
                 if (h->vi == 0) {
@@ -420,19 +423,19 @@ public:
 #endif
                 gradf[1][h->vi] = ((f[h->nne->vi] - f[h->nse->vi]) + (f[h->nnw->vi] - f[h->nsw->vi])) / (double)h->getV();
 
-            } else if (h->has_nnw && h->has_nne ) {
+            } else if (h->has_nnw() && h->has_nne() ) {
                 //if (h->vi == 0) { DBG ("y case 2"); }
                 gradf[1][h->vi] = ( (f[h->nne->vi] + f[h->nnw->vi]) / 2.0 - f[h->vi]) / (double)h->getV();
 
-            } else if (h->has_nsw && h->has_nse) {
+            } else if (h->has_nsw() && h->has_nse()) {
                 //if (h->vi == 0) { DBG ("y case 3"); }
                 gradf[1][h->vi] = (f[h->vi] - (f[h->nse->vi] + f[h->nsw->vi]) / 2.0) / (double)h->getV();
 
-            } else if (h->has_nnw && h->has_nsw) {
+            } else if (h->has_nnw() && h->has_nsw()) {
                 //if (h->vi == 0) { DBG ("y case 4"); }
                 gradf[1][h->vi] = (f[h->nnw->vi] - f[h->nsw->vi]) / (double)h->getTwoV();
 
-            } else if (h->has_nne && h->has_nse) {
+            } else if (h->has_nne() && h->has_nse()) {
                 //if (h->vi == 0) { DBG ("y case 5"); }
                 gradf[1][h->vi] = (f[h->nne->vi] - f[h->nse->vi]) / (double)h->getTwoV();
             } else {
@@ -469,32 +472,32 @@ public:
             // 1. The D Del^2 a_i term
             // Compute the sum around the neighbours
             double thesum = -6 * fa[h->vi];
-            if (h->has_ne) {
+            if (h->has_ne()) {
                 thesum += fa[h->ne->vi];
             } else {
                 // Apply boundary condition
             }
-            if (h->has_nne) {
+            if (h->has_nne()) {
                 thesum += fa[h->nne->vi];
             } else {
                 thesum += fa[h->vi]; // A ghost neighbour-east with same value as Hex_0
             }
-            if (h->has_nnw) {
+            if (h->has_nnw()) {
                 thesum += fa[h->nnw->vi];
             } else {
                 thesum += fa[h->vi];
             }
-            if (h->has_nw) {
+            if (h->has_nw()) {
                 thesum += fa[h->nw->vi];
             } else {
                 thesum += fa[h->vi];
             }
-            if (h->has_nsw) {
+            if (h->has_nsw()) {
                 thesum += fa[h->nsw->vi];
             } else {
                 thesum += fa[h->vi];
             }
-            if (h->has_nse) {
+            if (h->has_nse()) {
                 thesum += fa[h->nse->vi];
             } else {
                 thesum += fa[h->vi];
@@ -667,44 +670,45 @@ public:
             for (auto h : this->hg->hexen) {
                 if (h.onBoundary() == false) {
                     if (norm_a[i][h.vi]<c) {
-                        if (norm_a[i][h.ne->vi]>c && h.has_ne) {
+#warning "FIXME: ordering here too"
+                        if (norm_a[i][h.ne->vi]>c && h.has_ne()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 0);
                         }
-                        if (norm_a[i][h.nne->vi]>c && h.has_nne) {
+                        if (norm_a[i][h.nne->vi]>c && h.has_nne()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 1);
                         }
-                        if (norm_a[i][h.nnw->vi]>c && h.has_nnw) {
+                        if (norm_a[i][h.nnw->vi]>c && h.has_nnw()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 2);
                         }
-                        if (norm_a[i][h.nw->vi]>c && h.has_nw) {
+                        if (norm_a[i][h.nw->vi]>c && h.has_nw()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 3);
                         }
-                        if (norm_a[i][h.nsw->vi]>c && h.has_nsw) {
+                        if (norm_a[i][h.nsw->vi]>c && h.has_nsw()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 4);
                         }
-                        if (norm_a[i][h.nse->vi]>c && h.has_nse) {
+                        if (norm_a[i][h.nse->vi]>c && h.has_nse()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 5);
                         }
                     }
 
                 } else { // h.onBoundary() is true
 
-                    if (!h.has_ne) {
+                    if (!h.has_ne()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 0);
                     }
-                    if (!h.has_nne) {
+                    if (!h.has_nne()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 1);
                     }
-                    if (!h.has_nnw) {
+                    if (!h.has_nnw()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 2);
                     }
-                    if (!h.has_nw) {
+                    if (!h.has_nw()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 3);
                     }
-                    if (!h.has_nsw) {
+                    if (!h.has_nsw()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 4);
                     }
-                    if (!h.has_nse) {
+                    if (!h.has_nse()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 5);
                     }
                 }

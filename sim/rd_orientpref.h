@@ -594,7 +594,7 @@ public:
             // Compute the sum around the neighbours
             double sum_re = -6 * fa[0][h->vi];
             double sum_im = -6 * fa[1][h->vi];
-            if (h->has_ne) {
+            if (h->has_ne()) {
                 sum_re += fa[0][h->ne->vi];
                 sum_im += fa[1][h->ne->vi];
             } else {
@@ -607,35 +607,35 @@ public:
                                         // perhaps.
                 sum_im += fa[1][h->vi];
             }
-            if (h->has_nne) {
+            if (h->has_nne()) {
                 sum_re += fa[0][h->nne->vi];
                 sum_im += fa[1][h->nne->vi];
             } else {
                 sum_re += fa[0][h->vi];
                 sum_im += fa[1][h->vi];
             }
-            if (h->has_nnw) {
+            if (h->has_nnw()) {
                 sum_re += fa[0][h->nnw->vi];
                 sum_im += fa[1][h->nnw->vi];
             } else {
                 sum_re += fa[0][h->vi];
                 sum_im += fa[1][h->vi];
             }
-            if (h->has_nw) {
+            if (h->has_nw()) {
                 sum_re += fa[0][h->nw->vi];
                 sum_im += fa[1][h->nw->vi];
             } else {
                 sum_re += fa[0][h->vi];
                 sum_im += fa[1][h->vi];
             }
-            if (h->has_nsw) {
+            if (h->has_nsw()) {
                 sum_re += fa[0][h->nsw->vi];
                 sum_im += fa[1][h->nsw->vi];
             } else {
                 sum_re += fa[0][h->vi];
                 sum_im += fa[1][h->vi];
             }
-            if (h->has_nse) {
+            if (h->has_nse()) {
                 sum_re += fa[0][h->nse->vi];
                 sum_im += fa[1][h->nse->vi];
             } else {

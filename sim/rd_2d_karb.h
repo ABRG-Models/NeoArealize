@@ -934,13 +934,13 @@ public:
 
             DBG2 ("(h->ri,h->gi): (" << h->ri << "," << h->gi << ")");
             // Find x gradient
-            if (h->has_ne && h->has_nw) {
+            if (h->has_ne() && h->has_nw()) {
                 DBG2 ("x case 1 f[h->ne]: " << f[h->ne->vi] << " - f[h->nw]" << f[h->nw->vi] << "/ h->d*2: " << (double)h->d * 2.0);
                 gradf[0][h->vi] = (f[h->ne->vi] - f[h->nw->vi]) / ((double)h->d * 2.0);
-            } else if (h->has_ne) {
+            } else if (h->has_ne()) {
                 DBG2 ("x case 2 f[h->ne]: " << f[h->ne->vi] << " - f[h]" << f[h->vi] << "/ h->d: " << (double)h->d);
                 gradf[0][h->vi] = (f[h->ne->vi] - f[h->vi]) / (double)h->d;
-            } else if (h->has_nw) {
+            } else if (h->has_nw()) {
                 DBG2 ("x case 3 f[h]: " << f[h->vi] << " - f[h->nw]" << f[h->nw->vi] << "/ h->d: " << (double)h->d);
                 gradf[0][h->vi] = (f[h->vi] - f[h->nw->vi]) / (double)h->d;
             } else {
@@ -950,7 +950,7 @@ public:
             }
 
             // Find y gradient
-            if (h->has_nnw && h->has_nne && h->has_nsw && h->has_nse) {
+            if (h->has_nnw() && h->has_nne() && h->has_nsw() && h->has_nse()) {
                 // Full complement. Compute the mean of the nse->nne and nsw->nnw gradients
 #ifdef DEBUG2
                 if (h->vi == 0) {
@@ -961,19 +961,19 @@ public:
 #endif
                 gradf[1][h->vi] = ((f[h->nne->vi] - f[h->nse->vi]) + (f[h->nnw->vi] - f[h->nsw->vi])) / (double)h->getV();
 
-            } else if (h->has_nnw && h->has_nne ) {
+            } else if (h->has_nnw() && h->has_nne()) {
                 //if (h->vi == 0) { DBG ("y case 2"); }
                 gradf[1][h->vi] = ( (f[h->nne->vi] + f[h->nnw->vi]) / 2.0 - f[h->vi]) / (double)h->getV();
 
-            } else if (h->has_nsw && h->has_nse) {
+            } else if (h->has_nsw() && h->has_nse()) {
                 //if (h->vi == 0) { DBG ("y case 3"); }
                 gradf[1][h->vi] = (f[h->vi] - (f[h->nse->vi] + f[h->nsw->vi]) / 2.0) / (double)h->getV();
 
-            } else if (h->has_nnw && h->has_nsw) {
+            } else if (h->has_nnw() && h->has_nsw()) {
                 //if (h->vi == 0) { DBG ("y case 4"); }
                 gradf[1][h->vi] = (f[h->nnw->vi] - f[h->nsw->vi]) / (double)h->getTwoV();
 
-            } else if (h->has_nne && h->has_nse) {
+            } else if (h->has_nne() && h->has_nse()) {
                 //if (h->vi == 0) { DBG ("y case 5"); }
                 gradf[1][h->vi] = (f[h->nne->vi] - f[h->nse->vi]) / (double)h->getTwoV();
             } else {
@@ -1021,32 +1021,32 @@ public:
             // 1. The D Del^2 a_i term
             // Compute the sum around the neighbours
             double thesum = -6 * fa[h->vi];
-            if (h->has_ne) {
+            if (h->has_ne()) {
                 thesum += fa[h->ne->vi];
             } else {
                 thesum += fa[h->vi]; // Apply boundary condition
             }
-            if (h->has_nne) {
+            if (h->has_nne()) {
                 thesum += fa[h->nne->vi];
             } else {
                 thesum += fa[h->vi]; // A ghost neighbour-east with same value as Hex_0
             }
-            if (h->has_nnw) {
+            if (h->has_nnw()) {
                 thesum += fa[h->nnw->vi];
             } else {
                 thesum += fa[h->vi];
             }
-            if (h->has_nw) {
+            if (h->has_nw()) {
                 thesum += fa[h->nw->vi];
             } else {
                 thesum += fa[h->vi];
             }
-            if (h->has_nsw) {
+            if (h->has_nsw()) {
                 thesum += fa[h->nsw->vi];
             } else {
                 thesum += fa[h->vi];
             }
-            if (h->has_nse) {
+            if (h->has_nse()) {
                 thesum += fa[h->nse->vi];
             } else {
                 thesum += fa[h->vi];
@@ -1057,7 +1057,7 @@ public:
             // 2. The a div(g) term. Two sums for this.
             double term2 = 0.0;
             // First sum
-            if (h->has_ne) {
+            if (h->has_ne()) {
                 term2 += /*cos (0)*/ (this->g[i][0][h->ne->vi] + this->g[i][0][h->vi]);
             } else {
                 // Boundary condition _should_ be satisfied by
@@ -1065,50 +1065,50 @@ public:
                 // add only g[i][0][h->vi]
                 term2 += /*cos (0)*/ (this->g[i][0][h->vi]);
             }
-            if (h->has_nne) {
+            if (h->has_nne()) {
                 term2 += /*cos (60)*/ 0.5 * (this->g[i][0][h->nne->vi] + this->g[i][0][h->vi]);
             } else {
                 term2 += /*cos (60)*/ 0.5 * (this->g[i][0][h->vi]);
             }
-            if (h->has_nnw) {
+            if (h->has_nnw()) {
                 term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][h->nnw->vi] + this->g[i][0][h->vi]);
             } else {
                 term2 -= /*cos (120)*/ 0.5 * (this->g[i][0][h->vi]);
             }
-            if (h->has_nw) {
+            if (h->has_nw()) {
                 term2 -= /*cos (180)*/ (this->g[i][0][h->nw->vi] + this->g[i][0][h->vi]);
             } else {
                 term2 -= /*cos (180)*/ (this->g[i][0][h->vi]);
             }
-            if (h->has_nsw) {
+            if (h->has_nsw()) {
                 term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][h->nsw->vi] + this->g[i][0][h->vi]);
             } else {
                 term2 -= /*cos (240)*/ 0.5 * (this->g[i][0][h->vi]);
             }
-            if (h->has_nse) {
+            if (h->has_nse()) {
                 term2 += /*cos (300)*/ 0.5 * (this->g[i][0][h->nse->vi] + this->g[i][0][h->vi]);
             } else {
                 term2 += /*cos (300)*/ 0.5 * (this->g[i][0][h->vi]);
             }
             // 2nd sum
             //term2 += sin (0) * (this->g[i][1][h->ne->vi] + this->g[i][1][h->vi]);
-            if (h->has_nne) {
+            if (h->has_nne()) {
                 term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][h->nne->vi] + this->g[i][1][h->vi]);
             } else {
                 term2 += /*sin (60)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
             }
-            if (h->has_nnw) {
+            if (h->has_nnw()) {
                 term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][h->nnw->vi] + this->g[i][1][h->vi]);
             } else {
                 term2 += /*sin (120)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
             }
             //term2 += sin (180) * (this->g[i][1][h->nw->vi] + this->g[i][1][h->vi]);
-            if (h->has_nsw) {
+            if (h->has_nsw()) {
                 term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][h->nsw->vi] + this->g[i][1][h->vi]);
             } else {
                 term2 -= /*sin (240)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
             }
-            if (h->has_nse) {
+            if (h->has_nse()) {
                 term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][h->nse->vi] + this->g[i][1][h->vi]);
             } else {
                 term2 -= /*sin (300)*/ R3_OVER_2 * (this->g[i][1][h->vi]);
@@ -1435,12 +1435,12 @@ public:
                             DBG("Value over threshold...");
                         }
 #endif
-                        if ( (h.has_ne && norm_f[i][h.ne->vi] < threshold)
-                             || (h.has_nne && norm_f[i][h.nne->vi] < threshold)
-                             || (h.has_nnw && norm_f[i][h.nnw->vi] < threshold)
-                             || (h.has_nw && norm_f[i][h.nw->vi] < threshold)
-                             || (h.has_nsw && norm_f[i][h.nsw->vi] < threshold)
-                             || (h.has_nse && norm_f[i][h.nse->vi] < threshold) ) {
+                        if ( (h.has_ne() && norm_f[i][h.ne->vi] < threshold)
+                             || (h.has_nne() && norm_f[i][h.nne->vi] < threshold)
+                             || (h.has_nnw() && norm_f[i][h.nnw->vi] < threshold)
+                             || (h.has_nw() && norm_f[i][h.nw->vi] < threshold)
+                             || (h.has_nsw() && norm_f[i][h.nsw->vi] < threshold)
+                             || (h.has_nse() && norm_f[i][h.nse->vi] < threshold) ) {
 #ifdef DEBUG__
                             if (!i) {
                                 DBG("...with neighbour under threshold (push_back)");
@@ -1490,22 +1490,22 @@ public:
             }
 #endif
             if (h.onBoundary() == true) {
-                if (!h.has_ne) {
+                if (!h.has_ne()) {
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 0);
                 }
-                if (!h.has_nne) {
+                if (!h.has_nne()) {
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 1);
                 }
-                if (!h.has_nnw) {
+                if (!h.has_nnw()) {
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 2);
                 }
-                if (!h.has_nw) {
+                if (!h.has_nw()) {
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 3);
                 }
-                if (!h.has_nsw) {
+                if (!h.has_nsw()) {
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 4);
                 }
-                if (!h.has_nse) {
+                if (!h.has_nse()) {
                     disp.drawHexSeg (h.position(), zero_ar, r, zero_ar, 5);
                 }
             }
@@ -1566,44 +1566,46 @@ public:
             for (auto h : this->hg->hexen) {
                 if (h.onBoundary() == false) {
                     if (norm_f[i][h.vi]<threshold) {
-                        if (norm_f[i][h.ne->vi] > threshold && h.has_ne) {
+#warning "FIXME: Should test h.has_ne() first, then access norm_f second."
+                        // if (norm_f[i][h.ne->vi] > threshold && h.has_ne()) {
+                        if (norm_f[i][h.ne->vi] > threshold && h.has_ne()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 0);
                         }
-                        if (norm_f[i][h.nne->vi] > threshold && h.has_nne) {
+                        if (norm_f[i][h.nne->vi] > threshold && h.has_nne()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 1);
                         }
-                        if (norm_f[i][h.nnw->vi] > threshold && h.has_nnw) {
+                        if (norm_f[i][h.nnw->vi] > threshold && h.has_nnw()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 2);
                         }
-                        if (norm_f[i][h.nw->vi] > threshold && h.has_nw) {
+                        if (norm_f[i][h.nw->vi] > threshold && h.has_nw()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 3);
                         }
-                        if (norm_f[i][h.nsw->vi] > threshold && h.has_nsw) {
+                        if (norm_f[i][h.nsw->vi] > threshold && h.has_nsw()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 4);
                         }
-                        if (norm_f[i][h.nse->vi] > threshold && h.has_nse) {
+                        if (norm_f[i][h.nse->vi] > threshold && h.has_nse()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 5);
                         }
                     }
 
                 } else { // h.onBoundary() is true
 
-                    if (!h.has_ne) {
+                    if (!h.has_ne()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 0);
                     }
-                    if (!h.has_nne) {
+                    if (!h.has_nne()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 1);
                     }
-                    if (!h.has_nnw) {
+                    if (!h.has_nnw()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 2);
                     }
-                    if (!h.has_nw) {
+                    if (!h.has_nw()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 3);
                     }
-                    if (!h.has_nsw) {
+                    if (!h.has_nsw()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 4);
                     }
-                    if (!h.has_nse) {
+                    if (!h.has_nse()) {
                         disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_blk, 5);
                     }
                 }

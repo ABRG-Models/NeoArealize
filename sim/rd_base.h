@@ -709,12 +709,12 @@ public:
                             DBG("Value over threshold...");
                         }
 #endif
-                        if ( (h.has_ne && norm_f[i][h.ne->vi] < threshold)
-                             || (h.has_nne && norm_f[i][h.nne->vi] < threshold)
-                             || (h.has_nnw && norm_f[i][h.nnw->vi] < threshold)
-                             || (h.has_nw && norm_f[i][h.nw->vi] < threshold)
-                             || (h.has_nsw && norm_f[i][h.nsw->vi] < threshold)
-                             || (h.has_nse && norm_f[i][h.nse->vi] < threshold) ) {
+                        if ( (h.has_ne() && norm_f[i][h.ne->vi] < threshold)
+                             || (h.has_nne() && norm_f[i][h.nne->vi] < threshold)
+                             || (h.has_nnw() && norm_f[i][h.nnw->vi] < threshold)
+                             || (h.has_nw() && norm_f[i][h.nw->vi] < threshold)
+                             || (h.has_nsw() && norm_f[i][h.nsw->vi] < threshold)
+                             || (h.has_nse() && norm_f[i][h.nse->vi] < threshold) ) {
 #ifdef DEBUG__
                             if (!i) {
                                 DBG("...with neighbour under threshold (push_back)");

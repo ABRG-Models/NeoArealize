@@ -670,23 +670,22 @@ public:
             for (auto h : this->hg->hexen) {
                 if (h.onBoundary() == false) {
                     if (norm_a[i][h.vi]<c) {
-#warning "FIXME: ordering here too"
-                        if (norm_a[i][h.ne->vi]>c && h.has_ne()) {
+                        if (h.has_ne() && norm_a[i][h.ne->vi]>c && h.has_ne()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 0);
                         }
-                        if (norm_a[i][h.nne->vi]>c && h.has_nne()) {
+                        if (h.has_nne() && norm_a[i][h.nne->vi]>c && h.has_nne()) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 1);
                         }
-                        if (norm_a[i][h.nnw->vi]>c && h.has_nnw()) {
+                        if (h.has_nnw() && norm_a[i][h.nnw->vi]>c) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 2);
                         }
-                        if (norm_a[i][h.nw->vi]>c && h.has_nw()) {
+                        if (h.has_nw() && norm_a[i][h.nw->vi]>c) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 3);
                         }
-                        if (norm_a[i][h.nsw->vi]>c && h.has_nsw()) {
+                        if (h.has_nsw() && norm_a[i][h.nsw->vi]>c) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 4);
                         }
-                        if (norm_a[i][h.nse->vi]>c && h.has_nse()) {
+                        if (h.has_nse() && norm_a[i][h.nse->vi]>c) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 5);
                         }
                     }

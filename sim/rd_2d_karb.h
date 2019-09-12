@@ -1566,24 +1566,23 @@ public:
             for (auto h : this->hg->hexen) {
                 if (h.onBoundary() == false) {
                     if (norm_f[i][h.vi]<threshold) {
-#warning "FIXME: Should test h.has_ne() first, then access norm_f second."
                         // if (norm_f[i][h.ne->vi] > threshold && h.has_ne()) {
-                        if (norm_f[i][h.ne->vi] > threshold && h.has_ne()) {
+                        if (h.has_ne() && norm_f[i][h.ne->vi] > threshold) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 0);
                         }
-                        if (norm_f[i][h.nne->vi] > threshold && h.has_nne()) {
+                        if (h.has_nne() && norm_f[i][h.nne->vi] > threshold) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 1);
                         }
-                        if (norm_f[i][h.nnw->vi] > threshold && h.has_nnw()) {
+                        if (h.has_nnw() && norm_f[i][h.nnw->vi] > threshold) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 2);
                         }
-                        if (norm_f[i][h.nw->vi] > threshold && h.has_nw()) {
+                        if (h.has_nw() && norm_f[i][h.nw->vi] > threshold) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 3);
                         }
-                        if (norm_f[i][h.nsw->vi] > threshold && h.has_nsw()) {
+                        if (h.has_nsw() && norm_f[i][h.nsw->vi] > threshold) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 4);
                         }
-                        if (norm_f[i][h.nse->vi] > threshold && h.has_nse()) {
+                        if (h.has_nse() && norm_f[i][h.nse->vi] > threshold) {
                             disp.drawHexSeg (h.position(), zero_offset, (h.d/2.0f), cl_b, 5);
                         }
                     }

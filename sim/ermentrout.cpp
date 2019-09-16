@@ -3,7 +3,7 @@
 #include <string>
 
 /*!
- * This will be passed as the template argument for RD_plot and RD.
+ * This will be passed as the template argument for RD_Plot and RD.
  */
 #define FLOATTYPE double
 
@@ -46,7 +46,7 @@ int main (int argc, char **argv)
     vector<double> rot(3, 0.0);
 
     // A plotting object.
-    morph::RD_plot<FLOATTYPE> plt(fix, eye, rot);
+    morph::RD_Plot<FLOATTYPE> plt(fix, eye, rot);
 
     double rhoInit = 1;
     string winTitle = worldName + ": n";

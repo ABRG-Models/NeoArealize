@@ -6,7 +6,7 @@
  */
 
 /*!
- * This will be passed as the template argument for RD_plot and RD and
+ * This will be passed as the template argument for RD_Plot and RD and
  * should be defined when compiling.
  */
 #ifndef FLOATTYPE
@@ -321,7 +321,7 @@ int main (int argc, char **argv)
     vector<double> rot(3, 0.0);
 
     // A plot object.
-    morph::RD_plot<FLOATTYPE> plt(fix, eye, rot);
+    morph::RD_Plot<FLOATTYPE> plt(fix, eye, rot);
 
     double rhoInit = root.get ("rhoInit", 1.0).asDouble(); // This is effectively a zoom control. Increase to zoom out.
     double thetaInit = 0.0;

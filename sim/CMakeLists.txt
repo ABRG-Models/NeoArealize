@@ -39,6 +39,12 @@ add_executable(erm2 erm2.cpp)
 target_compile_definitions(erm2 PUBLIC FLOATTYPE=double COMPILE_PLOTTING)
 target_link_libraries(erm2 ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
 
+# RD_Base-derived Ermentrout model with HexGridVisual
+include_directories(${GLFW3_INCLUDE_DIR})
+add_executable(erm2_hgv erm2_hgv.cpp)
+target_compile_definitions(erm2_hgv PUBLIC FLT=float COMPILE_PLOTTING)
+target_link_libraries(erm2_hgv ${MORPH_LDFLAGS} ${HDF5LIBLINK} ${JSONLIBLINK})
+
 # A first combined model
 add_executable(embedded embedded.cpp)
 target_link_libraries(embedded ${MORPH_LDFLAGS} ${HDF5LIBLINK})

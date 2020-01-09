@@ -79,7 +79,7 @@ class RD_Erm2 : public morph::RD_Base<Flt>
 public:
 
     /*!
-     * Set N>1 for maintaning multiple expression gradients
+     * Set N>1 for maintaining multiple expression gradients
      */
     alignas(Flt) unsigned int N = 1;
 

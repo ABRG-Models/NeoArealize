@@ -19,6 +19,9 @@
 #include "morph/tools.h"
 #include "morph/Config.h"
 
+#include <morph/MathAlgo.h>
+using morph::MathAlgo;
+
 /*!
  * Choose whether to plot or not. Comment out to only compute. The
  * code could be changed so that the decision to plot or not was
@@ -150,7 +153,24 @@ int main (int argc, char **argv)
 
 #ifdef COMPILE_PLOTTING
     const array<float, 3> offset = { 0.0, 0.0, 0.0 };
-    unsigned int ngrid = plt.addHexGridVisual (RD.hg, RD.n[0], offset);
+    float _m = 0.3;
+    float _c = 0.0;
+    const array<float, 4> scaling = { _m/10, _c/10, _m, _c };
+
+    float maxn = -1e7;
+    float minn = 1e7;
+    for (auto ii : RD.c[0]) {
+        if (ii > maxn) {
+            maxn = ii;
+        }
+        if (ii < minn) {
+            minn = ii;
+        }
+    }
+    pair<float, float> mm = MathAlgo<float>::maxmin (RD.c[0]);
+    cout << "Max n: " << mm.first << ", min n: " << mm.second << endl;
+
+    unsigned int ngrid = plt.addHexGridVisual (RD.hg, offset, RD.c[0], scaling);
     //offset[0] += 1.0;
     //unsigned int cgrid = plt.addHexGridVisual (RD.hg, &RD.c, offset);
     //cout << "Added HexGridVisual with grid IDs " << ngrid << "(n) and " << cgrid << "(c)" << endl;
@@ -191,6 +211,9 @@ int main (int argc, char **argv)
             // Will need Visual in a thread to make it interactive:
             //while (v.readyToFinish == false) {
             glfwWaitEventsTimeout (2.5);
+            pair<float, float> mm = MathAlgo<float>::maxmin (RD.c[0]);
+            cout << "Max n: " << mm.first << ", min n: " << mm.second << endl;
+            plt.updateHexGridVisual (ngrid, RD.c[0], scaling);
             plt.render();
             //}
             // FIXME: Need to be able to save PNG frames here.

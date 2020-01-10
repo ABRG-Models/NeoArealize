@@ -6,6 +6,10 @@
 #include <vector>
 #include <string>
 
+#include <chrono>
+using namespace std::chrono;
+using std::chrono::steady_clock;
+
 /*!
  * This will be passed as the template argument for RD_Plot and RD and
  * should be defined when compiling.
@@ -118,7 +122,6 @@ int main (int argc, char **argv)
 #ifdef COMPILE_PLOTTING
     // Parameters from the config that apply only to plotting:
     const unsigned int plotevery = conf.getUInt ("plotevery", 10UL);
-    const unsigned int renderevery = conf.getUInt ("renderevery", 500UL);
     const bool vidframes = conf.getBool ("vidframes", false);
     unsigned int framecount = 0;
 
@@ -194,6 +197,7 @@ int main (int argc, char **argv)
     RD.savePositions();
 
     // Start the loop
+    steady_clock::time_point lastrender = steady_clock::now();
     bool doing = true;
     while (doing) {
 
@@ -210,9 +214,11 @@ int main (int argc, char **argv)
         // Render more often than the hex grid is updated with data, to keep it
         // responsive, but not too often, lest too much performance be used up with
         // rendering the graphics.
-        if ((RD.stepCount % renderevery) == 0) {
+        steady_clock::duration sincerender = steady_clock::now() - lastrender;
+        if (duration_cast<milliseconds>(sincerender).count() > 17) { // 17 is about 60 Hz
             glfwPollEvents();
             plt.render();
+            lastrender = steady_clock::now();
         }
 #endif
          // Save data every 'logevery' steps

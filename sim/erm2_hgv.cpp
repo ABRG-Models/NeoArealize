@@ -118,12 +118,16 @@ int main (int argc, char **argv)
 #ifdef COMPILE_PLOTTING
     // Parameters from the config that apply only to plotting:
     const unsigned int plotevery = conf.getUInt ("plotevery", 10UL);
+    const unsigned int renderevery = conf.getUInt ("renderevery", 500UL);
     const bool vidframes = conf.getBool ("vidframes", false);
     unsigned int framecount = 0;
 
     const unsigned int win_width = conf.getUInt ("win_width", 600UL);
     unsigned int win_height = static_cast<unsigned int>(0.8824f * (float)win_width);
     Visual plt (win_width, win_height, "Ermentrout 2009 simulation");
+    plt.zNear = 0.1;
+    plt.zFar = 10;
+    plt.fov = 90;
     // Note: Want to plot 'n' and 'c'
 #endif
 
@@ -152,15 +156,14 @@ int main (int argc, char **argv)
     RD.init();
 
 #ifdef COMPILE_PLOTTING
-    array<float, 3> offset = { 0.0, 0.0, 0.0 };
-    float _m = 0.3;
+    // Value/colour scaling
+    float _m = 0.2;
     float _c = 0.0;
     const array<float, 4> scaling = { _m/10, _c/10, _m, _c };
-    pair<float, float> mm = MathAlgo<float>::maxmin (RD.c[0]);
-    cout << "Max n: " << mm.first << ", min n: " << mm.second << endl;
 
+    array<float, 3> offset = { -0.5*RD.hg->width(), 0.0, 0.0 };
     unsigned int ngrid = plt.addHexGridVisual (RD.hg, offset, RD.n[0], scaling);
-    offset[0] += RD.hg->width()*1.1;
+    offset[0] *= -1;
     unsigned int cgrid = plt.addHexGridVisual (RD.hg, offset, RD.c[0], scaling);
     cout << "Added HexGridVisual with grid IDs " << ngrid << "(n) and " << cgrid << "(c)" << endl;
 #endif
@@ -193,17 +196,21 @@ int main (int argc, char **argv)
     // Start the loop
     bool doing = true;
     while (doing) {
+
         // Step the model:
         RD.step();
+
 #ifdef COMPILE_PLOTTING
+        // Update the models for the RD variable surfaces:
         if ((RD.stepCount % plotevery) == 0) {
             plt.updateHexGridVisual (ngrid, RD.n[0], scaling);
             plt.updateHexGridVisual (cgrid, RD.c[0], scaling);
         }
+
         // Render more often than the hex grid is updated with data, to keep it
         // responsive, but not too often, lest too much performance be used up with
         // rendering the graphics.
-        if ((RD.stepCount % 500) == 0) {
+        if ((RD.stepCount % renderevery) == 0) {
             glfwPollEvents();
             plt.render();
         }
@@ -242,12 +249,13 @@ int main (int argc, char **argv)
     const string paramsCopy = logpath + "/params.json";
     conf.write (paramsCopy);
     if (conf.ready == false) {
-        cerr << "Warning: Something went wrong writing a copy of the params.json: " << conf.emsg << endl;
+        cerr << "Warning: Something went wrong writing a copy of the params.json: "
+             << conf.emsg << endl;
     }
 
 #ifdef COMPILE_PLOTTING
     // Keep window open & active until user exits.
-    cout << "Press x to exit.\n";
+    cout << "Ctrl-c or press x in graphics window to exit.\n";
     plt.keepOpen();
 #endif // COMPILE_PLOTTING
 

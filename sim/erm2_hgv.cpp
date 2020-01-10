@@ -197,16 +197,15 @@ int main (int argc, char **argv)
         RD.step();
 #ifdef COMPILE_PLOTTING
         if ((RD.stepCount % plotevery) == 0) {
-            // Will need Visual in a thread to make it interactive:
-            //while (v.readyToFinish == false) {
-            glfwWaitEventsTimeout (2.5);
-            pair<float, float> mm = MathAlgo<float>::maxmin (RD.c[0]);
-            cout << "Max n: " << mm.first << ", min n: " << mm.second << endl;
             plt.updateHexGridVisual (ngrid, RD.n[0], scaling);
             plt.updateHexGridVisual (cgrid, RD.c[0], scaling);
+        }
+        // Render more often than the hex grid is updated with data, to keep it
+        // responsive, but not too often, lest too much performance be used up with
+        // rendering the graphics.
+        if ((RD.stepCount % 500) == 0) {
+            glfwPollEvents();
             plt.render();
-            //}
-            // FIXME: Need to be able to save PNG frames here.
         }
 #endif
          // Save data every 'logevery' steps
@@ -247,10 +246,9 @@ int main (int argc, char **argv)
     }
 
 #ifdef COMPILE_PLOTTING
-    // Ask for a keypress before exiting so that the final images can be studied
-    int key;
-    cout << "Press any key[return] to exit.\n";
-    cin >> key;
+    // Keep window open & active until user exits.
+    cout << "Press x to exit.\n";
+    plt.keepOpen();
 #endif // COMPILE_PLOTTING
 
     return 0;
